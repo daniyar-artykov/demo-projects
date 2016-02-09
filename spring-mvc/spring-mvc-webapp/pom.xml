@@ -22,13 +22,25 @@
 			<activation>
 				<activeByDefault>true</activeByDefault>
 			</activation>
-			<id>daniyar-test</id>
+			<id>home</id>
 			<properties>
-				<profile>daniyar-test.properties</profile>
+				<profile>home.properties</profile>
 			</properties>
 		</profile>
 	</profiles>
 	<dependencies>
+		<!-- joda time -->
+		<dependency>
+			<groupId>joda-time</groupId>
+			<artifactId>joda-time</artifactId>
+			<version>2.9.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jadira.usertype</groupId>
+			<artifactId>usertype.core</artifactId>
+			<version>3.2.0.GA</version>
+		</dependency>
+
 		<dependency>
 			<groupId>javax.servlet</groupId>
 			<artifactId>javax.servlet-api</artifactId>
@@ -128,7 +140,7 @@
 	</dependencies>
 
 	<build>
-		<finalName>UpworkWebApp</finalName>
+		<finalName>SpringMVCWebApp</finalName>
 		<filters>
 			<filter>${basedir}/src/main/resources/profiles/${profile}</filter>
 		</filters>

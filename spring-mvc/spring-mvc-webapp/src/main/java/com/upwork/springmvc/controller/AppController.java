@@ -24,7 +24,7 @@ public class AppController {
 
 	@Autowired
 	EmployeeService service;
-	
+
 	@Autowired
 	MessageSource messageSource;
 
@@ -36,6 +36,7 @@ public class AppController {
 
 		List<Employee> employees = service.findAllEmployees();
 		model.addAttribute("employees", employees);
+
 		return "allemployees";
 	}
 
@@ -70,12 +71,15 @@ public class AppController {
 		 * framework as well while still using internationalized messages.
 		 * 
 		 */
-		if(!service.isEmployeeSsnUnique(employee.getId(), employee.getSsn())){
-			FieldError ssnError =new FieldError("employee","ssn",messageSource.getMessage("non.unique.ssn", new String[]{employee.getSsn()}, Locale.getDefault()));
-		    result.addError(ssnError);
+		if(!service.isEmployeeSsnUnique(employee.getId(), employee.getSsn())){ 
+			FieldError ssnError =new FieldError("employee", "ssn", 
+					messageSource.getMessage("non.unique.ssn", 
+							new String[]{employee.getSsn()}, Locale.getDefault()));
+			result.addError(ssnError);
+
 			return "registration";
 		}
-		
+
 		service.saveEmployee(employee);
 
 		model.addAttribute("success", "Employee " + employee.getName() + " registered successfully");
@@ -91,9 +95,10 @@ public class AppController {
 		Employee employee = service.findEmployeeBySsn(ssn);
 		model.addAttribute("employee", employee);
 		model.addAttribute("edit", true);
+		
 		return "registration";
 	}
-	
+
 	/*
 	 * This method will be called on form submission, handling POST request for
 	 * updating employee in database. It also validates the user input
@@ -107,8 +112,10 @@ public class AppController {
 		}
 
 		if(!service.isEmployeeSsnUnique(employee.getId(), employee.getSsn())){
-			FieldError ssnError =new FieldError("employee","ssn",messageSource.getMessage("non.unique.ssn", new String[]{employee.getSsn()}, Locale.getDefault()));
-		    result.addError(ssnError);
+			FieldError ssnError =new FieldError("employee", "ssn", 
+					messageSource.getMessage("non.unique.ssn", 
+							new String[]{employee.getSsn()}, Locale.getDefault()));
+			result.addError(ssnError);
 			return "registration";
 		}
 
@@ -118,7 +125,7 @@ public class AppController {
 		return "success";
 	}
 
-	
+
 	/*
 	 * This method will delete an employee by it's SSN value.
 	 */

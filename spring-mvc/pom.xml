@@ -16,12 +16,10 @@
 		<maven.compiler.plugin.version>3.3</maven.compiler.plugin.version>
 		<junit.version>4.12</junit.version>
 		
-		<hibernate.version>4.3.11.Final</hibernate.version>
+		<hibernate.version>4.3.4.Final</hibernate.version>
 		<springframework.version>4.2.4.RELEASE</springframework.version>		
 		
-		<!-- <hibernate.version>4.3.6.Final</hibernate.version> -->
 		<mysql.connector.version>5.1.38</mysql.connector.version>
-		<!-- <spring.version>4.0.6.RELEASE</spring.version> -->
 	</properties>
 
 	<developers>
