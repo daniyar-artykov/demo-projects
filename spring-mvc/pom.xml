@@ -1,0 +1,43 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>spring-mvc</artifactId>
+	<groupId>com.upwork.springmvc</groupId>
+	<version>0.0.1</version>
+	<packaging>pom</packaging>
+	<name>spring-mvc</name>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<java.compiler.version>1.8</java.compiler.version>
+		<log4j.version>1.2.17</log4j.version>
+		<slf4j.version>1.7.7</slf4j.version>
+		<maven.war.plugin.version>2.6</maven.war.plugin.version>
+		<maven.compiler.plugin.version>3.3</maven.compiler.plugin.version>
+		<junit.version>4.12</junit.version>
+		
+		<hibernate.version>4.3.11.Final</hibernate.version>
+		<springframework.version>4.2.4.RELEASE</springframework.version>		
+		
+		<!-- <hibernate.version>4.3.6.Final</hibernate.version> -->
+		<mysql.connector.version>5.1.38</mysql.connector.version>
+		<!-- <spring.version>4.0.6.RELEASE</spring.version> -->
+	</properties>
+
+	<developers>
+		<developer>
+			<id>Daniyar Artykov</id>
+			<email>daniyar.artykov@gmail.kz</email>
+			<organization>Upwork</organization>
+			<organizationUrl>https://www.upwork.com</organizationUrl>
+			<roles>
+				<role>Java Developer</role>
+			</roles>
+			<timezone>+6:00</timezone>
+		</developer>
+	</developers>
+
+	<modules>
+		<module>spring-mvc-webapp</module>
+	</modules>
+</project>
