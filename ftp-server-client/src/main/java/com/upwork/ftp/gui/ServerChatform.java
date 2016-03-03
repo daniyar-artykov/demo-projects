@@ -41,8 +41,8 @@ public class ServerChatform extends JFrame {
 		Send.setBounds(375, 400, 95, 30);
 		panel.add(Send);
 		this.setTitle("Server");
-		ChatHistory.setText("Waiting for Client");
-		ChatHistory.setText(ChatHistory.getText() + 'n' + "Client Found");
+//		ChatHistory.setText("Waiting for Client");
+//		ChatHistory.setText(ChatHistory.getText() + 'n' + "Client Found");
 	}
 
 	public static void main(String[] args) throws UnknownHostException,
