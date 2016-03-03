@@ -12,18 +12,18 @@ public class FileClient extends NetCommon {
 	public static void main(String[] args) {
 		if (args.length != 5) {
 			System.out.println(
-				"Usage: java FileServer <server ip> <server port> <operation> <source> <destin>");
+					"Usage: java FileServer <server ip> <server port> <operation> <source> <destin>");
 			System.out.println(
-				" For example: java FileClient 127.0.0.1 23111 download hello.txt copy.hello.txt");
+					" For example: java FileClient 127.0.0.1 23111 download hello.txt copy.hello.txt");
 			return;
 		}
-		
+
 		String ip = args[0];
 		int port = Integer.parseInt(args[1]);
 		String operation = args[2];
 		String sourceFile = args[3];
 		String destinFile = args[4];
-		
+
 		// check the operation
 		if ("upload".equalsIgnoreCase(operation)) {
 			upload(ip, port, sourceFile, destinFile);
@@ -31,7 +31,7 @@ public class FileClient extends NetCommon {
 			download(ip, port, sourceFile, destinFile);
 		} else {
 			System.out.println(
-				"Invalid operation: must be upload or download.");
+					"Invalid operation: must be upload or download.");
 		}
 	}
 
@@ -43,20 +43,21 @@ public class FileClient extends NetCommon {
 	 * @param sourceFile
 	 * @param destinFile
 	 */
-	public static void upload(String ip, int port, String sourceFile, String destinFile) {
+	public static String upload(String ip, int port, String sourceFile, String destinFile) {
+		String returnString = null;
 		try {
 			// make sure the local file exists
 			FileInputStream fin = new FileInputStream(new File(sourceFile));
 			// connect with the server
 			Socket client = new Socket(ip, port);
-			
+
 			// get the input and output stream for the client
 			InputStream input = client.getInputStream();
 			OutputStream output = client.getOutputStream();
-			
+
 			// send the request to the server
 			sendString(output, "upload " + destinFile);
-			
+
 			// read the response from the server
 			String response = readString(input);
 			if ("OK".equals(response)) {
@@ -66,16 +67,23 @@ public class FileClient extends NetCommon {
 			} else {
 				// could not save the file due to permission issue
 				System.out.println("Error: permission denied.");
+				returnString = "Error: permission denied.";
 			}
 			client.close();
 			fin.close();
-			System.out.println("Done! Saved as " + destinFile);
+			if(returnString == null) {
+				System.out.println("Done! Saved as " + destinFile);
+				returnString = "Done! Saved as " + destinFile;
+			}
 		} catch (IOException e) {
 			System.out.println("Error: could not upload file " + sourceFile);
+			returnString = "Error: could not upload file " + sourceFile;
 		}
+
+		return returnString;
 	}
 
-	
+
 	/**
 	 * download the remote file (source file) from the given server
 	 * and save as (destin file) on the local side.
@@ -84,20 +92,21 @@ public class FileClient extends NetCommon {
 	 * @param sourceFile
 	 * @param destinFile
 	 */
-	public static void download(String ip, int port, String sourceFile, String destinFile) {
+	public static String download(String ip, int port, String sourceFile, String destinFile) {
+		String returnString = null;
 		try {
 			// make sure the client can save this file
 			FileOutputStream fout = new FileOutputStream(new File(destinFile));
 			// connect with the server
 			Socket client = new Socket(ip, port);
-			
+
 			// get the input and output stream for the client
 			InputStream input = client.getInputStream();
 			OutputStream output = client.getOutputStream();
-			
+
 			// send the request to the server
 			sendString(output, "download " + sourceFile);
-			
+
 			// read the response from the server
 			String response = readString(input);
 			if ("OK".equals(response)) {
@@ -107,12 +116,19 @@ public class FileClient extends NetCommon {
 			} else {
 				// could not download the file due to permission issue
 				System.out.println("Error: no such file or permission denied.");
+				returnString = "Error: no such file or permission denied.";
 			}
 			client.close();
 			fout.close();
-			System.out.println("Done! Saved as " + destinFile);
+			if(returnString == null) {
+				System.out.println("Done! Saved as " + destinFile);
+				returnString = "Done! Saved as " + destinFile;
+			}
 		} catch (IOException e) {
 			System.out.println("Error: could not download file " + sourceFile);
+			returnString = "Error: could not download file " + sourceFile;
 		}
+
+		return returnString;
 	}
 }
