@@ -1,15 +1,20 @@
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 
 public class ClientForm extends JFrame {
 
@@ -35,15 +40,22 @@ public class ClientForm extends JFrame {
 	private JButton uploadSourceOpen;
 	private JLabel uploadDestinationLabel;
 	private JTextField uploadDestination;
+	private  JProgressBar uploadProgressBar;
+	private UploadTask uploadTask;
 
 	private JLabel downloadSourceLabel;
 	private JTextField downloadSource;
+	private JLabel downloadDestFoldeLabel;
+	private JTextField downloadDestFolder;
+	private JButton downloadDestFolderOpen;
 	private JLabel downloadDestinationLabel;
 	private JTextField downloadDestination;
+	private  JProgressBar downloadProgressBar;
+	private DownloadTask downloadTask;
 
 	public ClientForm() {
 		// set default size of the client form
-		this.setSize(457, 320);
+		this.setSize(487, 350);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		// set title for client form
 		this.setTitle("Client");
@@ -75,7 +87,7 @@ public class ClientForm extends JFrame {
 		tabbedPane.addTab("Upload", uploadPanel);
 		tabbedPane.addTab("Download", downloadPanel);
 
-		tabbedPane.setBounds(5, 40, 450, 160);
+		tabbedPane.setBounds(5, 40, 452, 200);
 
 		topPanel.add(tabbedPane);
 
@@ -102,32 +114,59 @@ public class ClientForm extends JFrame {
 
 		// upload button
 		upload = new JButton("Upload");
-		upload.setBounds(5, 80, 120, 30);
+		upload.setBounds(5, 120, 120, 30);
 		uploadPanel.add(upload);
 
+		uploadProgressBar = new JProgressBar();
+		uploadProgressBar.setMinimum(0);
+		uploadProgressBar.setMaximum(100);
+		uploadProgressBar.setBounds(130, 120, 120, 30);
+		uploadProgressBar.setStringPainted(true);
+		uploadPanel.add(uploadProgressBar);
+
 		downloadSourceLabel = new JLabel("Source");
-		downloadSourceLabel.setBounds(5, 5, 80, 30);
+		downloadSourceLabel.setBounds(5, 5, 120, 30);
 		downloadPanel.add(downloadSourceLabel);
 
 		downloadSource = new JTextField("server.txt");
-		downloadSource.setBounds(105, 5, 150, 30);
+		downloadSource.setBounds(125, 5, 150, 30);
 		downloadPanel.add(downloadSource);
 
-		downloadDestinationLabel = new JLabel("Destination");
-		downloadDestinationLabel.setBounds(5, 40, 80, 30);
+		downloadDestFoldeLabel = new JLabel("Destination Folder");
+		downloadDestFoldeLabel.setBounds(5, 40, 120, 30);
+		downloadPanel.add(downloadDestFoldeLabel);
+
+		downloadDestFolder = new JTextField();
+		downloadDestFolder.setBounds(125, 40, 200, 30);
+		downloadDestFolder.setEnabled(false);
+		downloadPanel.add(downloadDestFolder);
+
+		downloadDestFolderOpen = new JButton("Browse...");
+		downloadDestFolderOpen.setBounds(335, 40, 100, 30);
+		downloadPanel.add(downloadDestFolderOpen);
+
+		downloadDestinationLabel = new JLabel("Destination File");
+		downloadDestinationLabel.setBounds(5, 80, 120, 30);
 		downloadPanel.add(downloadDestinationLabel);
 
 		downloadDestination = new JTextField("from-server.txt");
-		downloadDestination.setBounds(105, 40, 150, 30);
+		downloadDestination.setBounds(125, 80, 150, 30);
 		downloadPanel.add(downloadDestination);
 
 		// download button
 		download = new JButton("Download");
-		download.setBounds(5, 80, 120, 30);
+		download.setBounds(5, 120, 120, 30);
 		downloadPanel.add(download);
 
+		downloadProgressBar = new JProgressBar();
+		downloadProgressBar.setMinimum(0);
+		downloadProgressBar.setMaximum(100);
+		downloadProgressBar.setBounds(130, 120, 120, 30);
+		downloadProgressBar.setStringPainted(true);
+		downloadPanel.add(downloadProgressBar);
+
 		msg = new JLabel();
-		msg.setBounds(5, 200, 280, 30);
+		msg.setBounds(5, 250, 280, 30);
 		topPanel.add(msg);
 
 		uploadSourceOpen.addActionListener(new ActionListener() {
@@ -145,14 +184,45 @@ public class ClientForm extends JFrame {
 			}
 		});
 
+		downloadDestFolderOpen.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser c = new JFileChooser();
+				c.setCurrentDirectory(new java.io.File("."));
+				c.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+				c.setAcceptAllFileFilterUsed(false);
+
+				int rVal = c.showOpenDialog(ClientForm.this);
+				if (rVal == JFileChooser.APPROVE_OPTION) {
+					downloadDestFolder.setText(c.getCurrentDirectory().toString() + "/" + c.getSelectedFile().getName());
+				}
+				if (rVal == JFileChooser.CANCEL_OPTION) {
+					downloadDestFolder.setText("");
+				}
+			}
+		});
+
 		upload.addActionListener(new ActionListener() { 
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				upload.setEnabled(false);
 				if(validateUploadFields()) {
-					String[] address = serverAddress.getText().split(":");
-					String rsp = FileClient.upload(address[0], Integer.parseInt(address[1]), uploadSource.getText(), uploadDestination.getText());
-					msg.setText(rsp);
+					uploadTask = new UploadTask();
+					uploadTask.addPropertyChangeListener(new PropertyChangeListener() {
+
+						@Override
+						public void propertyChange(PropertyChangeEvent evt) {
+							if ("progress" == evt.getPropertyName()) {
+								int progress = (Integer) evt.getNewValue();
+								uploadProgressBar.setValue(progress);
+							}
+						}
+					});
+					uploadTask.execute();
+				} else {
+					upload.setEnabled(true);
 				}
 			}
 		});
@@ -161,14 +231,28 @@ public class ClientForm extends JFrame {
 
 			@Override
 			public void actionPerformed(ActionEvent e) { 
+				download.setEnabled(false);
 				if(validateDownloadFields()) {
-					String[] address = serverAddress.getText().split(":");
-					String rsp = FileClient.download(address[0], Integer.parseInt(address[1]), downloadSource.getText(), downloadDestination.getText());
-					msg.setText(rsp);
+					downloadTask = new DownloadTask();
+					downloadTask.addPropertyChangeListener(new PropertyChangeListener() {
+
+						@Override
+						public void propertyChange(PropertyChangeEvent evt) {
+							if ("progress" == evt.getPropertyName()) {
+								int progress = (Integer) evt.getNewValue();
+								downloadProgressBar.setValue(progress);
+							}
+						}
+					});
+					downloadTask.execute();
+				} else {
+					download.setEnabled(true);
 				}
 			}
 		});
 	}
+
+
 
 	public boolean validateUploadFields() {
 		if(serverAddress.getText() == null 
@@ -235,5 +319,108 @@ public class ClientForm extends JFrame {
 				sf.setVisible(true);
 			}
 		});
+	}
+
+	class UploadTask extends SwingWorker<Void, Void> {
+		/*
+		 * Main task. Executed in background thread.
+		 */
+		@Override
+		public Void doInBackground() {
+			setProgress(10);
+			sleep(500);
+			setProgress(20);
+			String[] address = serverAddress.getText().split(":");
+			setProgress(30);
+			sleep(500);
+			setProgress(40);
+			Integer port = Integer.parseInt(address[1]);
+			setProgress(50);
+			sleep(500);
+			setProgress(60);
+			sleep(500);
+			setProgress(70);
+			String rsp = FileClient.upload(address[0], port, uploadSource.getText(), 
+					uploadDestination.getText());
+			setProgress(80);
+			sleep(500);
+			setProgress(90);
+			sleep(500);
+			setProgress(100);
+			msg.setText(rsp);
+
+			return null;
+		}
+
+		/*
+		 * Executed in event dispatching thread
+		 */
+		@Override
+		public void done() {
+			Toolkit.getDefaultToolkit().beep();
+			upload.setEnabled(true);
+		}
+
+		public void sleep(long mls) {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	class DownloadTask extends SwingWorker<Void, Void> {
+		/*
+		 * Main task. Executed in background thread.
+		 */
+		@Override
+		public Void doInBackground() {
+			setProgress(10);
+			sleep(500);
+			setProgress(20);
+			sleep(500);
+			setProgress(30);
+			sleep(500);
+			setProgress(40);
+			String[] address = serverAddress.getText().split(":");
+			setProgress(50);
+			String folder = downloadDestFolder.getText();
+			String file = downloadDestination.getText();
+			
+			if(folder != null && folder.length() > 0) {
+				file = folder + "/" + file;
+			}
+			setProgress(60);
+			sleep(500);
+			setProgress(70);
+			String rsp = FileClient.download(address[0], Integer.parseInt(address[1]), 
+					downloadSource.getText(), file);
+			setProgress(80);
+			sleep(500);
+			setProgress(90);
+			sleep(500);
+			setProgress(100);
+			msg.setText(rsp);
+
+			return null;
+		}
+
+		/*
+		 * Executed in event dispatching thread
+		 */
+		@Override
+		public void done() {
+			Toolkit.getDefaultToolkit().beep();
+			download.setEnabled(true);
+		}
+
+		public void sleep(long mls) {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 }
