@@ -13,10 +13,12 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
 public class ServerForm extends JFrame {
+	
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -1029472673102757266L;
+	
 	private JPanel panel;
 	private JTextArea port;
 	private JButton startServer;

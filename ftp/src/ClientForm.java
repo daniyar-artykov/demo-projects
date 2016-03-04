@@ -22,6 +22,7 @@ public class ClientForm extends JFrame {
 	 * 
 	 */
 	private static final long serialVersionUID = -2442287481161446544L;
+	
 	private JPanel topPanel;
 	private JLabel serverAddressLabel;
 	private JTextArea serverAddress;
