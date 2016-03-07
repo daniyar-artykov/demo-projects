@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.2.0.final using JasperReports Library version 6.2.0  -->
+<!-- 2016-03-08T01:01:49 -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Template" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="b3579fbd-70d3-44ba-a97b-5b4bbf890f31">
+	<property name="ireport.zoom" value="1.610510000000001"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="SleekBill DB"/>
+	<parameter name="invoices" class="java.lang.String">
+		<defaultValueExpression><![CDATA["invoices"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="estimates" class="java.lang.String">
+		<defaultValueExpression><![CDATA["estimate"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="year" class="java.lang.String">
+		<defaultValueExpression><![CDATA["2014"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="link" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT * FROM (
+SELECT ('i' || number) as number, issue_date, client_name, total_no_tax, total_tax, total_all, internal_notes As internal_notes, invoice_notes AS invoice_notes
+   FROM $P!{invoices}
+ WHERE issue_date > date($P!{year}+"-06-01")
+   UNION ALL
+   SELECT ('aaa' || number) as number, issue_date, client_name, total_no_tax, total_tax, total_all, internal_notes, estimate_notes AS invoice_notes
+   FROM $P!{estimates}
+   WHERE issue_date > date($P!{year}+"-06-01")
+)
+ORDER BY issue_date DESC]]>
+	</queryString>
+	<field name="number" class="java.lang.Object"/>
+	<field name="issue_date" class="java.lang.Object"/>
+	<field name="client_name" class="java.lang.Object"/>
+	<field name="total_no_tax" class="java.lang.Object"/>
+	<field name="total_tax" class="java.lang.Object"/>
+	<field name="total_all" class="java.lang.Object"/>
+	<field name="internal_notes" class="java.lang.Object"/>
+	<field name="invoice_notes" class="java.lang.Object"/>
+	<background>
+		<band height="800" splitType="Stretch">
+			<image hAlign="Center" vAlign="Middle">
+				<reportElement x="0" y="0" width="555" height="800" uuid="81b5fa85-32c8-4246-8e6f-fd20dc1cd725"/>
+				<imageExpression><![CDATA["background.png"]]></imageExpression>
+			</image>
+		</band>
+	</background>
+	<title>
+		<band height="70" splitType="Stretch">
+			<image>
+				<reportElement x="303" y="0" width="317" height="70" uuid="a41b0ce2-15ee-46eb-9cf2-b5cc372e88fd"/>
+				<imageExpression><![CDATA["logo.png"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="0" width="276" height="40" forecolor="#FFFFFF" backcolor="#00BFFF" uuid="aaf40ed3-10e4-4b49-8810-a20f4f02b7b7"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="22"/>
+				</textElement>
+				<text><![CDATA[Sleek Bill Test Database]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="35" splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band height="29" splitType="Stretch">
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="0" width="69" height="29" forecolor="#FFFFFF" backcolor="#00BFFF" uuid="c10ee90b-38ba-4204-81f2-00522013bd99"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="69" y="0" width="69" height="29" forecolor="#FFFFFF" backcolor="#00BFFF" uuid="3c3dcc9d-9e10-4634-9867-57edf3ce9253"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[issue date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="138" y="0" width="69" height="29" forecolor="#FFFFFF" backcolor="#00BFFF" uuid="45ba62d2-931f-424a-9b8a-ff46bfb053f5"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[client name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="207" y="0" width="69" height="29" forecolor="#FFFFFF" backcolor="#00BFFF" uuid="95c80fb1-67ca-42fc-8c61-165e5f145c29"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[total no tax]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="276" y="0" width="69" height="29" forecolor="#FFFFFF" backcolor="#00BFFF" uuid="e2b97f81-4ab6-403b-acca-5af2af0ea39c"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[total tax]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="345" y="0" width="69" height="29" forecolor="#FFFFFF" backcolor="#00BFFF" uuid="d6620a09-7bc7-4f67-81c7-52e04dac9175"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[total all]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="414" y="0" width="69" height="29" forecolor="#FFFFFF" backcolor="#00BFFF" uuid="51c0793b-3c84-497c-9d3d-f5ff31a16d5f"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[internal notes]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="483" y="0" width="72" height="29" forecolor="#FFFFFF" backcolor="#00BFFF" uuid="c7bbb9b8-f71a-4614-b70d-749c6f650236"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[invoice notes]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="28" splitType="Stretch">
+			<textField isBlankWhenNull="false">
+				<reportElement x="0" y="0" width="69" height="28" uuid="329b1c1b-a6ef-4583-863b-1f7a92c04461"/>
+				<box topPadding="2" leftPadding="2" bottomPadding="2" rightPadding="2">
+					<pen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<topPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<leftPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<bottomPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<rightPen lineWidth="0.25" lineColor="#CCCCCC"/>
+				</box>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[""+$F{number}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement x="69" y="0" width="69" height="28" uuid="0ff2d0d0-1749-4ebd-aa72-dda3dbad8996"/>
+				<box topPadding="2" leftPadding="2" bottomPadding="2" rightPadding="2">
+					<pen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<topPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<leftPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<bottomPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<rightPen lineWidth="0.25" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[""+$F{issue_date}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement x="138" y="0" width="69" height="28" uuid="2e32151c-5350-4e46-b7e0-e89193ce4dbc"/>
+				<box topPadding="2" leftPadding="2" bottomPadding="2" rightPadding="2">
+					<pen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<topPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<leftPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<bottomPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<rightPen lineWidth="0.25" lineColor="#CCCCCC"/>
+				</box>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[""+$F{client_name}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement x="207" y="0" width="69" height="28" uuid="8abe2694-66c3-4dd2-a1ff-eca2591c45bc"/>
+				<box topPadding="2" leftPadding="2" bottomPadding="2" rightPadding="2">
+					<pen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<topPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<leftPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<bottomPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<rightPen lineWidth="0.25" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[""+$F{total_no_tax}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement x="276" y="0" width="69" height="28" uuid="3ead8060-c06b-432f-946e-74ec7832a0c6"/>
+				<box topPadding="2" leftPadding="2" bottomPadding="2" rightPadding="2">
+					<pen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<topPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<leftPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<bottomPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<rightPen lineWidth="0.25" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[""+$F{total_tax}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement x="345" y="0" width="69" height="28" uuid="f4041e82-cf9c-49fd-b044-c6be4ec03c06"/>
+				<box topPadding="2" leftPadding="2" bottomPadding="2" rightPadding="2">
+					<pen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<topPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<leftPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<bottomPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<rightPen lineWidth="0.25" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[""+$F{total_all}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement x="414" y="0" width="69" height="28" uuid="b903c08e-4819-4add-bafd-c544b7d8b484"/>
+				<box topPadding="2" leftPadding="2" bottomPadding="2" rightPadding="2">
+					<pen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<topPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<leftPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<bottomPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<rightPen lineWidth="0.25" lineColor="#CCCCCC"/>
+				</box>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[""+$F{internal_notes}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement x="483" y="0" width="72" height="28" uuid="d39e5477-0727-41cd-9790-98f732c2d90b"/>
+				<box topPadding="2" leftPadding="2" bottomPadding="2" rightPadding="2">
+					<pen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<topPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<leftPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<bottomPen lineWidth="0.25" lineColor="#CCCCCC"/>
+					<rightPen lineWidth="0.25" lineColor="#CCCCCC"/>
+				</box>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[""+$F{invoice_notes}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band height="22" splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band height="22" splitType="Stretch">
+			<elementGroup>
+				<textField>
+					<reportElement positionType="FixRelativeToBottom" mode="Opaque" x="229" y="0" width="36" height="20" forecolor="#FFFFFF" backcolor="#00BFFF" uuid="70d5e686-88de-488e-b41f-f084192a03c8"/>
+					<textElement verticalAlignment="Top">
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Page"]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement positionType="FixRelativeToBottom" mode="Opaque" x="265" y="0" width="20" height="20" forecolor="#FFFFFF" backcolor="#00BFFF" uuid="3f3d7f65-878e-4b97-a02d-eff5babb4250"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement positionType="FixRelativeToBottom" mode="Opaque" x="288" y="0" width="29" height="20" forecolor="#FFFFFF" backcolor="#00BFFF" uuid="2ca607ea-07b1-47c7-8149-009fce3e969d"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA["of"]]></textFieldExpression>
+				</textField>
+				<textField evaluationTime="Report">
+					<reportElement positionType="FixRelativeToBottom" mode="Opaque" x="320" y="0" width="26" height="20" forecolor="#FFFFFF" backcolor="#00BFFF" uuid="a8711580-803b-4a6d-bb15-b9536cf47c8c"/>
+					<textElement>
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+				</textField>
+			</elementGroup>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="42" splitType="Stretch"/>
+	</summary>
+</jasperReport>
