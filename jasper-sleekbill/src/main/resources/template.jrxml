@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Created with Jaspersoft Studio version 6.2.0.final using JasperReports Library version 6.2.0  -->
-<!-- 2016-03-09T00:46:22 -->
+<!-- 2016-03-09T00:51:08 -->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Template" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="b3579fbd-70d3-44ba-a97b-5b4bbf890f31">
 	<property name="ireport.zoom" value="1.610510000000001"/>
 	<property name="ireport.x" value="0"/>
@@ -16,10 +16,10 @@
 	<queryString>
 		<![CDATA[SELECT * FROM
   (SELECT 'e' AS type,number,issue_date, client_name, total_no_tax, total_tax, total_all,internal_notes, invoice_notes
-   FROM invoices WHERE issue_date between date("2014-01-01") and date("2014-12-31")
+   FROM invoices
    UNION ALL 
    SELECT 'i' AS type, number,issue_date, client_name, total_no_tax, total_tax, total_all,internal_notes, estimate_notes
-   FROM estimate WHERE issue_date between date("2014-01-01") and date("2014-12-31"))
+   FROM estimate)
 ORDER BY issue_date DESC;]]>
 	</queryString>
 	<field name="type" class="java.lang.String"/>
@@ -262,19 +262,19 @@ ORDER BY issue_date DESC;]]>
 	<columnFooter>
 		<band height="70" splitType="Stretch">
 			<frame>
-				<reportElement x="0" y="12" width="556" height="40" uuid="975832c4-da64-410c-9fa2-69625611697c"/>
+				<reportElement x="0" y="9" width="556" height="40" uuid="975832c4-da64-410c-9fa2-69625611697c"/>
 				<rectangle radius="10">
-					<reportElement style="no_style" x="0" y="0" width="556" height="40" uuid="fe2bcb12-3169-4216-8764-b0c277c3aeba"/>
+					<reportElement style="no_style" x="0" y="-3" width="556" height="40" uuid="fe2bcb12-3169-4216-8764-b0c277c3aeba"/>
 				</rectangle>
 			</frame>
 			<staticText>
-				<reportElement x="0" y="12" width="207" height="20" uuid="335c287a-0fce-4601-a973-2b021bbe14aa"/>
+				<reportElement x="1" y="6" width="207" height="20" uuid="335c287a-0fce-4601-a973-2b021bbe14aa"/>
 				<box leftPadding="4"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle"/>
 				<text><![CDATA[Total per page]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="0" y="32" width="207" height="20" uuid="a16cbce6-5ebb-49c7-9129-607a24370463"/>
+				<reportElement x="1" y="26" width="207" height="20" uuid="a16cbce6-5ebb-49c7-9129-607a24370463"/>
 				<box leftPadding="4"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font isBold="true"/>
@@ -282,42 +282,42 @@ ORDER BY issue_date DESC;]]>
 				<text><![CDATA[TOTAL DOCUMENTS]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="207" y="12" width="69" height="20" uuid="90beb5d2-3e3c-4591-9cc0-0f560829f0cb"/>
+				<reportElement x="208" y="6" width="69" height="20" uuid="90beb5d2-3e3c-4591-9cc0-0f560829f0cb"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font isBold="false"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$V{total_no_tax_sum}.setScale(2, java.math.BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="276" y="12" width="64" height="20" uuid="a9dbb90e-f281-48db-b2e4-84c620d52abe"/>
+				<reportElement x="277" y="6" width="64" height="20" uuid="a9dbb90e-f281-48db-b2e4-84c620d52abe"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font isBold="false"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$V{total_tax_sum}.setScale(2, java.math.BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="340" y="12" width="69" height="20" uuid="7cf441a9-ca42-484f-85b1-712ef1154ae5"/>
+				<reportElement x="341" y="6" width="69" height="20" uuid="7cf441a9-ca42-484f-85b1-712ef1154ae5"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font isBold="false"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$V{total_all_sum}.setScale(2, java.math.BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
 			</textField>
 			<textField evaluationTime="Report">
-				<reportElement x="207" y="32" width="69" height="20" uuid="b2fa3024-4774-4acb-bd22-965f5842215c"/>
+				<reportElement x="208" y="26" width="69" height="20" uuid="b2fa3024-4774-4acb-bd22-965f5842215c"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font isBold="true"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$V{total_no_tax_sum_all}.setScale(2, java.math.BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
 			</textField>
 			<textField evaluationTime="Report">
-				<reportElement x="276" y="32" width="64" height="20" uuid="54bc5ffb-752b-4381-949f-4fa697995f31"/>
+				<reportElement x="277" y="26" width="64" height="20" uuid="54bc5ffb-752b-4381-949f-4fa697995f31"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font isBold="true"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$V{total_tax_sum_all}.setScale(2, java.math.BigDecimal.ROUND_HALF_UP)]]></textFieldExpression>
 			</textField>
 			<textField evaluationTime="Report">
-				<reportElement x="340" y="32" width="69" height="20" uuid="569fe46f-e0ea-4e65-8edc-95a2c64d55ac"/>
+				<reportElement x="341" y="26" width="69" height="20" uuid="569fe46f-e0ea-4e65-8edc-95a2c64d55ac"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font isBold="true"/>
 				</textElement>
