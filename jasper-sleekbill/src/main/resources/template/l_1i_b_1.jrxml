@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="in_b_1" pageWidth="572" pageHeight="421" columnWidth="572" leftMargin="0" rightMargin="0" topMargin="10" bottomMargin="0" uuid="8f6ac6a0-8b3e-497c-bd53-020bb94f5b01">
+	<property name="ireport.zoom" value="1.5"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<template><![CDATA["styleTemplate1.jrtx"]]></template>
+	<style name="styleFontColor" isDefault="true" forecolor="#555555" hAlign="Left" vAlign="Middle" pattern="" fontName="Segoe UI" fontSize="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica">
+		<paragraph lineSpacing="Single" lineSpacingSize="1.2" leftIndent="2" rightIndent="2"/>
+		<conditionalStyle>
+			<style/>
+		</conditionalStyle>
+	</style>
+	<style name="styleTitle1" mode="Transparent" forecolor="#555555" hAlign="Center" vAlign="Middle" fontName="Segoe UI" fontSize="36" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica">
+		<paragraph leftIndent="2" rightIndent="2"/>
+		<conditionalStyle>
+			<style/>
+		</conditionalStyle>
+	</style>
+	<style name="styleTitle2_old_del" mode="Opaque" forecolor="#FFFFFF" backcolor="#E58B00" fill="Solid" vAlign="Middle" fontName="Segoe UI" fontSize="16" pdfFontName="Helvetica">
+		<box topPadding="2" leftPadding="2" bottomPadding="2" rightPadding="2"/>
+		<paragraph leftIndent="6" rightIndent="3"/>
+	</style>
+	<style name="Number" mode="Transparent" forecolor="#555555" hAlign="Center" vAlign="Middle" fontName="Segoe UI" fontSize="32" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica">
+		<paragraph leftIndent="2" rightIndent="2"/>
+	</style>
+	<style name="styleSubTitle1" forecolor="#555555" fontName="Segoe UI" fontSize="16">
+		<paragraph leftIndent="2" rightIndent="2"/>
+	</style>
+	<style name="styleSubTitle2" forecolor="#555555" hAlign="Center" vAlign="Middle" fontName="Segoe UI" fontSize="13">
+		<paragraph leftIndent="6" rightIndent="3"/>
+	</style>
+	<style name="styleText1" forecolor="#555555" vAlign="Bottom" fontName="Segoe UI" fontSize="11">
+		<paragraph leftIndent="2" rightIndent="3"/>
+	</style>
+	<style name="styleText2" forecolor="#555555" fontName="Segoe UI">
+		<paragraph leftIndent="2" rightIndent="2"/>
+	</style>
+	<style name="styleText3" forecolor="#555555" fontName="Segoe UI" fontSize="10">
+		<paragraph leftIndent="2" rightIndent="2"/>
+	</style>
+	<style name="styleTextTotal" forecolor="#555555" hAlign="Right" vAlign="Bottom" fontName="Segoe UI" fontSize="11">
+		<paragraph leftIndent="2" rightIndent="3"/>
+	</style>
+	<parameter name="bottom_notes" class="java.lang.String"/>
+	<parameter name="bottom_conditions" class="java.lang.String"/>
+	<parameter name="bottom_txt_total_document" class="java.lang.String"/>
+	<parameter name="bottom_total_document" class="java.lang.String"/>
+	<parameter name="bottom_tax" class="java.lang.String"/>
+	<parameter name="bottom_subtotal" class="java.lang.String"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="bottom_txt_total_tax" class="java.lang.String"/>
+	<parameter name="bottom_txt_subtotal" class="java.lang.String"/>
+	<parameter name="pay_link" class="java.lang.String"/>
+	<parameter name="pay_text" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="bottom_string_total_document" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="bottom_txt_signature" class="java.lang.String">
+		<defaultValueExpression><![CDATA["Authorized Signatory"]]></defaultValueExpression>
+	</parameter>
+	<title>
+		<band height="100" splitType="Stretch">
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="96eca574-cd70-4436-ab86-23d0fe41fbd5" style="styleText1" x="0" y="0" width="260" height="19">
+					<printWhenExpression><![CDATA[$P{pay_link}.isEmpty()]]></printWhenExpression>
+				</reportElement>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{bottom_txt_signature}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement uuid="807ae394-07b3-43c6-a32d-9412b952e49b" style="styleSubTitle2" x="421" y="0" width="150" height="19" isRemoveLineWhenBlank="true"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{bottom_subtotal} + "\n" + $P{bottom_tax}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="e0e0eee7-c304-4863-829d-176f1f353193" style="styleTitle2" positionType="Float" x="421" y="25" width="150" height="34"/>
+				<box topPadding="0" leftPadding="0" bottomPadding="0" rightPadding="0">
+					<topPen lineWidth="0.0" lineColor="#E58B00"/>
+					<leftPen lineColor="#E58B00"/>
+					<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+					<rightPen lineColor="#E58B00"/>
+				</box>
+				<textElement textAlignment="Right" markup="styled">
+					<font fontName="Segoe UI"/>
+				</textElement>
+				<textFieldExpression><![CDATA["<style fontName='FreeSerif' size='16'>" + $P{currency_symbol} + "</style>"
++ " " + $P{bottom_total_document}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="61f45ad3-f2b8-440b-8c22-87e829e8d1b2" key="dist_202" positionType="Float" x="109" y="25" width="180" height="0"/>
+				<textElement/>
+			</textField>
+			<textField>
+				<reportElement uuid="693b497b-2f8f-40d7-b780-3301d54f9414" style="styleTitle2" positionType="Float" x="298" y="25" width="160" height="34"/>
+				<box topPadding="0" leftPadding="0" bottomPadding="0" rightPadding="0">
+					<topPen lineWidth="0.0" lineColor="#E58B00"/>
+					<leftPen lineColor="#E58B00"/>
+					<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+					<rightPen lineColor="#E58B00"/>
+				</box>
+				<textElement/>
+				<textFieldExpression><![CDATA[$P{bottom_txt_total_document}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement uuid="f794e4da-3d5a-40f4-aa4b-185faab8acf5" style="styleTextTotal" positionType="Float" mode="Transparent" x="298" y="64" width="273" height="19" isRemoveLineWhenBlank="true">
+					<printWhenExpression><![CDATA[!$P{bottom_string_total_document}.isEmpty()]]></printWhenExpression>
+				</reportElement>
+				<textElement markup="styled">
+					<paragraph lineSpacing="Proportional" lineSpacingSize="1.3"/>
+				</textElement>
+				<textFieldExpression><![CDATA["<style fontName='FreeSerif' size='12'>" + $P{currency_symbol} + "</style>"
++ " " + $P{bottom_string_total_document}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="0ab065fb-169f-490a-80a8-a24f1faaf934" style="styleText1" positionType="Float" x="0" y="25" width="442" height="34">
+					<printWhenExpression><![CDATA[!$P{pay_link}.isEmpty()]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font isBold="true"/>
+					<paragraph rightIndent="155"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{bottom_txt_signature}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" hyperlinkType="Reference" hyperlinkTarget="">
+				<reportElement uuid="8b46d39c-b61c-499d-91f6-55fad1b6cfda" positionType="Float" x="0" y="0" width="427" height="20" isPrintWhenDetailOverflows="true" forecolor="#0000FF">
+					<printWhenExpression><![CDATA[!$P{pay_link}.isEmpty()]]></printWhenExpression>
+				</reportElement>
+				<box rightPadding="145"/>
+				<textElement markup="styled">
+					<font size="14" isBold="false" isUnderline="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{pay_text}]]></textFieldExpression>
+				<hyperlinkReferenceExpression><![CDATA[$P{pay_link}]]></hyperlinkReferenceExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement uuid="b23a131b-644e-44e9-b770-aafb456beb67" style="styleSubTitle2" x="298" y="0" width="179" height="19" isRemoveLineWhenBlank="true"/>
+				<textElement textAlignment="Left"/>
+				<textFieldExpression><![CDATA[$P{bottom_txt_subtotal} + "\n" + $P{bottom_txt_total_tax}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="37" splitType="Stretch">
+			<printWhenExpression><![CDATA[!$P{bottom_notes}.isEmpty()]]></printWhenExpression>
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="4a902858-15c4-483a-a452-21d7f78b6805" style="styleText1" x="298" y="21" width="273" height="15"/>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$P{bottom_conditions}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="259eea7a-3323-4afb-93eb-1df6187d7d84" style="styleText1" positionType="Float" x="0" y="21" width="572" height="15"/>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement/>
+				<textFieldExpression><![CDATA[$P{bottom_notes}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="d7ad0110-4097-450e-9ae6-78a37a1b6b09" style="styleText1" positionType="Float" x="0" y="7" width="260" height="15">
+					<printWhenExpression><![CDATA[!$P{bottom_notes}.isEmpty()]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement>
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Note:"]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="e28c0780-58b0-4c32-8199-aabbd3131358" style="styleText1" x="0" y="0" width="273" height="5">
+					<printWhenExpression><![CDATA[!$P{pay_link}.isEmpty()]]></printWhenExpression>
+				</reportElement>
+				<box topPadding="10"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["\n"]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+</jasperReport>

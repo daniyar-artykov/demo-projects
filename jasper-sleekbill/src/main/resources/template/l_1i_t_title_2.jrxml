@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="l_1i_t_title_2" pageWidth="612" pageHeight="792" columnWidth="592" leftMargin="0" rightMargin="20" topMargin="0" bottomMargin="0" uuid="5dff1a26-126f-4390-ad8e-404bf893f016">
+	<property name="ireport.zoom" value="1.7715610000000013"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<template><![CDATA["styleTemplate2.jrtx"]]></template>
+	<parameter name="detail_no" class="java.lang.String"/>
+	<parameter name="detail_product" class="java.lang.String"/>
+	<parameter name="detail_quantity" class="java.lang.String"/>
+	<parameter name="detail_price" class="java.lang.String"/>
+	<parameter name="detail_amount" class="java.lang.String"/>
+	<parameter name="detail_um" class="java.lang.String">
+		<defaultValueExpression><![CDATA["UM"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="detail_tax" class="java.lang.String"/>
+	<parameter name="detail_tax_name" class="java.lang.String"/>
+	<parameter name="show_quantity_column" class="java.lang.Boolean"/>
+	<parameter name="show_price_column" class="java.lang.Boolean"/>
+	<parameter name="show_tax_column" class="java.lang.Boolean"/>
+	<parameter name="show_tax_percentage" class="java.lang.Boolean"/>
+	<parameter name="show_um_column" class="java.lang.Boolean"/>
+	<variable name="qty_um" class="java.lang.String">
+		<variableExpression><![CDATA[$P{show_quantity_column}?
+($P{show_um_column}?
+$P{detail_quantity}.toUpperCase()+ ($V{show_detail_4}?"\n":" - ") + $P{detail_um}.toUpperCase():
+$P{detail_quantity}.toUpperCase())
+:
+$P{show_tax_column}?
+$P{detail_tax}.toUpperCase():
+$P{detail_price}.toUpperCase()]]></variableExpression>
+		<initialValueExpression><![CDATA[$P{show_quantity_column}?
+($P{show_um_column}?
+$P{detail_quantity}.toUpperCase()+ ($V{show_detail_4}?"\n":" - ") + $P{detail_um}.toUpperCase():
+$P{detail_quantity}.toUpperCase())
+:
+$P{detail_tax}.toUpperCase()]]></initialValueExpression>
+	</variable>
+	<variable name="show_detail_1" class="java.lang.Boolean">
+		<variableExpression><![CDATA[!$P{show_price_column} && !$P{show_quantity_column} && !$P{show_tax_column}]]></variableExpression>
+		<initialValueExpression><![CDATA[!$P{show_price_column} && !$P{show_quantity_column}]]></initialValueExpression>
+	</variable>
+	<variable name="show_detail_2" class="java.lang.Boolean">
+		<variableExpression><![CDATA[(!$P{show_price_column} && $P{show_quantity_column} && !$P{show_tax_column})
+||
+(!$P{show_price_column} && !$P{show_quantity_column} && $P{show_tax_column})
+||
+($P{show_price_column} &&  !$P{show_quantity_column} && !$P{show_tax_column})]]></variableExpression>
+		<initialValueExpression><![CDATA[(!$P{show_price_column} && $P{show_quantity_column} && !$P{show_tax_column})
+||
+(!$P{show_price_column} && !$P{show_quantity_column} && $P{show_tax_column})
+||
+($P{show_price_column} &&  !$P{show_quantity_column} && !$P{show_tax_column})]]></initialValueExpression>
+	</variable>
+	<variable name="show_detail_3" class="java.lang.Boolean">
+		<variableExpression><![CDATA[($P{show_price_column} && !$P{show_tax_column} && $P{show_quantity_column})||
+(!$P{show_price_column} && $P{show_tax_column} && $P{show_quantity_column})||
+($P{show_tax_column} && $P{show_price_column} && !$P{show_quantity_column} )]]></variableExpression>
+		<initialValueExpression><![CDATA[($P{show_price_column} && !$P{show_tax_column} && $P{show_quantity_column})||
+(!$P{show_price_column} && $P{show_tax_column} && $P{show_quantity_column})||
+($P{show_tax_column} && $P{show_price_column} && !$P{show_quantity_column} )]]></initialValueExpression>
+	</variable>
+	<variable name="show_detail_4" class="java.lang.Boolean">
+		<variableExpression><![CDATA[$P{show_tax_column} && $P{show_price_column} && $P{show_quantity_column}]]></variableExpression>
+		<initialValueExpression><![CDATA[$P{show_tax_column} && $P{show_price_column} && $P{show_quantity_column}]]></initialValueExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch">
+			<printWhenExpression><![CDATA[Boolean.FALSE]]></printWhenExpression>
+		</band>
+	</background>
+	<detail>
+		<band height="32" splitType="Stretch">
+			<printWhenExpression><![CDATA[$V{show_detail_1}]]></printWhenExpression>
+			<frame>
+				<reportElement uuid="447500c5-42a8-4f3b-97aa-487835ccd861" positionType="Float" x="0" y="0" width="572" height="30"/>
+				<textField>
+					<reportElement uuid="11d24e02-aa95-4749-b983-e66a36a13a4b" style="styleTableHeader" mode="Opaque" x="0" y="0" width="41" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{detail_no}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement uuid="79c7537a-a9a0-4292-988b-3e6915530abd" style="styleTableHeader" mode="Opaque" x="40" y="0" width="441" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{detail_product}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement uuid="1210c3e6-a463-4a5f-8b86-302c65155410" style="styleTableHeader" mode="Opaque" x="481" y="0" width="90" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{detail_amount}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement uuid="024f80eb-83f9-4071-b330-66b81262b973" key="header_line" style="styleNormalColor" x="0" y="0" width="572" height="1"/>
+					<graphicElement>
+						<pen lineWidth="1.5"/>
+					</graphicElement>
+				</line>
+			</frame>
+		</band>
+		<band height="32">
+			<printWhenExpression><![CDATA[$V{show_detail_2}]]></printWhenExpression>
+			<frame>
+				<reportElement uuid="58908cab-3ed6-4337-b9fe-1b50240f063d" positionType="Float" x="0" y="0" width="572" height="30"/>
+				<textField>
+					<reportElement uuid="1f4493e0-3089-4c98-8c89-60f768867adc" style="styleTableHeader" mode="Opaque" x="0" y="0" width="41" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{detail_no}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement uuid="df09fa6e-3a05-4224-bf37-56d3829dc2b7" style="styleTableHeader" mode="Opaque" x="40" y="0" width="293" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{detail_product}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement uuid="bc7ffbf8-0403-4343-942b-eba02fcc220c" style="styleTableHeader" mode="Opaque" x="333" y="0" width="118" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{qty_um}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement uuid="505c11ad-4d0d-42b0-b6ba-51546b47eb32" style="styleTableHeader" mode="Opaque" x="451" y="0" width="120" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{detail_amount}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement uuid="3ba2789f-378b-4a4c-9535-4d06fe2ebbbb" key="header_line" style="styleNormalColor" x="0" y="0" width="572" height="1"/>
+					<graphicElement>
+						<pen lineWidth="1.5"/>
+					</graphicElement>
+				</line>
+			</frame>
+		</band>
+		<band height="32">
+			<printWhenExpression><![CDATA[$V{show_detail_3}]]></printWhenExpression>
+			<frame>
+				<reportElement uuid="2d858d95-62e4-4bbc-9cc1-922fa77bf56e" positionType="Float" x="0" y="0" width="572" height="30"/>
+				<textField>
+					<reportElement uuid="1707516e-21e4-4146-8312-e65ead917b33" style="styleTableHeader" mode="Opaque" x="0" y="0" width="41" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{detail_no}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement uuid="14a4e1e1-80bd-42ed-b15c-fc35f5b23a2c" style="styleTableHeader" mode="Opaque" x="40" y="0" width="248" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{detail_product}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="a6fc9ce4-c2a1-4fd6-a9c2-97797846d363" style="styleTableHeader" mode="Opaque" x="288" y="0" width="80" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{qty_um}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement uuid="e45aa393-d88c-4153-8478-55fa99bbf4bb" style="styleTableHeader" mode="Opaque" x="368" y="0" width="83" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{show_price_column}?
+$P{detail_price}.toUpperCase():
+$P{detail_tax}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement uuid="758e24e6-3fb9-4a39-84bf-04e7b070a79a" style="styleTableHeader" mode="Opaque" x="451" y="0" width="121" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{detail_amount}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement uuid="ef9ff979-cc18-4b4e-ab3e-2474bc66ee42" key="header_line" style="styleNormalColor" x="0" y="0" width="572" height="1"/>
+					<graphicElement>
+						<pen lineWidth="1.5"/>
+					</graphicElement>
+				</line>
+			</frame>
+		</band>
+		<band height="32">
+			<printWhenExpression><![CDATA[$V{show_detail_4}]]></printWhenExpression>
+			<frame>
+				<reportElement uuid="196bc01d-5a2e-4437-a241-418714f19790" positionType="Float" x="0" y="0" width="572" height="30"/>
+				<textField>
+					<reportElement uuid="b297665a-664f-4b90-b2a9-cfc47cfbd0b9" style="styleTableHeader" mode="Opaque" x="0" y="0" width="26" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{detail_no}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement uuid="95963ce4-6572-4550-92ce-fa78ba10b002" style="styleTableHeader" mode="Opaque" x="26" y="0" width="216" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{detail_product}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement uuid="278e7da1-dc99-4000-b702-fa2173bb37b3" style="styleTableHeader" mode="Opaque" x="243" y="0" width="84" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{qty_um}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement uuid="c6957142-d213-4ea6-a4a9-f81ae28122b6" style="styleTableHeader" mode="Opaque" x="325" y="0" width="79" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{detail_price}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement uuid="c5111590-abe9-4c78-bd9e-0d364ec9c18b" style="styleTableHeader" mode="Opaque" x="402" y="0" width="80" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{detail_tax}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement uuid="52f07a34-c998-459e-a27c-99cf64976b90" style="styleTableHeader" mode="Opaque" x="482" y="0" width="90" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{detail_amount}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement uuid="62d52164-ae01-4396-8ce9-a617eb911e66" key="header_line" style="styleNormalColor" x="0" y="0" width="572" height="1"/>
+					<graphicElement>
+						<pen lineWidth="1.5"/>
+					</graphicElement>
+				</line>
+			</frame>
+		</band>
+		<band height="85">
+			<printWhenExpression><![CDATA[Boolean.FALSE]]></printWhenExpression>
+			<frame>
+				<reportElement uuid="e4cc831c-fd70-4d1d-bad4-0c29632dbac0" positionType="Float" x="0" y="0" width="572" height="30"/>
+				<textField>
+					<reportElement uuid="78bb41fa-f407-4379-85a7-247a6d7a8ad6" style="styleTableHeader" mode="Opaque" x="0" y="0" width="41" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{detail_no}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement uuid="95fea403-526a-408d-95da-06c2cb23576f" style="styleTableHeader" mode="Opaque" x="40" y="0" width="258" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{detail_product}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement uuid="7b4132f3-724d-42d4-9e7b-fc2349d0a079" style="styleTableHeader" mode="Opaque" x="297" y="0" width="92" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{qty_um}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement uuid="b4920ed2-2df8-40b5-b432-ff61fff0d50d" style="styleTableHeader" mode="Opaque" x="388" y="0" width="94" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{detail_price}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement uuid="c4d3ef42-eb26-4a02-9ab5-3471b6ac9a23" style="styleTableHeader" mode="Opaque" x="481" y="0" width="90" height="30"/>
+					<box>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{detail_amount}.toUpperCase()]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement uuid="1e9e3352-3b7a-41da-a5d2-4c1ca8bfd517" key="header_line" style="styleNormalColor" x="0" y="0" width="572" height="1"/>
+					<graphicElement>
+						<pen lineWidth="1.5"/>
+					</graphicElement>
+				</line>
+			</frame>
+		</band>
+		<band height="32">
+			<printWhenExpression><![CDATA[Boolean.FALSE]]></printWhenExpression>
+			<textField>
+				<reportElement uuid="3d80185a-6f65-452b-a920-b5390e795b46" x="492" y="0" width="100" height="20"/>
+				<textElement/>
+				<textFieldExpression><![CDATA[$V{show_detail_3}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="6f507cef-390a-4067-8237-b24c841e0ecf" x="368" y="0" width="203" height="20"/>
+				<textElement/>
+				<textFieldExpression><![CDATA[$V{qty_um}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="1f06230e-ab3f-4bfa-b9af-bc1ba7e1787d" x="10" y="0" width="162" height="20"/>
+				<textElement/>
+				<textFieldExpression><![CDATA[$P{detail_um}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="fdd9eb55-1677-411b-855d-0c3edec8506c" x="188" y="0" width="100" height="20"/>
+				<textElement/>
+				<textFieldExpression><![CDATA[$P{detail_quantity}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>
