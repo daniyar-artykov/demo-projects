@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Created with Jaspersoft Studio version 6.2.0.final using JasperReports Library version 6.2.0  -->
-<!-- 2016-03-09T00:51:08 -->
+<!-- 2016-03-10T23:40:43 -->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Template" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="b3579fbd-70d3-44ba-a97b-5b4bbf890f31">
 	<property name="ireport.zoom" value="1.610510000000001"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
-	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
 	<style name="blue_style" forecolor="#FFFFFF" backcolor="#01A9DB" fontName="Roboto">
 		<pen lineColor="#01A9DB"/>
 	</style>
@@ -13,14 +12,26 @@
 		<pen lineWidth="0.5" lineColor="#CCCCCC"/>
 	</style>
 	<style name="white_font" forecolor="#FFFFFF" fontName="Roboto"/>
+	<parameter name="table1" class="java.lang.String">
+		<defaultValueExpression><![CDATA["invoices"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="table2" class="java.lang.String">
+		<defaultValueExpression><![CDATA["estimate"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="year" class="java.lang.String">
+		<defaultValueExpression><![CDATA["2015"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="order_by" class="java.util.List" nestedType="java.lang.String">
+		<defaultValueExpression><![CDATA[java.util.Arrays.asList(new String[]{"issue_date", "desc"})]]></defaultValueExpression>
+	</parameter>
 	<queryString>
 		<![CDATA[SELECT * FROM
-  (SELECT 'e' AS type,number,issue_date, client_name, total_no_tax, total_tax, total_all,internal_notes, invoice_notes
-   FROM invoices
+  (SELECT 'e' AS type,number, issue_date, client_name, total_no_tax, total_tax, total_all,internal_notes, invoice_notes
+   FROM $P!{table1} WHERE issue_date between date("2015-01-01") and date("2015-12-31")
    UNION ALL 
-   SELECT 'i' AS type, number,issue_date, client_name, total_no_tax, total_tax, total_all,internal_notes, estimate_notes
-   FROM estimate)
-ORDER BY issue_date DESC;]]>
+   SELECT 'i' AS type, number, issue_date, client_name, total_no_tax, total_tax, total_all,internal_notes, estimate_notes
+   FROM $P!{table2} WHERE issue_date between date("2015-01-01") and date("2015-12-31"))
+ORDER BY issue_date desc;]]>
 	</queryString>
 	<field name="type" class="java.lang.String"/>
 	<field name="number" class="java.lang.Object"/>
