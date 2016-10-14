@@ -12,7 +12,7 @@ import javax.swing.SwingUtilities;
 
 /**
  *
- * @author Andrei
+ * @author daniyar.artykov
  */
 public class SampleSynthesizer extends JFrame {
 
@@ -20,7 +20,7 @@ public class SampleSynthesizer extends JFrame {
     private static Synthesizer synthesizer;
     private static MidiChannel[] midiChannel;
     private static Instrument[] instruments;
-    private int currentInstrumentIndex = 192;
+    private int currentInstrumentIndex = 10;
     private int velocity = 64;
 
     public SampleSynthesizer() {
@@ -35,7 +35,7 @@ public class SampleSynthesizer extends JFrame {
         }
         initComponents();
         comboBoxInstrument.setSelectedIndex(currentInstrumentIndex);
-        comboBoxChannel.setSelectedIndex(9);
+        comboBoxChannel.setSelectedIndex(5);
     }
 
     private void loadInstrument(int i) {
@@ -99,6 +99,9 @@ public class SampleSynthesizer extends JFrame {
         jLabel3 = new javax.swing.JLabel();
         jPanelTitle = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
+        menuBar = new javax.swing.JMenuBar();
+        menu = new javax.swing.JMenu();
+        menuSampleDrum = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Synthesizer Sample");
@@ -117,10 +120,10 @@ public class SampleSynthesizer extends JFrame {
         jPanelFields.setLayout(new java.awt.GridBagLayout());
 
         button1.setText("Note 1");
-        button1.setMaximumSize(new java.awt.Dimension(71, 23));
-        button1.setMinimumSize(new java.awt.Dimension(71, 23));
+        button1.setMaximumSize(new java.awt.Dimension(81, 23));
+        button1.setMinimumSize(new java.awt.Dimension(81, 23));
         button1.setName(""); // NOI18N
-        button1.setPreferredSize(new java.awt.Dimension(71, 23));
+        button1.setPreferredSize(new java.awt.Dimension(81, 23));
         button1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 button1ActionPerformed(evt);
@@ -129,15 +132,14 @@ public class SampleSynthesizer extends JFrame {
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 1;
-        gridBagConstraints.weightx = 0.1;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelFields.add(button1, gridBagConstraints);
 
         button2.setText("Note 2");
-        button2.setMaximumSize(new java.awt.Dimension(71, 23));
-        button2.setMinimumSize(new java.awt.Dimension(71, 23));
+        button2.setMaximumSize(new java.awt.Dimension(81, 23));
+        button2.setMinimumSize(new java.awt.Dimension(81, 23));
         button2.setName(""); // NOI18N
-        button2.setPreferredSize(new java.awt.Dimension(71, 23));
+        button2.setPreferredSize(new java.awt.Dimension(81, 23));
         button2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 button2ActionPerformed(evt);
@@ -150,9 +152,9 @@ public class SampleSynthesizer extends JFrame {
         jPanelFields.add(button2, gridBagConstraints);
 
         button3.setText("Note 3");
-        button3.setMaximumSize(new java.awt.Dimension(71, 23));
-        button3.setMinimumSize(new java.awt.Dimension(71, 23));
-        button3.setPreferredSize(new java.awt.Dimension(71, 23));
+        button3.setMaximumSize(new java.awt.Dimension(81, 23));
+        button3.setMinimumSize(new java.awt.Dimension(81, 23));
+        button3.setPreferredSize(new java.awt.Dimension(81, 23));
         button3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 button3ActionPerformed(evt);
@@ -165,9 +167,9 @@ public class SampleSynthesizer extends JFrame {
         jPanelFields.add(button3, gridBagConstraints);
 
         button4.setText("Note 4");
-        button4.setMaximumSize(new java.awt.Dimension(71, 23));
-        button4.setMinimumSize(new java.awt.Dimension(71, 23));
-        button4.setPreferredSize(new java.awt.Dimension(71, 23));
+        button4.setMaximumSize(new java.awt.Dimension(81, 23));
+        button4.setMinimumSize(new java.awt.Dimension(81, 23));
+        button4.setPreferredSize(new java.awt.Dimension(81, 23));
         button4.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 button4ActionPerformed(evt);
@@ -180,9 +182,9 @@ public class SampleSynthesizer extends JFrame {
         jPanelFields.add(button4, gridBagConstraints);
 
         button5.setText("Note 5");
-        button5.setMaximumSize(new java.awt.Dimension(71, 23));
-        button5.setMinimumSize(new java.awt.Dimension(71, 23));
-        button5.setPreferredSize(new java.awt.Dimension(71, 23));
+        button5.setMaximumSize(new java.awt.Dimension(81, 23));
+        button5.setMinimumSize(new java.awt.Dimension(81, 23));
+        button5.setPreferredSize(new java.awt.Dimension(81, 23));
         button5.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 button5ActionPerformed(evt);
@@ -195,9 +197,9 @@ public class SampleSynthesizer extends JFrame {
         jPanelFields.add(button5, gridBagConstraints);
 
         button6.setText("Note 6");
-        button6.setMaximumSize(new java.awt.Dimension(71, 23));
-        button6.setMinimumSize(new java.awt.Dimension(71, 23));
-        button6.setPreferredSize(new java.awt.Dimension(71, 23));
+        button6.setMaximumSize(new java.awt.Dimension(81, 23));
+        button6.setMinimumSize(new java.awt.Dimension(81, 23));
+        button6.setPreferredSize(new java.awt.Dimension(81, 23));
         button6.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 button6ActionPerformed(evt);
@@ -210,9 +212,9 @@ public class SampleSynthesizer extends JFrame {
         jPanelFields.add(button6, gridBagConstraints);
 
         button7.setText("Note 7");
-        button7.setMaximumSize(new java.awt.Dimension(71, 23));
-        button7.setMinimumSize(new java.awt.Dimension(71, 23));
-        button7.setPreferredSize(new java.awt.Dimension(71, 23));
+        button7.setMaximumSize(new java.awt.Dimension(81, 23));
+        button7.setMinimumSize(new java.awt.Dimension(81, 23));
+        button7.setPreferredSize(new java.awt.Dimension(81, 23));
         button7.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 button7ActionPerformed(evt);
@@ -225,9 +227,9 @@ public class SampleSynthesizer extends JFrame {
         jPanelFields.add(button7, gridBagConstraints);
 
         button8.setText("Note 8");
-        button8.setMaximumSize(new java.awt.Dimension(71, 23));
-        button8.setMinimumSize(new java.awt.Dimension(71, 23));
-        button8.setPreferredSize(new java.awt.Dimension(71, 23));
+        button8.setMaximumSize(new java.awt.Dimension(81, 23));
+        button8.setMinimumSize(new java.awt.Dimension(81, 23));
+        button8.setPreferredSize(new java.awt.Dimension(81, 23));
         button8.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 button8ActionPerformed(evt);
@@ -240,9 +242,9 @@ public class SampleSynthesizer extends JFrame {
         jPanelFields.add(button8, gridBagConstraints);
 
         button9.setText("Note 9");
-        button9.setMaximumSize(new java.awt.Dimension(71, 23));
-        button9.setMinimumSize(new java.awt.Dimension(71, 23));
-        button9.setPreferredSize(new java.awt.Dimension(71, 23));
+        button9.setMaximumSize(new java.awt.Dimension(81, 23));
+        button9.setMinimumSize(new java.awt.Dimension(81, 23));
+        button9.setPreferredSize(new java.awt.Dimension(81, 23));
         button9.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 button9ActionPerformed(evt);
@@ -255,6 +257,9 @@ public class SampleSynthesizer extends JFrame {
         jPanelFields.add(button9, gridBagConstraints);
 
         button10.setText("Note 10");
+        button10.setMaximumSize(new java.awt.Dimension(81, 23));
+        button10.setMinimumSize(new java.awt.Dimension(81, 23));
+        button10.setPreferredSize(new java.awt.Dimension(81, 23));
         button10.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 button10ActionPerformed(evt);
@@ -349,6 +354,20 @@ public class SampleSynthesizer extends JFrame {
         gridBagConstraints.weighty = 0.1;
         getContentPane().add(jPanelSuper, gridBagConstraints);
 
+        menu.setText("Menu");
+
+        menuSampleDrum.setText("SampleDrum");
+        menuSampleDrum.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                menuSampleDrumActionPerformed(evt);
+            }
+        });
+        menu.add(menuSampleDrum);
+
+        menuBar.add(menu);
+
+        setJMenuBar(menuBar);
+
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
@@ -403,6 +422,11 @@ public class SampleSynthesizer extends JFrame {
         }
     }//GEN-LAST:event_comboBoxInstrumentItemStateChanged
 
+    private void menuSampleDrumActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuSampleDrumActionPerformed
+        SampleDrum drum = new SampleDrum();
+        drum.setVisible(true);
+    }//GEN-LAST:event_menuSampleDrumActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -433,6 +457,9 @@ public class SampleSynthesizer extends JFrame {
     private javax.swing.JPanel jPanelSuper;
     private javax.swing.JPanel jPanelSuperContent;
     private javax.swing.JPanel jPanelTitle;
+    private javax.swing.JMenu menu;
+    private javax.swing.JMenuBar menuBar;
+    private javax.swing.JMenuItem menuSampleDrum;
     // End of variables declaration//GEN-END:variables
 
 }

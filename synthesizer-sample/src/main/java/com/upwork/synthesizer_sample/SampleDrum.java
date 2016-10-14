@@ -32,6 +32,7 @@ public class SampleDrum extends JFrame {
     }
 
     private void executeSound(int noteNumber) {
+        // the MIDI note number, from 0 to 127 (60 = Middle C)
         midiChannel[MIDI_PERCUSSION_CHANNEL].noteOn(noteNumber, VELOCITY);
     }
 
