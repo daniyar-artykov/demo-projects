@@ -1,0 +1,133 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.beans;
+
+import java.util.List;
+
+import sleekbill.Common;
+import sleekbill.db.SBConnection;
+import sleekbill.entities.AliasEmailEntity;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.stmt.PreparedQuery;
+import com.j256.ormlite.stmt.SelectArg;
+import com.j256.ormlite.table.DatabaseTable;
+
+/**
+ *
+ * @author dani
+ */
+@DatabaseTable(tableName = "alias_email")
+public class AliasEmail extends AliasEmailEntity {
+
+    private Dao<AliasEmailEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+
+    public AliasEmail(AliasEmailEntity aliasEmail) {
+        this(0);
+        this.id = aliasEmail.getId();
+        this.clientId = new Integer(aliasEmail.getClientId().intValue());
+        this.alias = new String(aliasEmail.getAlias());
+        this.email = new String(aliasEmail.getEmail());
+    }
+
+    public AliasEmail(Integer clientId, String alias, String email) {
+        this(0);
+        this.clientId = clientId;
+        this.alias = alias;
+        this.email = email;
+    }
+
+    public AliasEmail() {
+        this(0);
+    }
+
+    public AliasEmail(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager.createDao(mainConnection, AliasEmailEntity.class);
+
+                if (id != null && id != 0) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void create() throws Exception {
+        mainDao.create(this);
+    }
+
+    public AliasEmailEntity read(Integer id) throws Exception {
+        return mainDao.queryForId(id);
+    }
+
+    public void update() throws Exception {
+        mainDao.update(this);
+    }
+
+    public void delete() throws Exception {
+        mainDao.delete(this);
+    }
+
+    public static AliasEmail get(SBConnection connection, int clientId, String alias) throws Exception {
+        SelectArg selectArg = new SelectArg();
+        Dao<AliasEmailEntity, Integer> aliasDao = DaoManager.createDao(connection.getConnection(), AliasEmailEntity.class);
+        PreparedQuery<AliasEmailEntity> pq = aliasDao.queryBuilder()
+                .where().eq(AliasEmail.CLIENT_ID, clientId).and().eq(AliasEmail.ALIAS, alias).prepare();
+
+        List<AliasEmailEntity> list = aliasDao.query(pq);
+
+        if (list != null && list.size() > 0) {
+            return new AliasEmail(list.get(0));
+        }
+
+        return null;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+
+        hash = 53 * hash + this.id;
+        hash = 53 * hash + (this.clientId != null ? this.clientId.hashCode() : 0);
+        hash = 53 * hash + (this.alias != null ? this.alias.hashCode() : 0);
+        hash = 53 * hash + (this.email != null ? this.email.hashCode() : 0);
+
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final AliasEmail other = (AliasEmail) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (this.clientId != other.clientId && (this.clientId == null || !this.clientId.equals(other.clientId))) {
+            return false;
+        }
+        if ((this.alias == null) ? (other.alias != null) : !this.alias.equals(other.alias)) {
+            return false;
+        }
+        if ((this.email == null) ? (other.email != null) : !this.email.equals(other.email)) {
+            return false;
+        }
+        return true;
+    }
+}

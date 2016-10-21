@@ -1,0 +1,143 @@
+package sleekbill.entities;
+
+import com.j256.ormlite.field.DataType;
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+
+/**
+ *
+ * @author daniyar.artykov
+ */
+@DatabaseTable(tableName = "release")
+public class ReleaseEntity {
+
+    public static final String VERSION = "version";
+    public static final String YEAR = "year";
+    public static final String RELEASE_NOTES = "release_notes";
+    public static final String SHOW_RELEASE_NOTES = "show_notes";
+
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+    @DatabaseField(columnName = VERSION, canBeNull = false)
+    protected String version;
+    @DatabaseField(columnName = YEAR, canBeNull = false)
+    protected String year;
+    @DatabaseField(columnName = RELEASE_NOTES, canBeNull = true)
+    protected String releaseNotes;
+    @DatabaseField(columnName = SHOW_RELEASE_NOTES, canBeNull = false,
+            dataType = DataType.BOOLEAN)
+    protected boolean showNotes;
+
+    public ReleaseEntity(ReleaseEntity versionEntity) {
+        this.id = versionEntity.id;
+        this.version = versionEntity.version;
+        this.year = versionEntity.year;
+        this.releaseNotes = versionEntity.releaseNotes;
+        this.showNotes = versionEntity.showNotes;
+    }
+
+    public ReleaseEntity() {
+    }
+
+    public ReleaseEntity(int id) {
+        this.id = id;
+    }
+
+    public ReleaseEntity(String version, String year) {
+        this.version = version;
+        this.year = year;
+    }
+
+    public ReleaseEntity(String version, String year, String releaseNotes,
+            boolean showNotes) {
+        this.version = version;
+        this.year = year;
+        this.releaseNotes = releaseNotes;
+        this.showNotes = showNotes;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+    public String getYear() {
+        return year;
+    }
+
+    public void setYear(String year) {
+        this.year = year;
+    }
+
+    public String getReleaseNotes() {
+        return releaseNotes;
+    }
+
+    public void setReleaseNotes(String releaseNotes) {
+        this.releaseNotes = releaseNotes;
+    }
+
+    public void addReleaseNote(String note) {
+        if (releaseNotes == null) {
+            releaseNotes = "";
+        }
+        
+        releaseNotes = releaseNotes + "<br />" + note;
+    }
+
+    public boolean isShowNotes() {
+        return showNotes;
+    }
+
+    public void setShowNotes(boolean showNotes) {
+        this.showNotes = showNotes;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 29 * hash + this.id;
+        hash = 29 * hash + (this.version != null ? this.version.hashCode() : 0);
+        hash = 29 * hash + (this.year != null ? this.year.hashCode() : 0);
+        hash = 29 * hash + (this.releaseNotes != null ? this.releaseNotes.hashCode() : 0);
+        hash = 31 * hash + (this.showNotes ? 1 : 0);
+        
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final ReleaseEntity other = (ReleaseEntity) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if ((this.version == null) ? (other.version != null) : !this.version.equals(other.version)) {
+            return false;
+        }
+        if ((this.releaseNotes == null) ? (other.releaseNotes != null) : !this.releaseNotes.equals(other.releaseNotes)) {
+            return false;
+        }
+        if (this.showNotes != other.showNotes) {
+            return false;
+        }
+        
+        return !((this.year == null) ? (other.year != null) : !this.year.equals(other.year));
+    }
+}

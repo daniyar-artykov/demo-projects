@@ -1,0 +1,133 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.util;
+
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import sleekbill.Common;
+import sleekbill.Config;
+import sleekbill.beans.Tax;
+
+/**
+ *
+ * @author Andrei
+ */
+public class RegionalPreparator {
+
+	private static Map<String, Integer> mapCountries = new HashMap<String, Integer>();
+
+	public static void prepare(String countryName) {
+
+		mapCountries.put("United States of America", 1);
+		mapCountries.put("Canada", 2);
+		mapCountries.put("United Kingdom", 3);
+		mapCountries.put("Australia", 4);
+		mapCountries.put("India", 5);
+
+		int caseNr = mapCountries.get(countryName) == null ? 6 : mapCountries.get(countryName);
+		
+		switch (caseNr) {
+			case 1: {
+				prepareSUA();
+				break;
+			}
+
+			case 2: {
+				prepareCanada();
+				break;
+			}
+
+			case 3: {
+				prepareUK();
+				break;
+			}
+
+			case 4: {
+				prepareAustralia();
+				break;
+			}
+			case 5: {
+				prepareIndia();
+				break;
+			}
+
+			default: {
+				prepareDefault();
+				break;
+			}
+
+		}
+	}
+
+	private static void prepareSUA() {
+		//remains empty, for now
+	}
+
+	private static void prepareCanada() {
+		//date preferences
+		Common.selectedCompanyConfig.set(Config.DATE_MASK, " dd / MM / yyyy ");
+
+		//default taxes
+		try {
+			Tax tax = new Tax();
+			tax.setTaxName("PST");
+			tax.setTaxPercentage(new BigDecimal(7));
+			tax.setIsDefaultTax(true);
+			tax.create();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+
+	private static void prepareUK() {
+		//date preferences
+		Common.selectedCompanyConfig.set(Config.DATE_MASK, " dd / MM / yyyy ");
+
+		//default taxes
+		try {
+			Tax tax1 = new Tax();
+			tax1.setTaxName("VAT");
+			tax1.setTaxPercentage(new BigDecimal(20));
+			tax1.setIsDefaultTax(true);
+			tax1.create();
+
+			Tax tax2 = new Tax();
+			tax2.setTaxName("VAT");
+			tax2.setTaxPercentage(new BigDecimal(5));
+			tax2.create();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+
+	private static void prepareAustralia() {
+		//date preferences
+		Common.selectedCompanyConfig.set(Config.DATE_MASK, " dd / MM / yyyy ");
+
+		//default taxes
+		try {
+			Tax tax = new Tax();
+			tax.setTaxName("GST");
+			tax.setTaxPercentage(new BigDecimal(10));
+			tax.setIsDefaultTax(true);
+			tax.create();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+
+	private static void prepareIndia() {
+		Common.selectedCompanyConfig.set(Config.DATE_MASK, " dd / MM / yyyy ");
+	}
+
+	private static void prepareDefault() {
+		//remains empty, for now
+	}
+
+}

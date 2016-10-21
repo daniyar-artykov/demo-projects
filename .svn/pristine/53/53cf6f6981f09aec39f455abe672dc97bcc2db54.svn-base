@@ -1,0 +1,94 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.entities;
+
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+
+/**
+ *
+ * @author Andrei
+ */
+@DatabaseTable(tableName = "tax_combo")
+public class TaxComboEntity {
+    
+	public static final String ID = "id";
+    public static final String MAIN_TAX = "main_tax_id";
+    public static final String COMPONENT_TAX = "component_tax_id";
+
+    
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+    @DatabaseField(foreign = true, columnName = MAIN_TAX, foreignAutoRefresh = true, foreignAutoCreate = true, columnDefinition = "INTEGER REFERENCES taxes (id)")
+    protected TaxEntity mainTax;
+	@DatabaseField(foreign = true, columnName = COMPONENT_TAX, foreignAutoRefresh = true, foreignAutoCreate = true, columnDefinition = "INTEGER REFERENCES taxes (id)")
+    protected TaxEntity componentTax;
+    
+    //@ForeignCollectionField(foreignFieldName="product")
+    //protected ForeignCollection<InvoiceTaxComboEntity> invoiceTaxCombos;
+
+	public TaxComboEntity() {
+    }
+	
+    public TaxComboEntity(TaxComboEntity productsEntity) {
+        this.id = productsEntity.id;
+        this.mainTax = productsEntity.mainTax;
+        this.componentTax = productsEntity.componentTax;
+    }
+
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public TaxEntity getMainTax() {
+		return mainTax;
+	}
+
+	public void setMainTax(TaxEntity mainTax) {
+		this.mainTax = mainTax;
+	}
+
+	public TaxEntity getComponentTax() {
+		return componentTax;
+	}
+
+	public void setComponentTax(TaxEntity componentTax) {
+		this.componentTax = componentTax;
+	}
+
+	@Override
+	public int hashCode() {
+		int hash = 7;
+		hash = 97 * hash + this.id;
+		hash = 97 * hash + (this.mainTax != null ? this.mainTax.hashCode() : 0);
+		hash = 97 * hash + (this.componentTax != null ? this.componentTax.hashCode() : 0);
+		return hash;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final TaxComboEntity other = (TaxComboEntity) obj;
+		if (this.id != other.id) {
+			return false;
+		}
+		if (this.mainTax != other.mainTax && (this.mainTax == null || !this.mainTax.equals(other.mainTax))) {
+			return false;
+		}
+		if (this.componentTax != other.componentTax && (this.componentTax == null || !this.componentTax.equals(other.componentTax))) {
+			return false;
+		}
+		return true;
+	}
+}

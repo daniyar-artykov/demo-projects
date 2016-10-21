@@ -1,0 +1,368 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.entities;
+
+import com.j256.ormlite.dao.ForeignCollection;
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.field.ForeignCollectionField;
+import com.j256.ormlite.table.DatabaseTable;
+
+/**
+ *
+ * @author Andrei
+ */
+@DatabaseTable(tableName = "clients")
+public class ClientEntity {
+
+	public static final String ID = "id";
+    public static final String NAME = "name";
+    public static final String CODE = "code";
+    public static final String EMAIL = "email";
+    public static final String TELEPHONE = "telephone";
+    public static final String CONTACT = "contact";
+    public static final String BADDRESS = "billing_address";
+    public static final String BZIP = "billing_zip";
+    public static final String BCITY = "billing_city";
+    public static final String SADDRESS = "shipping_address";
+    public static final String SZIP = "shipping_zip";
+    public static final String SCITY = "shipping_city";
+    public static final String BSTATE_ID = "billing_state_id";
+    public static final String SSTATE_ID = "shipping_state_id";
+    public static final String DETAILS = "details";
+    public static final String DELETED = "deleted";
+    public static final String DETAILS_PUBLIC = "details_public";
+	public static final String TIN = "tin";
+
+    
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+    @DatabaseField(columnName = NAME, canBeNull = false)
+    protected String name;
+    @DatabaseField(columnName = CODE, canBeNull = true)
+    protected String code;
+    @DatabaseField(columnName = EMAIL, canBeNull = true)
+    protected String email;
+    @DatabaseField(columnName = TELEPHONE, canBeNull = true)
+    protected String telephone;
+    @DatabaseField(columnName = CONTACT, canBeNull = true)
+    protected String contact;
+    @DatabaseField(columnName = BADDRESS, canBeNull = true)
+    protected String billingAddress;
+    @DatabaseField(columnName = BZIP, canBeNull = true)
+    protected String billingZip;
+    @DatabaseField(columnName = BCITY, canBeNull = true)
+    protected String billingCity;
+    @DatabaseField(columnName = SADDRESS, canBeNull = true)
+    protected String shippingAddress;
+    @DatabaseField(columnName = SZIP, canBeNull = true)
+    protected String shippingZip;
+    @DatabaseField(columnName = SCITY, canBeNull = true)
+    protected String shippingCity;
+    @DatabaseField(foreign = true, columnName = BSTATE_ID, foreignAutoRefresh = true, columnDefinition = "INTEGER REFERENCES states (id)")
+    protected StateEntity billingState;
+    @DatabaseField(foreign = true, columnName = SSTATE_ID, foreignAutoRefresh = true, columnDefinition = "INTEGER REFERENCES states (id)")
+    protected StateEntity shippingState;
+    @DatabaseField(columnName = DETAILS, canBeNull = true)
+    protected String details;
+    @DatabaseField(columnName = DETAILS_PUBLIC, canBeNull = true)
+    protected String detailsPublic;
+	@DatabaseField(columnName = TIN, canBeNull = true)
+    protected String tin;
+    @DatabaseField(columnName = DELETED, canBeNull = false, defaultValue = "n")
+    protected String deleted;
+    
+    @ForeignCollectionField(foreignFieldName = "client")
+    protected ForeignCollection<InvoiceEntity> invoices;
+
+    public ClientEntity(ClientEntity clientsEntity) {
+        this.id = clientsEntity.id;
+        this.name = clientsEntity.name;
+        this.code = clientsEntity.code;
+        this.email = clientsEntity.email;
+        this.telephone = clientsEntity.telephone;
+        this.contact = clientsEntity.contact;
+        this.billingAddress = clientsEntity.billingAddress;
+        this.billingZip = clientsEntity.billingZip;
+        this.billingCity = clientsEntity.billingCity;
+        this.shippingAddress = clientsEntity.shippingAddress;
+        this.shippingZip = clientsEntity.shippingZip;
+        this.shippingCity = clientsEntity.shippingCity;
+        this.billingState = clientsEntity.billingState;
+        this.shippingState = clientsEntity.shippingState;
+        this.details = clientsEntity.details;
+        this.detailsPublic = clientsEntity.detailsPublic;
+		this.tin = clientsEntity.tin;
+        this.deleted = clientsEntity.deleted;
+        this.invoices = clientsEntity.invoices;
+    }
+
+    public ClientEntity() {
+    }
+
+    public ClientEntity(String name) {
+        this.name = name;
+    }
+
+    public ClientEntity(String name, String code, String email, String telephone, String contact, String billingAddress, String billingZip, String billingCity, String shippingAddress, String shippingZip, String shippingCity, StateEntity billingState, StateEntity shippingState, String details) {
+        this.name = name;
+        this.code = code;
+        this.email = email;
+        this.telephone = telephone;
+        this.contact = contact;
+        this.billingAddress = billingAddress;
+        this.billingZip = billingZip;
+        this.billingCity = billingCity;
+        this.shippingAddress = shippingAddress;
+        this.shippingZip = shippingZip;
+        this.shippingCity = shippingCity;
+        this.billingState = billingState;
+        this.shippingState = shippingState;
+        this.details = details;
+    }
+    
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getTelephone() {
+        return telephone;
+    }
+
+    public void setTelephone(String telephone) {
+        this.telephone = telephone;
+    }
+
+    public String getContact() {
+        return contact;
+    }
+
+    public void setContact(String contact) {
+        this.contact = contact;
+    }
+
+    public String getBillingAddress() {
+        return billingAddress;
+    }
+
+    public void setBillingAddress(String billingAddress) {
+        this.billingAddress = billingAddress;
+    }
+
+    public String getBillingZip() {
+        return billingZip;
+    }
+
+    public void setBillingZip(String billingZip) {
+        this.billingZip = billingZip;
+    }
+
+    public String getBillingCity() {
+        return billingCity;
+    }
+
+    public void setBillingCity(String billingCity) {
+        this.billingCity = billingCity;
+    }
+
+    public String getShippingAddress() {
+        return shippingAddress;
+    }
+
+    public void setShippingAddress(String shippingAddress) {
+        this.shippingAddress = shippingAddress;
+    }
+
+    public String getShippingZip() {
+        return shippingZip;
+    }
+
+    public void setShippingZip(String shippingZip) {
+        this.shippingZip = shippingZip;
+    }
+
+    public String getShippingCity() {
+        return shippingCity;
+    }
+
+    public void setShippingCity(String shippingCity) {
+        this.shippingCity = shippingCity;
+    }
+
+    public StateEntity getBillingState() {
+        return billingState;
+    }
+
+    public void setBillingState(StateEntity billingState) {
+        this.billingState = billingState;
+    }
+
+    public StateEntity getShippingState() {
+        return shippingState;
+    }
+
+    public void setShippingState(StateEntity shippingState) {
+        this.shippingState = shippingState;
+    }
+
+    public ForeignCollection<InvoiceEntity> getInvoices() {
+        return invoices;
+    }
+
+    public void setInvoices(ForeignCollection<InvoiceEntity> invoices) {
+        this.invoices = invoices;
+    }
+
+    public String getDetails() {
+        return details;
+    }
+
+    public void setDetails(String details) {
+        this.details = details;
+    }
+
+    public String getDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(String deleted) {
+        this.deleted = deleted;
+    }
+
+    public String getDetailsPublic() {
+        return detailsPublic;
+    }
+
+    public void setDetailsPublic(String detailsPublic) {
+        this.detailsPublic = detailsPublic;
+    }
+
+	public String getTin() {
+		return tin;
+	}
+
+	public void setTin(String tin) {
+		this.tin = tin;
+	}
+
+	@Override
+	public int hashCode() {
+		int hash = 7;
+		hash = 79 * hash + this.id;
+		hash = 79 * hash + (this.name != null ? this.name.hashCode() : 0);
+		hash = 79 * hash + (this.code != null ? this.code.hashCode() : 0);
+		hash = 79 * hash + (this.email != null ? this.email.hashCode() : 0);
+		hash = 79 * hash + (this.telephone != null ? this.telephone.hashCode() : 0);
+		hash = 79 * hash + (this.contact != null ? this.contact.hashCode() : 0);
+		hash = 79 * hash + (this.billingAddress != null ? this.billingAddress.hashCode() : 0);
+		hash = 79 * hash + (this.billingZip != null ? this.billingZip.hashCode() : 0);
+		hash = 79 * hash + (this.billingCity != null ? this.billingCity.hashCode() : 0);
+		hash = 79 * hash + (this.shippingAddress != null ? this.shippingAddress.hashCode() : 0);
+		hash = 79 * hash + (this.shippingZip != null ? this.shippingZip.hashCode() : 0);
+		hash = 79 * hash + (this.shippingCity != null ? this.shippingCity.hashCode() : 0);
+		hash = 79 * hash + (this.billingState != null ? this.billingState.hashCode() : 0);
+		hash = 79 * hash + (this.shippingState != null ? this.shippingState.hashCode() : 0);
+		hash = 79 * hash + (this.details != null ? this.details.hashCode() : 0);
+		hash = 79 * hash + (this.detailsPublic != null ? this.detailsPublic.hashCode() : 0);
+		hash = 79 * hash + (this.tin != null ? this.tin.hashCode() : 0);
+		hash = 79 * hash + (this.deleted != null ? this.deleted.hashCode() : 0);
+		return hash;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final ClientEntity other = (ClientEntity) obj;
+		if (this.id != other.id) {
+			return false;
+		}
+		if ((this.name == null) ? (other.name != null) : !this.name.equals(other.name)) {
+			return false;
+		}
+		if ((this.code == null) ? (other.code != null) : !this.code.equals(other.code)) {
+			return false;
+		}
+		if ((this.email == null) ? (other.email != null) : !this.email.equals(other.email)) {
+			return false;
+		}
+		if ((this.telephone == null) ? (other.telephone != null) : !this.telephone.equals(other.telephone)) {
+			return false;
+		}
+		if ((this.contact == null) ? (other.contact != null) : !this.contact.equals(other.contact)) {
+			return false;
+		}
+		if ((this.billingAddress == null) ? (other.billingAddress != null) : !this.billingAddress.equals(other.billingAddress)) {
+			return false;
+		}
+		if ((this.billingZip == null) ? (other.billingZip != null) : !this.billingZip.equals(other.billingZip)) {
+			return false;
+		}
+		if ((this.billingCity == null) ? (other.billingCity != null) : !this.billingCity.equals(other.billingCity)) {
+			return false;
+		}
+		if ((this.shippingAddress == null) ? (other.shippingAddress != null) : !this.shippingAddress.equals(other.shippingAddress)) {
+			return false;
+		}
+		if ((this.shippingZip == null) ? (other.shippingZip != null) : !this.shippingZip.equals(other.shippingZip)) {
+			return false;
+		}
+		if ((this.shippingCity == null) ? (other.shippingCity != null) : !this.shippingCity.equals(other.shippingCity)) {
+			return false;
+		}
+		if (this.billingState != other.billingState && (this.billingState == null || !this.billingState.equals(other.billingState))) {
+			return false;
+		}
+		if (this.shippingState != other.shippingState && (this.shippingState == null || !this.shippingState.equals(other.shippingState))) {
+			return false;
+		}
+		if ((this.details == null) ? (other.details != null) : !this.details.equals(other.details)) {
+			return false;
+		}
+		if ((this.detailsPublic == null) ? (other.detailsPublic != null) : !this.detailsPublic.equals(other.detailsPublic)) {
+			return false;
+		}
+		if ((this.tin == null) ? (other.tin != null) : !this.tin.equals(other.tin)) {
+			return false;
+		}
+		if ((this.deleted == null) ? (other.deleted != null) : !this.deleted.equals(other.deleted)) {
+			return false;
+		}
+		return true;
+	}
+
+    
+}

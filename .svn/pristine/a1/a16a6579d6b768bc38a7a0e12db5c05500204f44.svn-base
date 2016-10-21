@@ -1,0 +1,98 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.entities;
+
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+
+/**
+ *
+ * @author Andrei
+ */
+@DatabaseTable(tableName = "version")
+public class VersionEntity {
+
+    public static final String VERSION = "version";
+    public static final String YEAR = "year";
+    
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+    @DatabaseField(columnName = VERSION, canBeNull = false)
+    protected String version;
+    @DatabaseField(columnName = YEAR, canBeNull = false)
+    protected String year;
+
+    public VersionEntity(VersionEntity versionEntity) {
+        this.id = versionEntity.id;
+        this.version = versionEntity.version;
+        this.year = versionEntity.year;
+    }
+
+    public VersionEntity() {
+    }
+
+    public VersionEntity(int id) {
+        this.id = id;
+    }
+
+    public VersionEntity(String version, String year) {
+        this.version = version;
+        this.year = year;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+    public String getYear() {
+        return year;
+    }
+
+    public void setYear(String year) {
+        this.year = year;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 29 * hash + this.id;
+        hash = 29 * hash + (this.version != null ? this.version.hashCode() : 0);
+        hash = 29 * hash + (this.year != null ? this.year.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final VersionEntity other = (VersionEntity) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if ((this.version == null) ? (other.version != null) : !this.version.equals(other.version)) {
+            return false;
+        }
+        if ((this.year == null) ? (other.year != null) : !this.year.equals(other.year)) {
+            return false;
+        }
+        return true;
+    }
+}

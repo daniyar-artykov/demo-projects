@@ -1,0 +1,211 @@
+package sleekbill.beans;
+
+import java.sql.SQLException;
+import java.util.List;
+
+import sleekbill.Common;
+import sleekbill.entities.StateEntity;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.stmt.PreparedQuery;
+import com.j256.ormlite.stmt.SelectArg;
+
+public class State extends StateEntity {
+
+    private Dao<StateEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+
+    public State(StateEntity statesEntity) {
+        this(0);
+        this.id = statesEntity.getId();
+        this.state = statesEntity.getState();
+        this.county = statesEntity.getCounty();
+        this.city = statesEntity.getCity();
+        this.country = statesEntity.getCountry();
+        this.companyDetails = statesEntity.getCompanyDetails();
+        this.clientsBillingState = statesEntity.getClientsBillingState();
+        this.clientsShippingState = statesEntity.getClientsShippingState();
+        this.invoicesBillingState = statesEntity.getInvoicesBillingState();
+        this.invoicesShippingState = statesEntity.getInvoicesShippingState();
+    }
+    
+    public State() {
+        this(0);
+    }
+
+    public State(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager
+                        .createDao(mainConnection, StateEntity.class);
+
+                if (id != null && id != 0) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    
+     public void refreshDao(){
+            try {
+                mainDao = DaoManager
+                        .createDao(Common.connection.getConnection(), StateEntity.class);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+    }
+
+    public void create() throws Exception {
+        mainDao.create(this);
+    }
+
+    public StateEntity read(Integer id) throws Exception {
+        return mainDao.queryForId(id);
+    }
+
+    public void update() throws Exception {
+        mainDao.update(this);
+    }
+
+    public void delete() throws Exception {
+        mainDao.delete(this);
+    }
+    
+    public static State get(JdbcConnectionSource connectionSource, StateEntity state) throws SBDaoException, SQLException {
+
+        State retState = new State(State.get(connectionSource, state.getState(), state.getCounty(), state.getCity()));
+
+        if (retState == null) {
+            return new State(state);
+        } else {
+            return retState;
+        }       
+    }
+    
+    public static void add(JdbcConnectionSource connectionSource, State state) throws SBDaoException, SQLException {
+    	Dao<StateEntity, Integer> stateDao = DaoManager.createDao(connectionSource, StateEntity.class);    	
+    	stateDao.create(state);	
+    }
+    
+    public static void update(JdbcConnectionSource connectionSource, State state) throws SBDaoException, SQLException {
+    	Dao<StateEntity, Integer> stateDao = DaoManager.createDao(connectionSource, StateEntity.class);    	
+    	stateDao.update(state);	
+    }
+    
+    public static StateEntity get(JdbcConnectionSource connectionSource, String state, String county, String city) throws SBDaoException, SQLException {
+
+        SelectArg selectState = new SelectArg();
+        SelectArg selectCounty = new SelectArg();
+        SelectArg selectCity = new SelectArg();
+        Dao<StateEntity, Integer> stateDao = DaoManager.createDao(connectionSource, StateEntity.class);
+        PreparedQuery<StateEntity> pq = stateDao.queryBuilder().where().like(State.STATE, selectState).and().like(State.COUNTY, selectCounty).and().like(State.CITY, selectCity).prepare();
+        selectState.setValue(state);
+        selectCity.setValue(city);
+        selectCounty.setValue(county);
+        
+        List<StateEntity> list = stateDao.query(pq);
+
+        if (list.size() > 0) {
+            return list.get(0);
+        }
+        return null;
+    }
+    
+     
+    public static State get(JdbcConnectionSource connectionSource, String state, String county, String city, String country) throws SBDaoException, SQLException {
+
+        SelectArg selectState = new SelectArg();
+        SelectArg selectCounty = new SelectArg();
+        SelectArg selectCity = new SelectArg();
+        SelectArg selectCountry = new SelectArg();
+        
+        Dao<StateEntity, Integer> stateDao = DaoManager.createDao(connectionSource, StateEntity.class);
+        PreparedQuery<StateEntity> pq = stateDao.queryBuilder().where().like(State.STATE, selectState).and().like(State.COUNTY, selectCounty).and().like(State.CITY, selectCity).and().like(State.COUNTRY, selectCountry).prepare();
+        selectState.setValue(state);
+        selectCity.setValue(city);
+        selectCounty.setValue(county);
+        selectCountry.setValue(country);
+        
+        List<StateEntity> list = stateDao.query(pq);
+
+        if (list.size() > 0) {
+            return new State(list.get(0));
+        }
+        return null;
+    }
+    
+     public static State getSimple(JdbcConnectionSource connectionSource, String state, String city, String country) throws SBDaoException, SQLException {
+
+        SelectArg selectState = new SelectArg();
+        SelectArg selectCity = new SelectArg();
+        SelectArg selectCountry = new SelectArg();
+        
+        Dao<StateEntity, Integer> stateDao = DaoManager.createDao(connectionSource, StateEntity.class);
+        PreparedQuery<StateEntity> pq = stateDao.queryBuilder().where().like(State.STATE, selectState).and().like(State.CITY, selectCity).and().like(State.COUNTRY, selectCountry).prepare();
+        selectState.setValue(state);
+        selectCity.setValue(city);
+        selectCountry.setValue(country);
+        
+        List<StateEntity> list = stateDao.query(pq);
+
+        if (list.size() > 0) {
+            return new State(list.get(0));
+        }
+        return null;
+    }
+    
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 79 * hash + this.id;
+        hash = 79 * hash + (this.state != null ? this.state.hashCode() : 0);
+        hash = 79 * hash + (this.county != null ? this.county.hashCode() : 0);
+        hash = 79 * hash + (this.city != null ? this.city.hashCode() : 0);
+        hash = 79 * hash + (this.country != null ? this.country.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final State other = (State) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if ((this.state == null) ? (other.state != null) : !this.state.equals(other.state)) {
+            return false;
+        }
+        if ((this.county == null) ? (other.county != null) : !this.county.equals(other.county)) {
+            return false;
+        }
+        if ((this.city == null) ? (other.city != null) : !this.city.equals(other.city)) {
+            return false;
+        }
+        if ((this.country == null) ? (other.country != null) : !this.country.equals(other.country)) {
+            return false;
+        }
+        return true;
+    }
+
+    public Dao<StateEntity, Integer> getMainDao() {
+        return mainDao;
+    }
+
+    public void setMainDao(Dao<StateEntity, Integer> mainDao) {
+        this.mainDao = mainDao;
+    }
+}

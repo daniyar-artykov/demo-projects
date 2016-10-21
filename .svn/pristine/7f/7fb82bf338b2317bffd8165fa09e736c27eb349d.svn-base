@@ -1,0 +1,8 @@
+package sleekbill.beans;
+
+public class SBDaoException extends Exception {
+
+    public SBDaoException(String message) {
+        super(message);
+    }
+}

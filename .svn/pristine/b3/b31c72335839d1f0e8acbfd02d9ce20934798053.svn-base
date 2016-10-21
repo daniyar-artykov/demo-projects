@@ -1,0 +1,2596 @@
+/*
+ * JRViewerPlus.java
+ *
+ * Created on 04 January 2008, 11:11
+ *
+ * To change this template, choose Tools | Template Manager
+ * and open the template in the editor.
+ */
+package sleekbill.jasper;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.Point;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.font.FontRenderContext;
+import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.StringReader;
+import java.lang.reflect.Field;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.imageio.ImageIO;
+
+import javax.print.PrintService;
+import javax.print.attribute.PrintServiceAttribute;
+import javax.print.attribute.standard.PrinterIsAcceptingJobs;
+import javax.swing.AbstractAction;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.ListCellRenderer;
+import javax.swing.SwingUtilities;
+import javax.swing.border.LineBorder;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRPrintElement;
+import net.sf.jasperreports.engine.JRPrintFrame;
+import net.sf.jasperreports.engine.JRPrintHyperlink;
+import net.sf.jasperreports.engine.JRPrintPage;
+import net.sf.jasperreports.engine.JasperExportManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.view.JRHyperlinkListener;
+import net.sf.jasperreports.view.JRViewer;
+import org.capaxit.imagegenerator.Alignment;
+import org.capaxit.imagegenerator.Margin;
+import org.capaxit.imagegenerator.TextImage;
+import org.capaxit.imagegenerator.imageexporter.ImageType;
+import org.capaxit.imagegenerator.imageexporter.ImageWriter;
+import org.capaxit.imagegenerator.imageexporter.ImageWriterFactory;
+import org.capaxit.imagegenerator.imageexporter.exporters.PngImageWriter;
+import org.capaxit.imagegenerator.impl.TextImageImpl;
+
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
+import sleekbill.Common;
+import sleekbill.Config;
+import sleekbill.Messages;
+import sleekbill.SBConstants;
+import sleekbill.beans.Client;
+import sleekbill.beans.Estimate;
+import sleekbill.beans.Flag;
+import sleekbill.beans.Invoice;
+import sleekbill.beans.PageSize;
+import sleekbill.beans.SBDaoException;
+import sleekbill.entities.PageSizeEntity;
+import sleekbill.frames.JDialogEmail;
+import sleekbill.frames.JDialogFlags;
+import sleekbill.frames.JDialogIssueEstimate;
+import sleekbill.frames.JDialogIssueInvoice;
+import sleekbill.frames.JDialogLogoGenerator;
+import sleekbill.swingutils.JDialogQuestionMessageWithCheck;
+import sleekbill.swingutils.JPanelDragDrop;
+import sleekbill.swingutils.JPanelMessage;
+import sleekbill.swingutils.balloons.SBSpecialBalloonTip;
+import sleekbill.util.FileDrop;
+import sleekbill.util.SBSwingUtils;
+import sleekbill.utils.SBDesktop;
+import sleekbill.utils.SBStringUtils;
+
+/**
+ *
+ * @author aganencei (flaviu marcu)
+ */
+public class JRViewerPlus extends JRViewer // implements SBConstants
+{
+
+    Document document;
+//	String docName = "";
+    JDialog parent = null;
+    JasperPrint jrPrint = null;
+    JButton btnSavePDF = new javax.swing.JButton();
+    JButton btnFinalizare = new javax.swing.JButton();
+    JButton btnExit = new javax.swing.JButton();
+    private JComboBox jCBLayout = new JComboBox();
+    private JComboBox jCBColors = new JComboBox();
+    private JComboBox jCBPageSize = new JComboBox();
+    private JComboBox jCBPageSizeA4 = new JComboBox();
+    private JComboBox jCBPageSizeA5 = new JComboBox();
+    private JComboBox jCBPrintId = new JComboBox();
+    private JButton jBOptions = new JButton();
+    JPopupMenu tools = new JPopupMenu();
+    SBSpecialBalloonTip balloonFinalizare = null;
+    SBSpecialBalloonTip balloonTools = null;
+    JPanelDragDrop jPanelAdd = new JPanelDragDrop();
+    JPanel jPanelSuperEdit = new JPanel();
+    JPanel jPanelEdit = new JPanel();
+    JLabel lblEdit = new JLabel("Edit Logo");
+    JLabel lblDelete = new JLabel("Delete Logo");
+    int globalX = 25, globalY = 20, globalWidth = 260, globalHeight = 86;
+    boolean agLogo = false;
+    private int layout = 1;
+    private int lastIdLayout = 1;
+    private int printId = 1;
+    private JMenuItem itmPreferences;
+    private JMenuItem itmCopy;
+    private JMenuItem itmEdit;
+    private int indexA5 = 2;// index din combo de modele. (layout)
+
+    {
+        btnExit.setName("bExit");
+    }
+    JButton btnPrintF = new javax.swing.JButton();
+
+    {
+        btnPrintF.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                if (!btnPrintF.isEnabled()) {
+                    Messages.showErrorMessage(JRViewerPlus.this, "<html>You may print this " + capitalize(getDocumentName()) + " once it's completed.<br>"
+                            + "Please use the <b>Save " + capitalize(getDocumentName()) + "</b> button.</html>", "Warning!");
+                }
+            }
+        });
+    }
+    JButton btnBon = new javax.swing.JButton();
+    JButton btnMail = new javax.swing.JButton();
+
+    {
+        btnMail.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                if (!btnMail.isEnabled()) {
+                    Messages.showErrorMessage(JRViewerPlus.this, "<html>You may email this " + capitalize(getDocumentName()) + " once it's completed.<br>"
+                            + "Please use the <b>Save " + capitalize(getDocumentName()) + "</b> button.</html>", "Warning!");
+                }
+            }
+        });
+    }
+    
+    JComboBox cmbRep = new JComboBox(new String[]{"Model 1", "Model 2", "Model 3"});
+    //JComboBox cmbPrint;
+    JPanelMessage messagePanel = new JPanelMessage();
+    int heightMessagePanel = 60;// documentul a fos salvat cu succes in baza de date!
+    ReportGenerator reportGenerator;
+    String imgPath = Common.IMAGES_FOLDER_PATH + "buttons/";
+    String propertyToSave = "";
+    String emailFrom = "";
+    String emailTo = "";
+    ActionListener fal, sal;
+    public boolean isFinalized = false;
+    public boolean nextDoc = false;
+    boolean canPrintBon = false;
+    boolean canSendEmail = false;
+    boolean inAlb = false;
+    JasperPrint[] multiReps;
+//	String tipDocument = "";
+    String serieNrFactura = "";
+    String dataEmiterii = "";
+    String dataScadentei = "";
+    String numeClient = "";
+    String persoanaContact = "";
+    String totalDocument = "";
+    int clientId = -1;
+    boolean isDispozitie = false;
+    private final ExecutorService executorService = Executors.newFixedThreadPool(2);
+    final JButton btnHidePret = new JButton();
+
+    {
+        btnHidePret.setText("Ascunde preturile");
+        btnHidePret.setIcon(new ImageIcon("./images/buttons/ico_hide_price.png"));
+        // btnHidePret.setBorderPainted(true);
+        // btnHidePret.setMaximumSize(new Dimension(220, 14));
+        // btnHidePret.setBorder(BorderFactory.createEtchedBorder());
+    }
+
+    public JRViewerPlus(JasperPrint jrp, final Document document, final JDialog prnt, final ReportGenerator reportGenerator)
+            throws JRException {
+        this(jrp, document, prnt);
+        this.reportGenerator = reportGenerator;
+//		cmbRep = new JComboBox(new String[] { "Model 1", "Model 2", "Model 3" });
+        cmbRep.setName("cFormat");
+//		cmbRep.addItemListener(new ItemListener() {
+//			@Override
+//			public void itemStateChanged(ItemEvent e) {
+//				if (e.getStateChange() == ItemEvent.SELECTED && leftSidePanel != null && enableLeftSidebar) {
+//					leftSidePanel.setFormatSelected(cmbRep.getSelectedItem().toString());
+//					if (cmbPrint != null) {
+//						leftSidePanel.setPageFormatSelected(cmbPrint.getSelectedItem().toString());
+//					}
+//					afiseazaButoaneNext(2);
+//				}
+//			}
+//		});
+        cmbRep.setSelectedIndex(document.getLayout() - 1);
+
+//		final String[] printStrings = fact.getLista_chitante().size() > 0 && !fact.getLista_chitante().get(0).isToDelete()
+//				&& fact.getLista_chitante().get(0).getChitanta() == 'y' ? new String[] { "1 factura si 1 chitanta",
+//				"2 facturi si 2 chitante", "1 factura", "2 facturi", "3 facturi", "1 factura A5" } : new String[] { "1 factura",
+//				"2 facturi", "3 facturi", "1 factura A5" };
+//		final String[] printStrings = new String[] { "1 factura" };
+//		cmbPrint = new JComboBox(printStrings);
+//		cmbPrint.setName("cModulPrintare");
+//		cmbPrint.setSelectedIndex(-1);
+//		cmbPrint.addItemListener(new ItemListener() {
+//			@Override
+//			public void itemStateChanged(ItemEvent e) {
+//				if (e.getStateChange() == ItemEvent.SELECTED) {
+//					fact.setPrint_id(printStrings.length > 4 ? cmbPrint.getSelectedIndex() + 1 : cmbPrint.getSelectedIndex() + 3);
+//					JasperPrint jp = reportGenerator.getJasperPrint(fact.getPrint_id(), fact.getLayout_id(), true);
+//
+//					if (reportGenerator.mesageOverFlow.isEmpty() || reportGenerator.mesageOverFlow.contains("succes in baza de date!")) {// mesajul
+//																														// Documentul
+//																														// a
+//																														// fost
+//																														// salvat
+//																														// cu
+//																														// succes
+//																														// in
+//																														// baza
+//																														// de
+//																														// date!
+//						messagePanel.setPreferredSize(new Dimension(200, heightMessagePanel));
+//						messagePanel.setVisible(false);
+//					}/*
+//					 * else if (!reportGenerator.mesageOverFlow.isEmpty()) {//mesajul
+//					 * Documentul nu incape pe foaie A4/A5...
+//					 * messagePanel.setMessageOverFlow(reportGenerator.mesageOverFlow);
+//					 * messagePanel.setPreferredSize(new Dimension(200, 135));
+//					 * messagePanel.setVisible(true); }
+//					 */// BILL-552 Ioana: mesajele de genul arata totusi foarte
+//						// urat sus in viewer, cred ca e bine sa le punem la loc
+//						// cum erau
+//					try {
+//						if (jp == null) {// BILL-893
+//							if (cmbPrint.getSelectedIndex() == printStrings.length - 2 && leftSidePanel != null
+//									&& !leftSidePanel.isEnabledPageFormat(leftSidePanel.TOOLTIP13)) {// daca
+//																										// am
+//																										// selectat
+//																										// 3
+//																										// facturi
+//																										// pe
+//																										// A4.
+//								cmbPrint.setSelectedIndex(0);
+//							} else {
+//								cmbPrint.setSelectedIndex(printStrings.length > 4 ? fact.getPrint_id() - 1
+//										: fact.getPrint_id() - 3);
+//							}
+//						}
+//					} catch (Exception ex) {
+//						cmbPrint.setSelectedIndex(0);
+//					}
+//					if (jp == jrPrint || jp == null)
+//						return;
+//					jrPrint = jp;
+//					loadReport(jrPrint);
+//					afiseazaButoaneNext(2);
+//
+//					refreshPage();
+//				}
+//				if (e.getStateChange() == ItemEvent.SELECTED && leftSidePanel != null && enableLeftSidebar) {
+//					leftSidePanel.setPageFormatSelected(cmbPrint.getSelectedItem().toString());
+//				}
+//			}
+//		});
+//		try {
+//			cmbPrint.setSelectedIndex(printStrings.length > 4 ? fact.getPrint_id() - 1 : fact.getPrint_id() - 3);
+//		} catch (Exception e) {
+//			cmbPrint.setSelectedIndex(0);
+//			System.err.println(e.getMessage());
+//		}
+        // El tema es asi cuando tenemos una factura con muchos productos y
+        // luego elejimos 1 fact y 1 chit
+        // no se muestra los botones de next hasta elegir otro formato
+        cmbRep.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+//				if (e.getStateChange() == ItemEvent.SELECTED) {
+//					int oldLayout = fact.getLayout_id();
+//					fact.setLayout_id(cmbRep.getSelectedIndex() + 1);
+//					if (enableLeftSidebar) {
+//						leftSidePanel.setDisabledPagesFormats(getUnavailableFormatPages(printStrings, fact, reportGenerator));
+//					}
+//					JasperPrint jp = reportGenerator.getJasperPrint(fact.getPrint_id(), fact.getLayout_id(), true);
+//					if (jp == null)
+//						cmbRep.setSelectedIndex(oldLayout - 1);
+//					if (jp == jrPrint || jp == null)
+//						return;
+//					jrPrint = jp;
+//					loadReport(jrPrint);
+//					afiseazaButoaneNext(2);
+//					// if(jrPrint.getPages().size()>1) {
+//					// ordinButoane(2);
+//					// // tlbToolBar.add(btnPrevious,3);
+//					// // tlbToolBar.add(btnNext,4);
+//					// btnPrevious.setVisible(true);
+//					// btnNext.setVisible(true);
+//					// tlbToolBar.repaint();
+//					// tlbToolBar.revalidate();
+//					// }
+//					try {
+//						cmbPrint.setSelectedIndex(printStrings.length > 4 ? fact.getPrint_id() - 1 : fact.getPrint_id() - 3);
+//					} catch (Exception ex) {
+//						cmbPrint.setSelectedIndex(0);
+//					}
+//					refreshPage();
+//				}
+            }
+        });
+//		if (Versiuni.isAvailable(Facilitate.MODEL_FACTURI_2A4_2A5))
+//			tlbToolBar.add(cmbRep, 4);
+//		tlbToolBar.add(cmbPrint, 2);
+
+//		if (enableLeftSidebar) {
+//			cmbRep.setVisible(false);
+//			cmbPrint.setVisible(false);
+//			leftSidePanel.setEnableFacturi(printStrings);
+//			leftSidePanel.setDisabledPagesFormats(getUnavailableFormatPages(printStrings, fact, reportGenerator));
+//			leftSidePanel.setPageFormatSelected(cmbPrint.getSelectedItem().toString());
+//		}
+        //cmbZoom.setBorder(null);
+//        if (Common.selectedCompanyConfig.get(Config.SAVE_DOCUMENT).equals("true") && document.getId() <= 0) {
+//            balloonFinalizare = new SBSpecialBalloonTip(btnFinalizare, "Save the document so that you can print, save, or email it", 45);
+//            balloonTools = new SBSpecialBalloonTip(jBOptions, "Customize the labels on your printed documents");
+//            Common.selectedCompanyConfig.set(Config.SAVE_DOCUMENT, "false");
+//        }
+        this.parent.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                Common.selectedCompanyConfig.set(Config.ZOOM, String.valueOf(zoom));
+            }
+        });
+    }
+
+    /**
+     * Creates a new instance of JRViewerPlus
+     */
+    public JRViewerPlus(JasperPrint jrp, final Document document, final JDialog prnt) throws JRException {
+        super(jrp);
+        this.document = document;
+
+        SBSwingUtils.addPaidComponent(btnMail);
+        SBSwingUtils.addPaidComponent(jCBLayout);
+        SBSwingUtils.addPaidComponent(jCBColors);
+
+        addHyperlinkListener(new JRHyperlinkListener() {
+            @Override
+            public void gotoHyperlink(JRPrintHyperlink hyperlink) throws JRException {
+                try {
+                    SBDesktop.browse(new URI(hyperlink.getHyperlinkReference()));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (URISyntaxException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+//		tipDocument = "factura";//TODO de pus type doc
+//		serieNrFactura = fact.getSerie() + fact.getNumar();
+//		dataEmiterii = fact.getData_emiterii() + "";
+//		dataScadentei = fact.getData_scadentei() + "";
+//		numeClient = fact.getClient().getDenumire();
+//		persoanaContact = fact.getClient_pers_contact();
+//		totalDocument = BigDecimal.valueOf(fact.getValoare_totala()) + " "
+//				+ (fact.getMoneda().equalsIgnoreCase("RON") ? "Lei" : fact.getMoneda());
+//		clientId = fact.getClient().getClient_id();
+//		String sn = document.getSerie() + document.getNumber();
+//		sn = Common.sanitizePath(sn);
+//		docName = tipDocument + sn.trim();
+//		propertyToSave = "fact_save_path";
+//		if (fact.getFactura_id() <= 0) {
+//			emailTo = fact.getClient().getEmail();
+//		} else {
+//			emailTo = Common.getClientEmail(fact.getFactura_id(), 'f');
+//		}
+        init(jrp, prnt);
+
+        fal = new SaveAction();
+//		fal = new java.awt.event.ActionListener() {
+//
+//			@Override
+//			public void actionPerformed(java.awt.event.ActionEvent evt) {
+//
+//				try {
+//
+//					// reload if number changed (two saves at the same time)
+////					String number = document.getNumber();
+//
+////					boolean newFact = fact.getFactura_id() <= 0;
+////					Common.salveaza(fact);
+//					
+//					document.save();
+//
+////					if (!fnr.equals(fact.getNumar())) {
+////						prnt.dispose();
+////					}
+//
+////					try {
+////						File dir = new File(Common.FACTURI_PATH);
+////						if (!dir.exists()) {
+////							dir.mkdirs();
+////						}
+////						String sn = document.getSerie() + document.getNumber();
+////						sn = Common.sanitizePath(sn);
+////						if (Common.autoSavePDF()) {
+////							JasperExportManager.exportReportToPdfFile(jrPrint, Common.FACTURI_PATH + "factura" + sn + ".pdf");
+////						}
+////					} catch (Exception ex) {
+////						ex.printStackTrace();
+////					}
+//
+//					actionFinalizare();
+//					actionNextDocument();
+//
+//					// Messages.showOkMessage(JRViewerPlus.this,
+//					// "Factura a fost salvata cu succes in baza de date!\n" +
+//					// "O puteti vizualiza ulterior in Rapoarte.","Felicitari");
+//
+//					messagePanel.setMessage(Common.STYLE_MESSAGE_PANEL + "Factura a fost salvata cu succes in baza de date! "
+//							+ "O puteti vizualiza ulterior in Rapoarte." + Common.STYLE_MESSAGE_PANEL_1);
+//					messagePanel.setPreferredSize(new Dimension(200, heightMessagePanel));
+//					messagePanel.setVisible(true);
+//
+//					executorService.submit(new Runnable() {
+//
+//						@Override
+//						public void run() {
+//							try {
+//								// int panelHeight = messagePanel.getHeight();
+//								// int panelWidth = messagePanel.getWidth();
+//								Thread.sleep(4000);
+//								// while(panelHeight>0 &&
+//								// messagePanel.isVisible()){
+//								// messagePanel.setSize(new
+//								// Dimension(panelWidth, panelHeight));
+//								// messagePanel.setPreferredSize(new
+//								// Dimension(panelWidth, panelHeight));
+//								// messagePanel.setMinimumSize(new
+//								// Dimension(panelWidth, panelHeight));
+//								// messagePanel.setMaximumSize(new
+//								// Dimension(panelWidth, panelHeight));
+//								// revalidate();
+//								// Thread.sleep(3);
+//								// panelHeight -= 2;
+//								// }
+//								messagePanel.setVisible(false);
+//							} catch (InterruptedException e) {
+//								e.printStackTrace();
+//							}
+//						}
+//					});
+//
+//				} catch (Exception ex) {
+//					ex.printStackTrace();
+//					Messages.showErrorMessage(JRViewerPlus.this, ex.getMessage(), "Error");
+//				}
+//			}
+//		};
+        btnFinalizare.addActionListener(fal);
+
+        if (document.getId() <= 0 /*|| fact.isDirty()*/) {
+//			if (fact.isDirty())
+            btnFinalizare.setText("Save Document");
+            btnSavePDF.setEnabled(false);
+            btnPrintF.setEnabled(false);
+            btnMail.setEnabled(false);
+        } else {
+            actionFinalizare();// btnFinalizare.setEnabled(false);
+            parent.setTitle("Preview " + capitalize(getDocumentName()) + "");
+        }
+        //cmbZoom.setBorder(null);
+
+        if (Common.selectedCompanyConfig.get(Config.SAVE_DOCUMENT).equals("true") && document.getId() <= 0) {
+            new Thread(new Runnable() {
+
+                @Override
+                public void run() {
+                    try {
+                        Thread.sleep(5000);
+                        if (!parent.getTitle().toLowerCase().contains("save")) {
+                            balloonFinalizare = new SBSpecialBalloonTip(btnFinalizare, "Save the document so that you can print, save, or email it", 45);
+                        }
+                    } catch (InterruptedException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }).start();
+
+            balloonTools = new SBSpecialBalloonTip(jBOptions, "Customize the labels on your printed documents");
+            Common.selectedCompanyConfig.set(Config.SAVE_DOCUMENT, "false");
+        }
+
+//		if (Common.IS_INDIA && Common.selectedCompanyConfig.get(Config.INDIA).equals("free") && document.getId() <= 0) {
+//			jCBColors.setSelectedIndex(2);
+//			jCBLayout.setSelectedIndex(2);
+//			layoutChanged();
+//			colorChanged();
+//		}
+    }
+
+//	public JRViewerPlus(JasperPrint[] jrp, final Document documentStoc, final JDialog prnt, String[] comboNames)
+//			throws JRException {
+//		this(jrp[0], documentStoc, prnt);
+//		multiReps = jrp;
+//		cmbRep = new JComboBox(comboNames);
+//		cmbRep.addItemListener(new ItemListener() {
+//			@Override
+//			public void itemStateChanged(ItemEvent e) {
+//				if (e.getStateChange() == ItemEvent.SELECTED) {
+//					if (multiReps[cmbRep.getSelectedIndex()] == jrPrint)
+//						return;
+//					jrPrint = multiReps[cmbRep.getSelectedIndex()];
+//					loadReport(jrPrint);
+//					refreshPage();
+//				}
+//			}
+//		});
+//		if (Versiuni.isAvailable(Facilitate.MODEL_FACTURI_2A4_2A5))
+//			tlbToolBar.add(cmbRep, 4);
+//		cmbRep.setSelectedIndex(1);
+//	}
+//	public JRViewerPlus(JasperPrint jrp, final Document documentStoc, final JDialog prnt) throws JRException {
+//
+//		super(jrp);
+//		defaultZoomIndex = 3;
+//		String serie = documentStoc.getSerie();
+//		String numar = documentStoc.getNumar();
+//		String sn = serie + numar;
+//		sn = Common.sanitizePath(sn);
+//		docName = documentStoc.getTranzactie().getTipDoc() + "_" + sn.trim();
+//		propertyToSave = documentStoc.getTranzactie().getTipDoc().toLowerCase() + "_save_path";
+//		emailTo = "";
+//		init(jrp, prnt);
+//		fal = new java.awt.event.ActionListener() {
+//			@Override
+//			public void actionPerformed(java.awt.event.ActionEvent evt) {
+//				try {
+//					DBAccess.beginTransaction();
+//
+//					String nr = documentStoc.getNumar();
+//					documentStoc.save(documentStoc.getTranzactie());
+//					String td;
+//					String tipDoc = documentStoc.getTranzactie().getTipDoc();
+//					if ("BT".equals(tipDoc))
+//						td = "bon transfer";
+//					else if ("BC".equals(tipDoc))
+//						td = "bon consum";
+//					else
+//						td = "NIR";
+//					OperatiuneJurnal o = new OperatiuneJurnal("Emitere " + " " + td, documentStoc.getSerie()
+//							+ documentStoc.getNumar(), td, new Date(), Common.getLoggedUser().getUserName(),
+//							DBAccess.getCurrentLock(DBAccess.getFirmakey()));
+//					OperatiuneJurnal.insert(o);
+//
+//					if (!nr.equals(documentStoc.getNumar())) {
+//						prnt.dispose();
+//					}
+//
+//					File dir;
+//					if ("BT".equals(tipDoc)) {
+//						dir = new File(Common.BON_TRANSFER_PATH);
+//					} else if ("BC".equals(tipDoc)) {
+//						dir = new File(Common.BON_CONSUM_PATH);
+//					} else
+//						dir = new File(Common.NIR_PATH);
+//
+//					if (!dir.exists())
+//						dir.mkdirs();
+//					String sn = documentStoc.getSerie() + documentStoc.getNumar();
+//					sn = Common.sanitizePath(sn);
+//					if (Common.autoSavePDF()) {
+//						if ("BT".equals(tipDoc)) {
+//							JasperExportManager.exportReportToPdfFile(jrPrint, Common.BON_TRANSFER_PATH + "bt" + sn + ".pdf");
+//						} else if ("BC".equals(tipDoc)) {
+//							JasperExportManager.exportReportToPdfFile(jrPrint, Common.BON_CONSUM_PATH + "bc" + sn + ".pdf");
+//						} else
+//							JasperExportManager.exportReportToPdfFile(jrPrint, Common.NIR_PATH + "nir" + sn + ".pdf");
+//
+//					}
+//
+//					DBAccess.commitTr();
+//
+//					actionFinalizare();
+//
+//					Messages.showOkMessage(JRViewerPlus.this, "Documentul a fost salvat cu succes in baza de date!\n"
+//							+ "Il puteti vizualiza ulterior in Rapoarte.", "Felicitari");
+//				} catch (JRException ex) {
+//					DBAccess.rollbackTr();
+//					ex.printStackTrace();
+//				} catch (StocException e) {
+//					DBAccess.rollbackTr();
+//					Messages.showErrorMessage(prnt, e.getMessage(), "Eroare");
+//					// new JDialogError(null, e).setVisible(true);
+//					e.printStackTrace();
+//				} catch (Exception e) {
+//					DBAccess.rollbackTr();
+//					new JDialogError(null, e).setVisible(true);
+//					e.printStackTrace();
+//				}
+//			}
+//		};
+//		btnFinalizare.addActionListener(fal);
+//
+//		if (documentStoc.getId() <= 0) {
+//			btnFinalizare.setText("Finalizare");
+//			btnSavePDF.setEnabled(false);
+//			btnPrintF.setEnabled(false);
+//			btnMail.setEnabled(false);
+//		} else
+//			actionFinalizare();
+//		if ("nir".equals(documentStoc.getTranzactie().getTipDoc()) && documentStoc.getPrimitor() != null
+//				&& documentStoc.getPrimitor().getTip() == Gestiune.TIP_GESTIUNE_MAGAZIN)
+//			btnFitWidth.doClick();
+//	}
+//	public JRViewerPlus(final JasperPrint jrp, JDialog prnt, final String[] fileToSave) throws JRException {
+//		super(jrp);
+//
+//		{
+//			emailTo = "";
+//			canSendEmail = !"".equals(new Config().get("smtp_host")) && Versiuni.isAvailable(Facilitate.EMAIL);
+//
+//			tlbToolBar.remove(btnSave);
+//			tlbToolBar.remove(btnReload);
+//			tlbToolBar.remove(btnPrint);
+//			tlbToolBar.remove(btnActualSize);
+//			tlbToolBar.remove(btnFitPage);
+//			tlbToolBar.remove(btnFitWidth);
+//			pnlStatus.setVisible(false);
+//
+//			this.jrPrint = jrp;
+//			this.parent = prnt;
+//
+//			tlbToolBar.add(btnSavePDF, 0);
+//			tlbToolBar.add(btnPrintF, 1);
+//			tlbToolBar.add(btnMail, 2);
+//
+//			tlbToolBar.add(btnExit, tlbToolBar.getComponents().length/* 2 */);
+//
+//		}
+//		btnMail.setText("E-Mail");
+//		btnSavePDF.setText("Exporta ca PDF");
+//		btnPrintF.setText("Tiparire");
+//		btnExit.setText("Iesire");
+//
+//		btnMail.setToolTipText("Trimite documentul prin mail");
+//		btnSavePDF.setToolTipText("Exporta ca PDF");
+//		btnPrintF.setToolTipText("Tiparire");
+//		btnExit.setToolTipText("Iesire");
+//
+//		btnZoomIn.setToolTipText("Mareste");
+//		btnZoomOut.setToolTipText("Micsoreaza");
+//		cmbZoom.setToolTipText("Rata de marire");
+//
+//		if (jrp.getPages().size() > 1) {
+//			btnFirst.setToolTipText("Prima pagina");
+//			btnLast.setToolTipText("Ultima pagina");
+//			btnNext.setToolTipText("Urmatoarea pagina");
+//			btnPrevious.setToolTipText("Pagina anterioara");
+//			txtGoTo.setToolTipText("Mergi la pagina");
+//		} else {
+//			tlbToolBar.remove(btnFirst);
+//			tlbToolBar.remove(btnLast);
+//			tlbToolBar.remove(btnNext);
+//			tlbToolBar.remove(btnPrevious);
+//			tlbToolBar.remove(txtGoTo);
+//		}
+//		btnMail.setIcon(new ImageIcon(imgPath + "mail.png"));
+//		btnSavePDF.setIcon(new ImageIcon(imgPath + "pdf.gif"));
+//		btnPrintF.setIcon(new ImageIcon(imgPath + "printer.gif"));
+//		btnExit.setIcon(new ImageIcon(imgPath + "ico_iesire.png"));
+//
+//		btnSavePDF.addActionListener(new java.awt.event.ActionListener() {
+//			@Override
+//			public void actionPerformed(java.awt.event.ActionEvent evt) {
+//				try {
+//					JFileChooser chooser = new JFileChooser();
+//					chooser.setSelectedFile(new File(docName /*
+//															 * fileToSave[cmbPrint
+//															 * .
+//															 * getSelectedIndex(
+//															 * )]
+//															 */));
+//					// chooser.addChoosableFileFilter(new MyFilter());
+//					if (chooser.showSaveDialog(JRViewerPlus.this) == JFileChooser.APPROVE_OPTION) {
+//						if (chooser.getSelectedFile().exists()) {
+//							if (Messages.showQuestionMessage(JRViewerPlus.this,
+//									"Fisierul exista deja. Doriti sa suprascrieti fisierul?", "Atentie") != JOptionPane.YES_OPTION)
+//								return;
+//						}
+//						JasperExportManager.exportReportToPdfFile(jrPrint, chooser.getSelectedFile().getAbsolutePath());
+//						// JOptionPane.showMessageDialog(JRViewerPlus.this,
+//						// "Fisierul a fost salvat cu succes");
+//						messagePanel.setPreferredSize(new Dimension(200, heightMessagePanel));
+//						messagePanel.setMessage(Common.STYLE_MESSAGE_PANEL + "Fisierul a fost salvat cu succes"
+//								+ Common.STYLE_MESSAGE_PANEL_1);
+//						messagePanel.setVisible(true);
+//						executorService.submit(new Runnable() {
+//
+//							@Override
+//							public void run() {
+//								try {
+//									Thread.sleep(4000);
+//									messagePanel.setVisible(false);
+//								} catch (InterruptedException e) {
+//									e.printStackTrace();
+//								}
+//							}
+//						});
+//					}
+//				} catch (JRException ex) {
+//					ex.printStackTrace();
+//				}
+//			}
+//		});
+//
+//		// btnPrintF.addActionListener(btnPrint.getActionListeners()[0]);
+//		btnPrintF.addActionListener(new NewPrintAction());
+//		// btnPrintF.addActionListener(new AbstractAction() {
+//		//
+//		// @Override
+//		// public void actionPerformed(ActionEvent e) {
+//		//
+//		// Thread thread =
+//		// new Thread(
+//		// new Runnable() {
+//		//
+//		// public void run() {
+//		// try {
+//		// btnPrint.setEnabled(false);
+//		// JRViewerPlus.this.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+//		// // JasperPrintManager.printReport(jasperPrint, true);
+//		// if (!checkAvailablePrinters()) {
+//		// throw new JRException("No printer available.");
+//		// }
+//		//
+//		// Field field = JRViewer.class.getDeclaredField("jasperPrint");
+//		// field.setAccessible(true);
+//		// JasperPrint jasperPrint = (JasperPrint) field.get(JRViewerPlus.this);
+//		// JasperPrintManager.printPages(
+//		// jasperPrint,
+//		// 0,
+//		// jasperPrint.getPages().size() - 1,
+//		// true);
+//		//
+//		// } catch (Exception ex) {
+//		// System.out.print(getBundleString("error.printing"));
+//		// JOptionPane.showMessageDialog(JRViewerPlus.this,
+//		// getBundleString("error.printing"));
+//		// } finally {
+//		// JRViewerPlus.this.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+//		// btnPrint.setEnabled(true);
+//		// }
+//		// }
+//		// });
+//		//
+//		// thread.start();
+//		//
+//		// }
+//		// });
+//
+//		btnExit.addActionListener(new java.awt.event.ActionListener() {
+//			@Override
+//			public void actionPerformed(java.awt.event.ActionEvent evt) {
+//				exit();
+//			}
+//		});
+//
+//		btnMail.addActionListener(new ActionListener() {
+//			@Override
+//			public void actionPerformed(ActionEvent e) {
+//				File f = new File(System.getProperty("java.io.tmpdir") + docName);
+//				if (f.exists())
+//					f.delete();
+//				try {
+//					JasperExportManager.exportReportToPdfFile(jrPrint, f.getAbsolutePath());
+//				} catch (JRException ex) {
+//					throw new RuntimeException(ex);
+//				}
+//				// create email
+//				if (!canSendEmail) {
+//					if (Messages.showQuestionMessage(JRViewerPlus.this,
+//							"Trebuie sa configurati programul pentru a putea trimite \ndocumentele pe email. "
+//									+ "Doriti sa configurati acum?", "Atentie ") == JOptionPane.YES_OPTION) {
+//						JDialogConfigurare jd_conf;
+//						jd_conf = new JDialogConfigurare(parent, JDialogConfigurare.TAB_EMAIL,
+//								JDialogConfigurare.CONFIGURARI_GEN_MODE);
+//						jd_conf.hideConfigTextEmail();
+//						jd_conf.setVisible(true);
+//						if ("".equals(new Config().get("smtp_host")) && Versiuni.isAvailable(Facilitate.EMAIL)) {
+//							return;
+//						} else {
+//							// parent,
+//							// attach,
+//							// String from
+//							// String to,
+//							// String tipDocument,
+//							// String serieNrFactura,
+//							// String dataEmiterii,
+//							// String dataScadentei,
+//							// String numeClient,
+//							// String persoanaContact,
+//							// int clientId
+//							new JDialogEmail(parent, f, emailFrom, emailTo, "tipDocument", "serieNrFactura", "dataEmiterii",
+//									"dataScadentei", "numeClient", "persoanaContact", "totalDocument", 0, isDispozitie)
+//									.setVisible(true);
+//							canSendEmail = !"".equals(new Config().get("smtp_host")) && Versiuni.isAvailable(Facilitate.EMAIL);
+//						}
+//					} else {
+//						return;
+//					}
+//				} else {// parent, attach, from, to, tipDocument,
+//						// serieNrFactura, dataEmiterii, dataScadentei,
+//						// numeClient, persoanaContact, clientId
+//					new JDialogEmail(parent, f, emailFrom, emailTo, "dispozitie", "", "", "", "", "", "", 0, isDispozitie)
+//							.setVisible(true);
+//				}
+//			}
+//		});
+//
+//		tlbToolBar.revalidate();
+//
+//		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+//		if (dim.width == 1024)
+//			btnFitWidth.doClick();
+//		else
+//			btnFitPage.doClick();
+//	}
+    private void init(JasperPrint jrp, JDialog prnt) {
+//		if (docName != null && !docName.endsWith(".pdf"))
+//			docName = docName.trim() + ".pdf";
+        this.jrPrint = jrp;
+        this.parent = prnt;
+
+        setGlobalCoordinates();
+
+        //edit logo
+        jPanelEdit.setLayout(new GridBagLayout());
+        java.awt.GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new Insets(0, 5, 0, 5);
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        jPanelEdit.add(lblEdit, gridBagConstraints);
+        java.awt.GridBagConstraints gridBagConstraints2 = new java.awt.GridBagConstraints();
+        gridBagConstraints2.gridx = 1;
+        gridBagConstraints2.gridy = 0;
+        gridBagConstraints2.insets = new Insets(0, 5, 0, 5);
+        gridBagConstraints2.anchor = java.awt.GridBagConstraints.WEST;
+        jPanelEdit.add(lblDelete, gridBagConstraints2);
+//        jPanelEdit.setOpaque(false);
+//        lblEdit.setOpaque(false);
+//        lblDelete.setOpaque(false);
+        setupLabels();
+        jPanelEdit.setBorder(BorderFactory.createLineBorder(new Color(0x23, 0x82, 0xa5)));
+
+        jPanelSuperEdit.setLayout(new GridBagLayout());
+        java.awt.GridBagConstraints gridBagConstraints3 = new java.awt.GridBagConstraints();
+        gridBagConstraints3.gridx = 0;
+        gridBagConstraints3.gridy = 0;
+        gridBagConstraints3.weightx = 0.1;
+        gridBagConstraints3.weighty = 0.1;
+        gridBagConstraints3.insets = new Insets(0, 0, 0, 0);
+        gridBagConstraints3.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        jPanelSuperEdit.add(jPanelEdit, gridBagConstraints3);
+        jPanelEdit.setVisible(false);
+        jPanelSuperEdit.setOpaque(false);
+        //jPanelSuperEdit.setBorder(BorderFactory.createLineBorder(new Color(0x23, 0x82, 0xa5)));
+
+        try {
+            Field field = JRViewer.class.getDeclaredField("pnlLinks");
+            field.setAccessible(true);
+            JPanel pnlLinks = (JPanel) field.get(this);
+            pnlLinks.addMouseMotionListener(new MouseMotionAdapter() {
+                @Override
+                public void mouseMoved(MouseEvent e) {
+                    int y = (int) (globalY * realZoom);
+                    int x = (int) (globalX * realZoom);
+                    Point p = e.getPoint();
+                    int panelX = jCBLayout.getSelectedItem().toString().equals("Model 3") ? ((int) (globalX * realZoom)) : 0;
+                    //System.out.println(panelX);
+                    if (p.x >= panelX && p.x <= x + jPanelSuperEdit.getWidth() && p.y >= 0 && p.y <= y + jPanelSuperEdit.getHeight()) {
+                        jPanelEdit.setVisible(true);
+
+                    } else {
+                        jPanelEdit.setVisible(false);
+                    }
+                }
+            });
+
+            Field field2 = JRViewer.class.getDeclaredField("pnlInScroll");
+            field2.setAccessible(true);
+            JPanel pnlInScroll = (JPanel) field2.get(this);
+            pnlInScroll.addMouseMotionListener(new MouseMotionAdapter() {
+                @Override
+                public void mouseMoved(MouseEvent e) {
+                    jPanelEdit.setVisible(false);
+                }
+            });
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        //add logo
+        jPanelAdd.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                JRViewerPlus.this.showLogoGenerator();
+            }
+        });
+
+        tlbToolBar.remove(btnSave);
+        tlbToolBar.remove(btnReload);
+        tlbToolBar.remove(btnPrint);
+        tlbToolBar.remove(btnActualSize);
+        tlbToolBar.remove(btnFitPage);
+        tlbToolBar.remove(btnFitWidth);
+
+        btnFinalizare.setText("Save Document");
+        btnFinalizare.setToolTipText("Save the document so that you can print, save, or email it");
+        btnSavePDF.setText("Export to PDF");
+        btnPrintF.setText("Print");
+        btnPrintF.setToolTipText("Print the document");
+        btnExit.setText("Back");
+
+        btnBon.setText("Bon");
+        btnBon.setToolTipText("Print");
+        btnMail.setText("E-Mail");
+        btnMail.setToolTipText("Send via email");
+        btnExit.setToolTipText("Back"); // din aceasta fereastra");
+
+        /*
+         * btnActualSize.setToolTipText("Marimea reala");
+         * btnFitPage.setToolTipText("Incadreaza pagina");
+         * btnFitWidth.setToolTipText("Incadreaza pe latime");
+         */
+        btnZoomIn.setToolTipText("Zoom In");
+        btnZoomOut.setToolTipText("Zoom out");
+        cmbZoom.setToolTipText("Zoom ratio");
+        // realZoom=1.3333f; strica linile verticale din registru de casa
+
+        pnlStatus.removeAll();
+
+        btnFinalizare.setIcon(new ImageIcon(imgPath + "viewer_ico_checkl.png"));
+        btnSavePDF.setIcon(new ImageIcon(imgPath + "viewer_ico_pdf.png"));
+        btnPrintF.setIcon(new ImageIcon(imgPath + "viewer_ico_print.png"));
+        btnExit.setIcon(new ImageIcon(imgPath + "viewer_ico_prevl.png"));
+        btnBon.setIcon(new ImageIcon(imgPath + "ecr.png"));
+        btnMail.setIcon(new ImageIcon(imgPath + "viewer_ico_email.png"));
+        btnZoomIn.setIcon(new ImageIcon(imgPath + "ZoomIn.png"));
+        btnZoomOut.setIcon(new ImageIcon(imgPath + "ZoomOut.png"));
+
+        sal = new ExportPdfAction();
+
+        btnMail.addActionListener(new EmailAction());
+
+//		btnMail.addActionListener(new ActionListener() {
+//			@Override
+//			public void actionPerformed(ActionEvent e) {
+////				File f = new File(System.getProperty("java.io.tmpdir") + "/" + docName);
+////				try {
+////					if (f.exists())
+////						f.delete();
+////				} catch (Exception ex) {
+////					ex.printStackTrace();
+////				}
+////				try {
+////					JasperExportManager.exportReportToPdfFile(jrPrint, f.getAbsolutePath());
+////				} catch (JRException ex) {
+////					throw new RuntimeException(ex);
+////				}
+////				// create email
+////				if (!canSendEmail) {
+////					if (Messages.showQuestionMessage(JRViewerPlus.this,
+////							"Trebuie sa configurati programul pentru a putea trimite \ndocumentele pe email. "
+////									+ "Doriti sa configurati acum?", "Atentie ") == JOptionPane.YES_OPTION) {
+////						JDialogConfigurare jd_conf;
+////						jd_conf = new JDialogConfigurare(parent, JDialogConfigurare.TAB_EMAIL,
+////								JDialogConfigurare.CONFIGURARI_GEN_MODE);
+////						jd_conf.hideConfigTextEmail();
+////						jd_conf.setVisible(true);
+////						if ("".equals(new Config().get("smtp_host")) && Versiuni.isAvailable(Facilitate.EMAIL)) {
+////							return;
+////						} else {
+////							new JDialogEmail(parent, f, emailFrom, emailTo, tipDocument, serieNrFactura, dataEmiterii,
+////									dataScadentei, numeClient, persoanaContact, totalDocument, clientId, isDispozitie)
+////									.setVisible(true);
+////							canSendEmail = !"".equals(new Config().get("smtp_host")) && Versiuni.isAvailable(Facilitate.EMAIL);
+////						}
+////					} else {
+////						return;
+////					}
+////				} else {
+////					new JDialogEmail(parent, f, emailFrom, emailTo, tipDocument, serieNrFactura, dataEmiterii, dataScadentei,
+////							numeClient, persoanaContact, totalDocument, clientId, isDispozitie).setVisible(true);
+////				}
+//			}
+//		});
+        btnSavePDF.addActionListener(sal);
+
+        // btnPrintF.addActionListener(btnPrint.getActionListeners()[0]);
+        btnPrintF.addActionListener(new NewPrintAction());
+
+        btnExit.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                exit();
+            }
+        });
+
+        btnFinalizare.setPreferredSize(new java.awt.Dimension(145, 30));
+        btnSavePDF.setPreferredSize(new java.awt.Dimension(115, 30));
+        btnPrintF.setPreferredSize(new java.awt.Dimension(87, 30));
+        btnExit.setPreferredSize(new java.awt.Dimension(90, 30));
+        btnBon.setPreferredSize(new java.awt.Dimension(70, 30));
+        btnMail.setPreferredSize(new java.awt.Dimension(90, 30));
+        btnHidePret.setPreferredSize(new java.awt.Dimension(90, 30));
+
+        btnZoomIn.setPreferredSize(new java.awt.Dimension(30, 30));
+        btnZoomOut.setPreferredSize(new java.awt.Dimension(30, 30));
+        cmbZoom.setPreferredSize(new java.awt.Dimension(80, 25));
+
+        //if (cmbPrint != null)
+        //	cmbPrint.setPreferredSize(new java.awt.Dimension(100, 30));
+        tlbToolBar.add(btnFinalizare, 0);
+        // tlbToolBar.add(btnSavePDF, 1);
+        tlbToolBar.add(btnPrintF, 1);
+        // tlbToolBar.add(btnMail, 2);
+//		if (Versiuni.isAvailable(Facilitate.EMAIL)) {
+        tlbToolBar.add(btnMail, 2);
+//		}
+        tlbToolBar.add(new JLabel(" "), tlbToolBar.getComponentCount());
+//                                                          "E58B00",                    "3D6B86",                 "4B8B4A",        "A7127B",          "B82D2D",          "2CA70F",             "0091E5",         "A3A3A3"
+
+        Object[] layouts = new Object[]{
+            new Layout("Model 1", Document.LAYOUT1_1INVOICE),
+            new Layout("Model 2", Document.LAYOUT2_1INVOICE),
+            new Layout("Model 2, small", Document.LAYOUT2A5_1INVOICE),
+            new Layout("Model 3", Document.LAYOUT3_1INVOICE)
+        };
+        
+        jCBLayout.setModel(new javax.swing.DefaultComboBoxModel(layouts));
+        jCBLayout.setPreferredSize(new java.awt.Dimension(115, 25));
+        layout = document.getLayout();
+//        lastLayout = 0;
+        jCBLayout.setSelectedIndex(0);
+        jCBLayout.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(final ItemEvent e) {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                    JRViewerPlus.this.layoutChanged();
+                    if (reportGenerator != null) {
+                        if (!reportGenerator.mesageOverFlow.isEmpty()) {
+                            SwingUtilities.invokeLater(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Messages.showInfoMessageWithLink(JRViewerPlus.this, reportGenerator.mesageOverFlow, "Overflow");
+                                    reportGenerator.mesageOverFlow = "";
+                                    jCBLayout.setSelectedIndex(lastIdLayout);
+                                }
+                            });
+                        }
+//                        else {
+//                            lastIdLayout = jCBLayout.getSelectedIndex();
+//                        }
+                    }
+
+                    setCursor(null);
+                }
+//                    }
+//                }).start();
+
+            }
+        });
+        String[] listaOptiuni1 = new String[]{SBConstants.PORTOCALIU, SBConstants.ALBASTRU_INCHIS, SBConstants.VERDE_INCHIS, SBConstants.MOB, SBConstants.BORDO, SBConstants.VERDE, SBConstants.ALBASTRU, SBConstants.GRI, SBConstants.NEGRU};
+        jCBColors.setModel(new javax.swing.DefaultComboBoxModel(listaOptiuni1));
+        setComboBoxColors();
+        jCBColors.setSelectedItem(document.getColorText());
+        loadPrintId();
+        loadjPageSize(true);
+        loadjPageSizeA5();
+        loadjPageSizeA4();
+        setPrintId(document.getDocumentPrintId());
+        jCBPrintId.setSelectedItem(document.getDocumentPrintId());
+        jCBLayout.setSelectedIndex(alegeModel(document.getPageSizeText()));
+        tlbToolBar.add(jCBLayout);
+
+        jCBPageSizeA5.setVisible(jCBLayout.getSelectedIndex() == indexA5);
+        jCBPageSizeA4.setVisible(jCBLayout.getSelectedIndex() != indexA5);
+
+        jCBPageSize.setSelectedItem(document.getPageSizeText());
+        tlbToolBar.add(jCBPageSize);
+        jCBPageSize.setVisible(false);
+        jCBPageSizeA4.setSelectedItem(document.getPageSizeText());
+        tlbToolBar.add(jCBPageSizeA4);
+
+        jCBPageSizeA5.setSelectedItem(document.getDocumentPrintId() - 1);
+        tlbToolBar.add(jCBPageSizeA5);
+
+        Dimension dim1 = new Dimension(15, 0);
+        tlbToolBar.add(new Box.Filler(dim1, dim1, dim1));
+
+        tlbToolBar.add(btnExit, tlbToolBar.getComponentCount());
+
+        tlbToolBar.setBorder(new LineBorder(Color.BLACK));
+
+        Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+        if (dim.width == 1024) {
+//			btnFitWidth.doClick();
+        } else {
+            String zoom = Common.selectedCompanyConfig.get(Config.ZOOM);
+            if (zoom.equals("fit_to_page")) {
+                btnFitPage.doClick();
+            } else {
+                setZoomRatio(Float.valueOf(zoom));
+                refreshPage();
+            }
+        }
+
+        tlbToolBar.remove(btnLast);
+        tlbToolBar.remove(btnNext);
+        tlbToolBar.remove(txtGoTo);
+        tlbToolBar.remove(btnPrevious);
+        tlbToolBar.remove(btnFirst);
+        afiseazaButoaneNextSiTools(2);
+
+        //buton options
+        jBOptions.setIcon(new ImageIcon(imgPath + "viewer_ico_tools.png"));
+        jBOptions.setPreferredSize(new Dimension(30, 30));
+        jBOptions.setToolTipText("Edit Document");
+        jBOptions.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                tools.show(jBOptions, 0, jBOptions.getHeight());
+            }
+        });
+        itmEdit = new JMenuItem("Edit this " + capitalize(getDocumentName()));
+
+        tools.add(itmEdit);
+        itmEdit.setEnabled(document.getId() > 0);
+        itmEdit.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                parent.dispose();
+                if (document.getDocumentTypeName().equals("invoice")) {
+                    new JDialogIssueInvoice(Common.getMainFrame(), true, new Invoice(document.getId()), false).setVisible(true);
+                } else {
+                    new JDialogIssueEstimate(Common.getMainFrame(), true, new Estimate(document.getId()), false).setVisible(true);
+                }
+            }
+        });
+
+        itmCopy = new JMenuItem("Copy " + capitalize(getDocumentName()));
+        tools.add(itmCopy);
+        itmCopy.setEnabled(document.getId() > 0);
+        SBSwingUtils.addPaidComponent(itmCopy);
+        itmCopy.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                parent.dispose();
+                if (document.getDocumentTypeName().equals("invoice")) {
+                    new JDialogIssueInvoice(Common.getMainFrame(), true, new Invoice(document.getId()), true).setVisible(true);
+                } else {
+                    new JDialogIssueEstimate(Common.getMainFrame(), true, new Estimate(document.getId()), true).setVisible(true);
+                }
+            }
+        });
+
+        itmPreferences = new JMenuItem("Edit Document Preferences");
+        tools.add(itmPreferences);
+        itmPreferences.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    new JDialogFlags(parent, true, new Flag(document.getFlag())).setVisible(true);
+                    document.setFlag(Flag.getLast(Common.connection.getConnection()));
+                    refresh();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+
+        //refresh toolbar...just in case
+        tlbToolBar.updateUI();
+
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+
+                if (document.getId() > 0) {
+                    return;
+                }
+
+                if (Common.IS_INDIA && Common.selectedCompanyConfig.get(Config.INDIA).equals("free") && document.getId() <= 0) {
+                    jCBColors.setSelectedIndex(0);
+                    jCBLayout.setSelectedIndex(0);
+                    layoutChanged();
+                    colorChanged();
+                }
+
+                if (document.getDocumentLogo() == null || document.getDocumentLogo().isEmpty()) {
+                    if (Common.selectedCompanyConfig.get(Config.ASK_LOGO).equals("true")) {
+                        JDialogQuestionMessageWithCheck q = new JDialogQuestionMessageWithCheck(parent, "It seems that you haven't set up a logo for your company. Would you like one to be automatically generated?", Config.ASK_LOGO);
+                        q.setVisible(true);
+                        Common.selectedCompanyConfig.set(Config.SAVE_LOGO, q.saveArticol() ? "true" : "false");
+                    }
+
+                    agLogo = Common.selectedCompanyConfig.get(Config.SAVE_LOGO).equals("true");
+                    if (agLogo) {
+                        autogenerateLogo();
+                    }
+                }
+            }
+        });
+
+        redrawLogoPanel();
+        new FileDrop(jPanelAdd.jPanel1, new FileDrop.Listener() {
+            public void filesDropped(java.io.File[] files) {
+                File file = files[0];
+                BufferedImage bufimg = null;
+                if (files.length > 1) {
+                    Messages.showErrorMessage(JRViewerPlus.this, "You have selected more than 1 file!", "Image upload");
+                    return;
+                }
+                try {
+                    if (Common.isClient() && !file.exists()) {
+                        sleekbill.xmlrpc.Client.fetch(file);
+                    }
+                    bufimg = ImageIO.read(file);
+                } catch (IOException ex) {
+                    Messages.showErrorMessage(JRViewerPlus.this, "The image could not be loaded!", "Image upload");
+                    return;
+                } catch (OutOfMemoryError ome) {
+                    Messages.showErrorMessage(JRViewerPlus.this, "The image resolution is to big!", "Image upload");
+                    return;
+                }
+                if (bufimg == null) {
+                    if (file != null) {
+                        Messages.showErrorMessageWithLink(parent, "<b>" + file.getName() + "</b> is not a valid image! Please use a valid image format (JPG, BMP, PNG, GIF).<br>Please contact us at <a href=\"mailto:support@sleekbill.com\">support@sleekbill.com</a> if you need any assistance.", "Image upload");
+                    }
+                    return;
+                }
+
+                long currentTimeMillis = System.currentTimeMillis();
+                try {
+                    copyfile(files[0], new File(Common.SAVED_LOGOS_PATH + currentTimeMillis + "_" + file.getName()));
+                    refreshWithLogo(currentTimeMillis + "_" + file.getName());
+                    redrawLogoPanel();
+                    agLogo = false;
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+
+            }   // end filesDropped
+        }); // end FileDrop.Listener
+
+    }// Init
+
+    private void loadjPageSize(boolean complet) {
+
+        //incarcare dinamica...daca se poate
+        try {
+            List<PageSizeEntity> all = PageSize.getAll(Common.connection.getConnection());
+            for (PageSizeEntity item : all) {
+                if (complet || !item.getFormat().contains(DocumentType.PAGE_SIZE_A5)) {
+                    jCBPageSize.addItem(item.getFormat());
+                }
+            }
+        } catch (Exception ex) {
+            jCBPageSize.removeAllItems();
+            jCBPageSize.addItem(DocumentType.PAGE_SIZE_A4);
+            jCBPageSize.addItem(DocumentType.PAGE_SIZE_LETTER);
+        }
+
+        jCBPageSize.setPreferredSize(new java.awt.Dimension(75, 25));
+        jCBPageSize.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                PageSize ps = new PageSize(PageSize.A4);
+                try {
+                    PageSize get = PageSize.get(Common.connection.getConnection(), jCBPageSize.getSelectedItem().toString());
+                    if (get != null) {
+                        ps = get;
+                    }
+                } catch (SBDaoException ex) {
+                    Logger.getLogger(JRViewerPlus.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (SQLException ex) {
+                    Logger.getLogger(JRViewerPlus.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                Common.selectedCompanyConfig.set(Config.LAST_PAGE_SIZE, "" + ps.getId());
+                document.setPageSize(ps);
+//                facem refresh doar daca se schimba selectia
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    refresh();
+                }
+            }
+        });
+    }
+
+    private void loadjPageSizeA4() {
+
+        //incarcare dinamica...daca se poate
+        try {
+            List<PageSizeEntity> all = PageSize.getAll(Common.connection.getConnection());
+            for (PageSizeEntity item : all) {
+                if (!item.getFormat().contains(DocumentType.PAGE_SIZE_A5)) {
+                    jCBPageSizeA4.addItem(item.getFormat());
+                }
+            }
+        } catch (Exception ex) {
+            jCBPageSizeA4.removeAllItems();
+            jCBPageSizeA4.addItem(DocumentType.PAGE_SIZE_A4);
+            jCBPageSizeA4.addItem(DocumentType.PAGE_SIZE_LETTER);
+        }
+
+        jCBPageSizeA4.setPreferredSize(new java.awt.Dimension(60, 25));
+        jCBPageSizeA4.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    jCBPrintId.setSelectedIndex(0);
+                    jCBPageSize.setSelectedIndex(jCBPageSizeA4.getSelectedIndex());
+                }
+            }
+        });
+    }
+
+    private void loadjPageSizeA5() {
+
+        jCBPageSizeA5.addItem(DocumentType.PAGE_SIZE_A5);
+        jCBPageSizeA5.addItem(DocumentType.PAGE_SIZE_2_A5);
+        jCBPageSizeA5.setPreferredSize(new java.awt.Dimension(60, 25));
+        jCBPageSizeA5.setSelectedIndex(document.getDocumentPrintId() - 1);
+        jCBPageSizeA5.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    int printId = 0;
+                    if (jCBPageSizeA5.getSelectedIndex() == 0) {
+                        printId = DocumentType.FORMAT_1INVOICE;
+                    } else {
+                        printId = DocumentType.FORMAT_2INVOICE;
+                    }
+                    jCBPrintId.setSelectedItem(printId);//document.setPrintId(printId);
+                    jCBPageSize.setSelectedItem(DocumentType.PAGE_SIZE_A5);
+                    refresh(); // facem refresh pt ca size-ul ramane mereu A5
+                }
+            }
+        });
+    }
+
+    private void loadPrintId() {
+
+        jCBPrintId.addItem(DocumentType.FORMAT_1INVOICE);
+        jCBPrintId.addItem(DocumentType.FORMAT_2INVOICE);
+
+        jCBPrintId.setPreferredSize(new java.awt.Dimension(35, 25));
+
+        jCBPrintId.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    String printId = jCBPrintId.getSelectedItem().toString();
+//              momentan nu salvam ultimul print_id in config pt a evita probleme la ulterior emiterea de                     
+//                    Common.selectedCompanyConfig.set(Config.LAST_PAGE_PRINT, printId);
+                    document.setDocumentPrintId(new Integer(printId));
+//                    refresh();
+                }
+            }
+        });
+    }
+
+    private int alegeModel(String pageSize) {
+//        problema, trebuie sa setam corect modelul pe combo. 
+//                model 1     layout -1 (0)
+//                model 2     layout -1 (1) pageSize letter/A4
+//                model 2 bis layout -1 (2) pageSize A5
+//                model 3     layout    (3) 
+        int model = layout - 1;
+        if (pageSize.equalsIgnoreCase(DocumentType.PAGE_SIZE_A5)) {//daca are A5
+            model = indexA5;
+        } else if (model >= indexA5) {
+            model = layout;
+        }
+        return model;
+
+    }
+
+    private static void copyfile(File srcFile, File dstFile) throws IOException {
+        try {
+
+            InputStream in = new FileInputStream(srcFile);
+
+            OutputStream out = new FileOutputStream(dstFile);
+            byte[] buf = new byte[1024];
+            int len;
+            while ((len = in.read(buf)) > 0) {
+                out.write(buf, 0, len);
+            }
+            in.close();
+            out.close();
+        } catch (FileNotFoundException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void paintPage(Graphics2D arg0) {
+
+        super.paintPage(arg0);
+
+        redrawLogoPanel();
+
+    }
+
+    public static boolean checkAvailablePrinters() {
+        PrintService[] ss = java.awt.print.PrinterJob.lookupPrintServices();
+        for (int i = 0; i < ss.length; i++) {
+            // old
+            // Attribute[] att = ss[i].getAttributes().toArray();
+            // for (int j=0;j<att.length;j++) {
+            // if (att[j].equals(PrinterIsAcceptingJobs.ACCEPTING_JOBS)) {
+            // return true;
+            // }
+            // }
+
+            PrintServiceAttribute a = ss[i].getAttribute(PrinterIsAcceptingJobs.class);
+            if (a != null && a.equals(PrinterIsAcceptingJobs.ACCEPTING_JOBS)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void exit() {
+        Common.selectedCompanyConfig.set(Config.ZOOM, String.valueOf(zoom));
+        parent.dispose();
+        nextDoc = true;
+    }
+
+    private void actionFinalizare() {
+        parent.setTitle("Save " + capitalize(getDocumentName()) + "");
+
+        btnFinalizare.removeActionListener(fal);
+        btnFinalizare.addActionListener(sal);
+        btnFinalizare.setPreferredSize(new Dimension(135, 30));
+        btnFinalizare.setText("Export to PDF");
+        btnFinalizare.setToolTipText("Export to PDF");
+        btnFinalizare.setIcon(new ImageIcon(imgPath + "viewer_ico_pdf.png"));
+
+        btnSavePDF.setEnabled(true);
+        btnPrintF.setEnabled(true);
+        if (!Common.IS_INDIA) {
+            btnMail.setEnabled(true);
+        } else {
+            btnMail.setEnabled(!Common.selectedCompanyConfig.get(Config.INDIA).equals("free"));
+        }
+
+        btnExit.setText("Exit");
+        btnExit.setToolTipText("Exits the current window");
+        btnExit.setIcon(new ImageIcon(imgPath + "viewer_ico_exit.png"));
+
+        parent.getContentPane().removeAll();
+        parent.getContentPane().add(this);
+        isFinalized = true;
+
+        if (canPrintBon) {
+            tlbToolBar.add(btnBon, 2);
+            tlbToolBar.repaint();
+        }
+        // if(Versiuni.isAvailable(Facilitate.EMAIL)) {
+        // tlbToolBar.add(btnMail,2);
+        // tlbToolBar.repaint();
+        // }
+
+        if (balloonFinalizare != null) {
+            balloonFinalizare.setVisible(false);
+        }
+
+        if (balloonTools != null) {
+            balloonTools.setVisible(false);
+        }
+
+        if (!Common.IS_INDIA) {
+            itmCopy.setEnabled(document.getId() > 0);
+        } else {
+            itmCopy.setEnabled(document.getId() > 0 && !Common.selectedCompanyConfig.get(Config.INDIA).equals("free"));
+        }
+
+        itmEdit.setEnabled(document.getId() > 0);
+        jPanelSuperEdit.setVisible(false);
+        jPanelAdd.setVisible(false);
+    }
+
+    private void actionNextDocument() {
+        btnExit.setIcon(new ImageIcon(imgPath + "viewer_ico_invoice.png"));
+//		System.out.println("!!!!!!!!!!!!!!!!" + tipDocument);
+
+        btnExit.setText("New Document");
+        btnExit.setToolTipText("New Document");
+        btnExit.setPreferredSize(new java.awt.Dimension(135, 30));
+
+//		char c;
+//		if (tipDocument.equals("factura"))
+//			c = 'n';
+//		else if (tipDocument.equals("proforma"))
+//			c = 'p';
+//		else if (tipDocument.equals("aviz"))
+//			c = 'z';
+//		else if (tipDocument.equals("chitanta"))
+//			c = 'c';
+//		else
+//			c = 'x';
+//
+//		switch (c) {
+//		case 'n':
+//			btnExit.setText("New invoice");
+//			btnExit.setToolTipText("  New document");
+//			btnExit.setPreferredSize(new java.awt.Dimension(140, 35));
+//			break;
+//		case 'p':
+//			btnExit.setText("Proforma noua");
+//			btnExit.setToolTipText("Emite o alta proforma");
+//			btnExit.setPreferredSize(new java.awt.Dimension(150, 35));
+//			break;
+//		case 'z':
+//			btnExit.setText("Aviz nou");
+//			btnExit.setToolTipText("Emite un alt aviz");
+//			btnExit.setPreferredSize(new java.awt.Dimension(120, 35));
+//			break;
+//		case 'c':
+//			btnExit.setText("Chitanta noua");
+//			btnExit.setToolTipText("Emite o alta chitanta");
+//			btnExit.setPreferredSize(new java.awt.Dimension(160, 35));
+//			break;
+//		default:
+//			btnExit.setText("Document nou");
+//			btnExit.setToolTipText("Emitere document");
+//			btnExit.setPreferredSize(new java.awt.Dimension(200, 35));
+//		}
+    }
+
+    /**
+     *
+     */
+    @Override
+    protected void setZooms() {
+        this.zooms = new int[]{50, 75, 85, 100};
+        Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+        if (dim.width <= 1280 && dim.height <= 1024) {
+            this.defaultZoomIndex = 2;
+        } else {
+            this.defaultZoomIndex = 3;
+        }
+    }
+
+    private void fitPage() {
+        Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+        System.out.println("width: " + dim.width + " height: " + dim.height);
+        if (dim.width > 1280 && dim.height > 1024) {
+
+            if (JRViewerPlus.this.jrPrint.getPageHeight() < JRViewerPlus.this.jrPrint.getPageWidth()) {
+                setFitWidthZoomRatio();
+            } else {
+                setFitPageZoomRatio();
+            }
+        }
+    }
+
+    public void setFitToHeight() {
+        btnFitPage.doClick();
+    }
+
+    private void setupLabels() {
+
+        lblEdit.setIcon(new ImageIcon("./images/buttons/Pencil.png"));
+        lblEdit.setEnabled(false);
+        lblEdit.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        lblEdit.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                JRViewerPlus.this.showLogoGenerator();
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                lblEdit.setEnabled(true);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                lblEdit.setEnabled(false);
+            }
+        });
+
+        lblDelete.setIcon(new ImageIcon("./images/buttons/Cross.png"));
+        lblDelete.setEnabled(false);
+        lblDelete.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        lblDelete.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (Messages.showQuestionMessage(parent, "Are you sure you want to delete this logo?", "Confirmation") == JOptionPane.YES_OPTION) {
+                    agLogo = false;
+                    refreshWithLogo("");
+                    redrawLogoPanel();
+                }
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                lblDelete.setEnabled(true);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                lblDelete.setEnabled(false);
+            }
+        });
+    }
+
+    public void redrawLogoPanel() {
+//        try{
+//            setGlobalCoordinates();
+//        }catch(Exception ex){
+//            
+//        }
+
+        if (document.getId() > 0 || reportGenerator == null || isFinalized) {
+            return;
+        }
+
+        try {
+            Field field;
+            field = JRViewer.class.getDeclaredField("pnlMain");
+            field.setAccessible(true);
+            JPanel pnlMain = (JPanel) field.get(this);
+            pnlMain.add(messagePanel, java.awt.BorderLayout.NORTH);
+            messagePanel.setPreferredSize(new Dimension(200, heightMessagePanel));
+            messagePanel.setVisible(false);
+
+            field = JRViewer.class.getDeclaredField("pnlInScroll");
+            field.setAccessible(true);
+            JPanel pnlInScroll = (JPanel) field.get(this);
+            java.awt.GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
+            gridBagConstraints.gridx = 0;
+            gridBagConstraints.gridy = 0;
+            gridBagConstraints.insets = new Insets((int) (globalY * realZoom), (int) (globalX * realZoom), 0, 0);
+            gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+
+            if (!reportGenerator.params.containsKey("title_logo") || reportGenerator.params.get("title_logo") == null || reportGenerator.params.get("title_logo").toString().isEmpty()) {
+                pnlInScroll.add(jPanelAdd, gridBagConstraints);
+                Font font = jPanelAdd.jLabel2.getFont();
+                if (jCBLayout.getSelectedItem().toString().equals("Model 3")) {
+                    jPanelAdd.jLabel2.setText("<html><center>Click here or drop an<br>image to add your logo</html>");
+                    jPanelAdd.jLabel2.setFont(font.deriveFont(11 * realZoom));
+
+                } else {
+                    jPanelAdd.jLabel2.setText("<html>Click here or drop an image to add your logo</html>");
+                    jPanelAdd.jLabel2.setFont(font.deriveFont(11 * realZoom));
+                }
+
+                //jPanelAdd.validate();
+                //jPanelAdd.repaint();
+                jPanelAdd.setMaximumSize(new Dimension((int) (globalWidth * realZoom), (int) (globalHeight * realZoom)));
+                jPanelAdd.setMinimumSize(new Dimension((int) (globalWidth * realZoom), (int) (globalHeight * realZoom)));
+                jPanelAdd.setPreferredSize(new Dimension((int) (globalWidth * realZoom), (int) (globalHeight * realZoom)));
+
+                jPanelAdd.setVisible(true);
+                jPanelSuperEdit.setVisible(false);
+            } else {
+                //valori hardcodate sa incapa tot scrisul
+                jPanelSuperEdit.setMaximumSize(new Dimension((int) (260 * realZoom), (int) (globalHeight * realZoom)));
+                jPanelSuperEdit.setMinimumSize(new Dimension((int) (260 * realZoom), (int) (globalHeight * realZoom)));
+                jPanelSuperEdit.setPreferredSize(new Dimension((int) (260 * realZoom), (int) (globalHeight * realZoom)));
+
+                if (jCBLayout.getSelectedItem().toString().equals("Model 3")) {
+                    gridBagConstraints.insets = new Insets(5, (int) (globalX * realZoom), 0, 0);
+                } else {
+                    gridBagConstraints.insets = new Insets(5, 5, 0, 0);
+                }
+                pnlInScroll.add(jPanelSuperEdit, gridBagConstraints);
+
+                jPanelSuperEdit.setVisible(true);
+                jPanelAdd.setVisible(false);
+            }
+
+            //remove and add panel
+            field = JRViewer.class.getDeclaredField("pnlPage");
+            field.setAccessible(true);
+            JPanel pnlPage = (JPanel) field.get(this);
+            pnlInScroll.remove(pnlPage);
+            gridBagConstraints = new java.awt.GridBagConstraints();
+            gridBagConstraints.gridx = 0;
+            gridBagConstraints.gridy = 0;
+            gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+            pnlInScroll.add(pnlPage, gridBagConstraints);
+            pnlInScroll.validate();
+            pnlInScroll.repaint();
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private void showLogoGenerator() {
+        JDialogLogoGenerator jdlg = new JDialogLogoGenerator(parent, true, document.getDocumentLogo(), globalWidth, globalHeight);
+        jdlg.setUpdateCompanyDetails(true);
+        jdlg.setVisible(true);
+        if (jdlg.isSaved()) {
+            try {
+                File logo = jdlg.getLogo();
+                if (logo != null) {
+                    long currentTimeMillis = System.currentTimeMillis();
+                    copyfile(logo, new File(Common.SAVED_LOGOS_PATH + currentTimeMillis + "_" + logo.getName()));
+                    refreshWithLogo(currentTimeMillis + "_" + logo.getName());
+                    redrawLogoPanel();
+                } else {
+                    refreshWithLogo("");
+                    redrawLogoPanel();
+                }
+                agLogo = false;
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    private void autogenerateLogo() {
+        try {
+            //...si alte matematici (ne)distractive
+            String text = " " + Common.companyDetails.getName() + " ";
+            AffineTransform affinetransform = new AffineTransform();
+            FontRenderContext frc = new FontRenderContext(affinetransform, true, true);
+            int size = 0;
+            int lastHeight = 0;
+            while (true) {
+                Font plain = new Font("Arial", Font.PLAIN, size);
+                int textWidth = (int) (plain.getStringBounds(text, frc).getWidth());
+                int textHeight = (int) (plain.getStringBounds(text, frc).getHeight());
+                if (textWidth > globalWidth || textHeight > globalHeight) {
+                    break;
+                }
+                size++;
+                lastHeight = textHeight;
+            }
+
+            int marginH = (globalHeight - lastHeight) / 2;
+
+            TextImage testImage = new TextImageImpl(globalWidth, globalHeight, new Margin(0, marginH, 0, 0));
+
+            Font plain = new Font("Arial", Font.PLAIN, size - 1);
+
+            testImage.setTextAligment(Alignment.CENTER).withFont(plain).withColor(Color.decode("0x" + Common.selectedCompanyConfig.get(Config.LAST_COLOR))).wrap(true).write(text);
+
+            try {
+                File logo = new File("./images/logo.png");
+
+                ImageWriter imageWriter = ImageWriterFactory.getImageWriter(ImageType.PNG);
+                ((PngImageWriter) imageWriter).writeImageToFile(testImage,
+                        logo,
+                        text,
+                        "Arial",
+                        "" + (size - 1),
+                        Common.selectedCompanyConfig.get(Config.LAST_COLOR),
+                        "" + marginH);
+
+                long currentTimeMillis = System.currentTimeMillis();
+                copyfile(logo, new File(Common.SAVED_LOGOS_PATH + currentTimeMillis + "_" + logo.getName()));
+                refreshWithLogo(currentTimeMillis + "_" + logo.getName());
+                redrawLogoPanel();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    /**
+     * @param layout the layout to set
+     */
+    public void setLayout(int layout) {
+
+        this.layout = layout;
+    }
+
+    public void setPrintId(int print_id) {
+        this.printId = print_id;
+    }
+
+    private int getRealIndexLayuot() {
+        boolean m2Small = jCBLayout.getSelectedIndex() == indexA5;
+        int index = m2Small ? jCBLayout.getSelectedIndex() : jCBLayout.getSelectedIndex() + (jCBLayout.getSelectedIndex() > indexA5 ? 0 : +1);
+        return index;
+    }
+
+    private void layoutChanged() {
+        try {
+            boolean m2Small = jCBLayout.getSelectedIndex() == indexA5;
+            int index = getRealIndexLayuot();
+            setLayout(index);
+            if (m2Small) {
+                jCBPageSize.setSelectedItem(DocumentType.PAGE_SIZE_A5);
+                jCBPageSizeA5.setSelectedIndex(document.getDocumentPrintId() - 1);
+            } else if (jCBPageSize.getSelectedItem().toString().equalsIgnoreCase(DocumentType.PAGE_SIZE_A5)) {
+                jCBPageSizeA4.setSelectedIndex(0);
+                jCBPageSize.setSelectedIndex(0);
+                jCBPrintId.setSelectedIndex(0);
+            }
+            jCBPageSizeA5.setVisible(m2Small);
+            jCBPageSizeA4.setVisible(!m2Small);
+            changeStyleColor("styleTemplate" + layout, jCBColors.getSelectedItem().toString());
+//			Common.selectedCompanyConfig.set(Config.LAST_COLOR, jCBColors.getSelectedItem().toString());
+            document.setColorText(jCBColors.getSelectedItem().toString());
+            refreshWithLogo(document.getDocumentLogo());
+            if (agLogo) {
+                autogenerateLogo();
+            }
+
+        } catch (Exception e1) {
+            e1.printStackTrace();
+            //new JDialogError(null, e1).setVisible(true);
+        }
+    }
+
+    private void colorChanged() {
+        try {
+            changeStyleColor("styleTemplate" + layout, jCBColors.getSelectedItem().toString());
+//			Common.selectedCompanyConfig.set(Config.LAST_COLOR, jCBColors.getSelectedItem().toString());
+            document.setColorText(jCBColors.getSelectedItem().toString());
+            refresh();
+            if (agLogo) {
+                autogenerateLogo();
+            }
+
+        } catch (Exception e1) {
+            e1.printStackTrace();
+            //new JDialogError(null, e1).setVisible(true);
+        }
+    }
+
+    // @Override
+    // public void update(Observable o, Object arg) {
+    // if(o.equals(leftSidePanel.getFormatObservable())) {
+    // cmbRep.setSelectedItem((String)arg);
+    // }
+    // if(o.equals(leftSidePanel.getPageFormatObservable())) {
+    // cmbPrint.setSelectedItem((String)arg);
+    // }
+    // if(o.equals(leftSidePanel.getCollapseObservable())) {
+    // if(arg instanceof Boolean){
+    // new Config().set("show_save_leftsidebar", String.valueOf(arg));
+    // SwingUtilities.invokeLater(new Runnable() {
+    //
+    // @Override
+    // public void run() {
+    // fitPage();
+    // }
+    // });
+    // }
+    // }
+    // }
+    class MyFilter extends javax.swing.filechooser.FileFilter {
+
+        @Override
+        public boolean accept(File file) {
+            String filename = file.getName();
+            return filename.endsWith(".pdf");
+        }
+
+        @Override
+        public String getDescription() {
+            return "*.pdf";
+        }
+    }
+
+    public boolean isInAlb() {
+        return inAlb;
+    }
+
+    public void setInAlb(boolean inAlb) {
+        // this.inAlb = inAlb;
+        // if(!inAlb) return;
+        // if(inAlb && Common.vKCheck()>=0){
+        // if(btnPrintF.getActionListeners().length>0){
+        // btnPrintF.removeActionListener(btnPrintF.getActionListeners()[0]);
+        // }
+        // btnPrintF.addActionListener(new ActionListener() {
+        // @Override
+        // public void actionPerformed(ActionEvent e) {
+        // Messages.showOkMessage(JRViewerPlus.this,
+        // "Nu puteti tipari documente in alb in versiunile neinregistrate!",
+        // "Atentie");
+        // }
+        // });
+        // if(btnFinalizare.getActionListeners().length>0){
+        // btnFinalizare.removeActionListener(btnFinalizare.getActionListeners()[0]);
+        // }
+        // btnFinalizare.addActionListener(new ActionListener() {
+        // @Override
+        // public void actionPerformed(ActionEvent e) {
+        // Messages.showOkMessage(JRViewerPlus.this,
+        // "Nu puteti salva documente in alb in versiunile neinregistrate!",
+        // "Atentie");
+        // }
+        // });
+        // if(btnMail.getActionListeners().length>0){
+        // btnMail.removeActionListener(btnMail.getActionListeners()[0]);
+        // }
+        // btnMail.addActionListener(new ActionListener() {
+        // @Override
+        // public void actionPerformed(ActionEvent e) {
+        // Messages.showOkMessage(JRViewerPlus.this,
+        // "Nu puteti trimite pe email documente in alb in versiunile neinregistrate!",
+        // "Atentie");
+        // }
+        // });
+        //
+        // }
+    }
+
+    private void ordinButoane(int i) {
+        try {
+
+            btnFirst.setToolTipText("Firs page");
+            btnLast.setToolTipText("Last page");
+            btnNext.setToolTipText("Next page");
+            btnPrevious.setToolTipText("Previous page");
+            txtGoTo.setToolTipText("Go to page");
+            tlbToolBar.add(btnFirst, 3 + i);
+            tlbToolBar.add(btnPrevious, 4 + i);
+            tlbToolBar.add(txtGoTo, 5 + i);
+            tlbToolBar.add(btnNext, 6 + i);
+            tlbToolBar.add(btnLast, 7 + i);
+
+            tlbToolBar.add(jBOptions, 9 + i);
+
+            tlbToolBar.updateUI();
+        } catch (Exception e) {
+        }
+
+    }
+
+    private void afiseazaButoaneNextSiTools(int i) {
+
+        try {// ;)Esteban: afisare segatile in functie de model ales
+            if (jrPrint.getPages().size() > 1) {
+                ordinButoane(i);
+            } else {
+                tlbToolBar.remove(btnLast);
+                tlbToolBar.remove(btnNext);
+                tlbToolBar.remove(txtGoTo);
+                tlbToolBar.remove(btnPrevious);
+                tlbToolBar.remove(btnFirst);
+
+                tlbToolBar.add(jBOptions, 4 + i);
+                tlbToolBar.updateUI();
+            }
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+    }
+
+    class NewPrintAction extends AbstractAction {
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+
+            Thread thread = new Thread(new Runnable() {
+                public void run() {
+                    try {
+                        btnPrint.setEnabled(false);
+                        JRViewerPlus.this.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                        // JasperPrintManager.printReport(jasperPrint, true);
+                        if (!checkAvailablePrinters()) {
+                            throw new JRException("No printer available.");
+                        }
+
+                        Field field = JRViewer.class.getDeclaredField("jasperPrint");
+                        field.setAccessible(true);
+                        JasperPrint jasperPrint = (JasperPrint) field.get(JRViewerPlus.this);
+//                        JasperPrintManager.printPages(jasperPrint, 0, jasperPrint.getPages().size() - 1, true);
+                        boolean fitPage = false;
+                        if ("true".equals(new Config().get(Config.JASPER_PRINT_FITPAGE))) {
+                            fitPage = true;
+                        }
+                        SBJasperPrintManager.printPages(
+                                jasperPrint,
+                                0,
+                                jasperPrint.getPages().size() - 1,
+                                true,
+                                fitPage);
+
+                    } catch (Exception ex) {
+                        System.out.print(getBundleString("error.printing"));
+                        JOptionPane.showMessageDialog(JRViewerPlus.this, getBundleString("error.printing"));
+                    } finally {
+                        JRViewerPlus.this.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                        btnPrint.setEnabled(true);
+                    }
+                }
+            });
+
+            thread.start();
+
+        }
+    }
+
+    public class SaveAction implements ActionListener {
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            try {
+
+                // reload if number changed (two saves at the same time)
+//				String number = document.getNumber();
+//				boolean newFact = fact.getFactura_id() <= 0;
+//				Common.salveaza(fact);
+                setLayout(((Layout) jCBLayout.getSelectedItem()).getLayout());
+                document.setLayout(layout);
+
+                document.save();
+
+                String number = document.getNumber();
+                number = Common.sanitizePath(number);
+                String docName = getDocumentName() + " " + number.trim() + ".pdf";
+                if (Common.selectedCompanyConfig.get(Config.AUTOSAVE_DOCUMENTS).equals("true")) {
+                    if (document.getDocumentTypeName().equals("invoice")) {
+                        JasperExportManager.exportReportToPdfFile(jrPrint, Common.INVOICES_PATH + docName);
+                    } else {
+                        JasperExportManager.exportReportToPdfFile(jrPrint, Common.PROFORME_PATH + docName);
+                    }
+                }
+
+//				if (!fnr.equals(fact.getNumar())) {
+//					prnt.dispose();
+//				}
+//				try {
+//					File dir = new File(Common.FACTURI_PATH);
+//					if (!dir.exists()) {
+//						dir.mkdirs();
+//					}
+//					String sn = document.getSerie() + document.getNumber();
+//					sn = Common.sanitizePath(sn);
+//					if (Common.autoSavePDF()) {
+//						JasperExportManager.exportReportToPdfFile(jrPrint, Common.FACTURI_PATH + "factura" + sn + ".pdf");
+//					}
+//				} catch (Exception ex) {
+//					ex.printStackTrace();
+//				}
+                actionFinalizare();
+                actionNextDocument();
+
+                // Messages.showOkMessage(JRViewerPlus.this,
+                // "Factura a fost salvata cu succes in baza de date!\n" +
+                // "O puteti vizualiza ulterior in Rapoarte.","Felicitari");
+                String mesaj = Common.STYLE_MESSAGE_PANEL + "<center>You have successfully saved the " + getDocumentName() + " in the database!"
+                        + "You can find and view it in the " + capitalize(getDocumentName()) + "s Report." + "placeholder_sent</center>" + Common.STYLE_MESSAGE_PANEL_1;
+
+                messagePanel.setMessage(mesaj.replace("placeholder_sent", document.isShowResend() ? "<br>Please resent it by email so that your client can see the changes on the document" : ""));
+                messagePanel.setPreferredSize(new Dimension(200, heightMessagePanel));
+                messagePanel.setVisible(true);
+
+                executorService.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            // int panelHeight = messagePanel.getHeight();
+                            // int panelWidth = messagePanel.getWidth();
+                            Thread.sleep(4000);
+                            // while(panelHeight>0 &&
+                            // messagePanel.isVisible()){
+                            // messagePanel.setSize(new
+                            // Dimension(panelWidth, panelHeight));
+                            // messagePanel.setPreferredSize(new
+                            // Dimension(panelWidth, panelHeight));
+                            // messagePanel.setMinimumSize(new
+                            // Dimension(panelWidth, panelHeight));
+                            // messagePanel.setMaximumSize(new
+                            // Dimension(panelWidth, panelHeight));
+                            // revalidate();
+                            // Thread.sleep(3);
+                            // panelHeight -= 2;
+                            // }
+                            messagePanel.setVisible(false);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                Messages.showErrorMessage(JRViewerPlus.this, ex.getMessage(), "Error");
+            }
+        }
+    }
+
+    public class ExportPdfAction implements ActionListener {
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            try {
+                JFileChooser chooser = new JFileChooser();
+
+                // chooser.addChoosableFileFilter(new MyFilter());
+                String path = document.getSaveFilePath();
+                if (path.isEmpty()) {
+                    path = Common.REPORTS_FOLDER_PATH + Common.getSelectedCompany().getName();
+                    File fPath = new File(path);
+                    if (!fPath.exists()) {
+                        fPath.mkdir();
+                    }
+                }
+                String number = document.getNumber();
+                number = Common.sanitizePath(number);
+                String docName = getDocumentName() + " " + number.trim() + ".pdf";
+                File f = new File(path + "/" + docName);
+
+                chooser.setSelectedFile(f.getAbsoluteFile());
+                if (chooser.showSaveDialog(parent) == JFileChooser.APPROVE_OPTION) {
+                    if (chooser.getSelectedFile().exists()) {
+                        if (Messages.showQuestionMessage(JRViewerPlus.this,
+                                "File already exists. Do you want to override the existing file?", "Atentie") != JOptionPane.YES_OPTION) {
+                            return;
+                        }
+                    }
+                    JasperExportManager.exportReportToPdfFile(jrPrint, chooser.getSelectedFile().getAbsolutePath());
+//                    if (Common.isTestCompany()) {
+//                        PDFUtils.encrypt(chooser.getSelectedFile().getAbsolutePath());
+//                    }
+
+                    document.setSaveFilePath(chooser.getSelectedFile().getParent() + "/");
+
+                    messagePanel.setMessage(Common.STYLE_MESSAGE_PANEL + "You have successfully saved your file!"
+                            + Common.STYLE_MESSAGE_PANEL_1);
+                    messagePanel.setVisible(true);
+                    executorService.submit(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Thread.sleep(4000);
+                                messagePanel.setVisible(false);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+                }
+            } catch (JRException ex) {
+                ex.printStackTrace();
+                Messages.showErrorMessage(JRViewerPlus.this, "The file was not saved!", "Warning!");
+            }
+        }
+    }
+
+    class EmailAction implements ActionListener {
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            String docName = getDocumentName() + " " + document.getNumber().trim() + ".pdf";
+            File fileAttachment = new File(System.getProperty("java.io.tmpdir") + "/" + docName);
+            try {
+                if (fileAttachment.exists()) {
+                    fileAttachment.delete();
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+            
+            try {
+                JasperExportManager.exportReportToPdfFile(jrPrint, fileAttachment.getAbsolutePath());
+//                if (Common.isTestCompany()) {
+//                    PDFUtils.encrypt(f.getAbsolutePath());
+//                }
+            } catch (JRException ex) {
+                throw new RuntimeException(ex);
+            }
+
+            emailTo = new Client(document.getClientId()).getEmail();
+
+            if (document.getDocumentTypeName().equals("invoice")) {
+                new JDialogEmail(Common.mainFrame, document.getClientId(), fileAttachment, emailFrom, emailTo, "", 
+                        capitalize(getDocumentName()) + " no. " + document.getNumber().trim(), // subject
+                        true, 
+                        new Invoice(document.getId()), document).setVisible(true); // message
+            } else {
+                new JDialogEmail(Common.mainFrame, document.getClientId(), fileAttachment, emailFrom, emailTo, "", 
+                        capitalize(getDocumentName()) + " no. " + document.getNumber().trim(), // subject
+                        true, 
+                        new Estimate(document.getId()), document).setVisible(true); // message
+            }
+        }
+    }
+
+    String capitalize(String input) {
+        return SBStringUtils.capitalizeEachWord(input);
+    }
+
+    void setComboBoxColors() {
+
+        ComboBoxRenderer renderer = new ComboBoxRenderer();
+        renderer.setPreferredSize(jCBColors.getPreferredSize());
+        jCBColors.setRenderer(renderer);
+        jCBColors.setBorder(null);
+        //jCBColors.setEditable(true);
+        jCBColors.setPreferredSize(new java.awt.Dimension(50, 25));
+
+        jCBColors.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(final ItemEvent e) {
+//                new Thread(new Runnable() {
+//                    @Override
+//                    public void run() {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                    colorChanged();
+                    if (document.getId() <= 0) {
+                        Common.selectedCompanyConfig.set(Config.LAST_COLOR, jCBColors.getSelectedItem().toString());
+                    }
+                    setCursor(null);
+                }
+//                    }
+//                }).start();
+
+            }
+        });
+
+        tlbToolBar.add(jCBColors);
+        Dimension dim = new Dimension(3, 0);
+        tlbToolBar.add(new Box.Filler(dim, dim, dim));
+
+    }
+
+    public static void changeStyleColor(String styleFileName, String color) throws Exception {
+
+        org.w3c.dom.Document doc = null; // = parseXmlFile(new ByteArrayInputStream(s.getBytes("UTF-8")), false);
+        try {
+            // Create a builder factory
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setValidating(false);
+
+            // Create the builder and parse the file
+//            doc = factory.newDocumentBuilder().parse(new File("./template/StyleTitle2Template.jrtx"));
+//            doc = factory.newDocumentBuilder().parse(new File("./template/" + styleFileName + "Template.jrtx"));
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            builder.setEntityResolver(new EntityResolver() {
+                @Override
+                public InputSource resolveEntity(String publicId, String systemId)
+                        throws SAXException, IOException {
+                    if (systemId.contains("jaspertemplate.dtd")) {
+                        return new InputSource(new StringReader(""));
+                    } else {
+                        return null;
+                    }
+                }
+            });
+//            doc = builder.parse(new File("./template/" + styleFileName + "Template.jrtx"));
+            doc = builder.parse(new File("./template/" + styleFileName + ".jrtx"));
+        } catch (SAXException e) {
+            // A parsing error occurred; the xml input is not valid
+        } catch (ParserConfigurationException e) {
+        } catch (IOException e) {
+        }
+
+        if (doc == null) {
+            throw new Exception("Parse style change color error!");
+        }
+
+        //
+        NodeList nodeList = doc.getElementsByTagName("style");
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            Node node = nodeList.item(i);
+            if (node.getNodeType() == Node.ELEMENT_NODE) {
+                Element element = (Element) node;
+                String name = element.getAttribute("name");
+//                element.setAttribute("backcolor", "#FFFFFF" /*+ color*/);
+//                element.setAttribute("forecolor", "#" + color);
+                if (element.getAttribute("backcolor") != null && !element.getAttribute("backcolor").isEmpty()) {
+                    element.setAttribute("backcolor", "#" + color);
+                }
+                if (element.getAttribute("forecolor") != null && !element.getAttribute("forecolor").isEmpty()) {
+                    if (!element.getAttribute("forecolor").equalsIgnoreCase("#FFFFFF")) {//Daca este alb nu schimbam culoarea fontului 
+                        element.setAttribute("forecolor", "#" + color);
+                    }
+                }
+                if (name.equals("back_color") || name.equals("back_color")) {
+                    element.setAttribute("backcolor", "#EAEAEA");
+                }
+
+                for (int z = 0; z < node.getChildNodes().getLength(); z++) {
+                    Node childNode = node.getChildNodes().item(z);
+                    if (childNode.getNodeType() == Node.ELEMENT_NODE) {
+
+                        Element childElement = (Element) childNode;
+                        String childName = childElement.getAttribute("name");
+                        if (childElement.getAttribute("lineColor") != null && !childElement.getAttribute("lineColor").isEmpty()) {
+                            childElement.setAttribute("lineColor", "#" + color);
+                        }
+                    }
+
+                }
+
+//                if (name.equals("styleTitle2") || name.equals("styleSubTitle2")){
+//                    element.setAttribute("backcolor", "#" + color);                    
+//                }else{
+//                    element.setAttribute("forecolor", "#" + color);                    
+//                }                 
+            }
+        }
+
+        try {
+            Transformer transformer = TransformerFactory.newInstance().newTransformer();
+            StreamResult result = new StreamResult(new File("./template/" + styleFileName + ".jrtx"));//new StreamResult(new StringWriter());
+            DOMSource source = new DOMSource(doc);
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            org.w3c.dom.DocumentType doctype = doc.getDoctype();
+            if (doctype != null) {
+                transformer.setOutputProperty(OutputKeys.DOCTYPE_PUBLIC, doctype.getPublicId());
+                transformer.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, doctype.getSystemId());
+            }
+            transformer.transform(source, result);
+        } catch (TransformerException ex) {
+            throw new Exception("Save style change color error!");
+        }
+    }
+
+    public void refresh() {
+        if (reportGenerator != null) {
+            JasperPrint jasperPrint = reportGenerator.getJasperPrint(jCBPageSize.getSelectedItem().toString(),
+                    /*document.getPrintId()*/ (Integer) jCBPrintId.getSelectedItem(), ((Layout) jCBLayout.getSelectedItem()).getLayout(), true);
+            if (jasperPrint == jrPrint || jasperPrint == null) {
+                return;
+            }
+            setLayout(getRealIndexLayuot());//            setLayout(jCBLayout.getSelectedIndex()+1);
+            jrPrint = jasperPrint;
+            loadReport(jrPrint);
+            refreshPage();
+            afiseazaButoaneNextSiTools(2);
+            setGlobalCoordinates();
+        }
+    }
+
+    public void refreshWithLogo(String logoName) {
+        if (reportGenerator != null) {
+            JasperPrint jasperPrint = reportGenerator.getJasperPrintLogo(jCBPageSize.getSelectedItem().toString(),
+                    /*document.getPrintId()*/ (Integer) jCBPrintId.getSelectedItem(), ((Layout) jCBLayout.getSelectedItem()).getLayout(), true, logoName);
+            if (jasperPrint == jrPrint || jasperPrint == null) {
+                return;
+            }
+//            if (reportGenerator.mesageOverFlow.isEmpty()) {
+//                lastIdLayout = jCBLayout.getSelectedIndex();
+//            }
+            document.setDocumentLogo(logoName);
+            jrPrint = jasperPrint;
+            loadReport(jrPrint);
+            refreshPage();
+            afiseazaButoaneNextSiTools(2);
+            setGlobalCoordinates();
+        }
+    }
+
+    private void setGlobalCoordinates() {
+
+        Field field;
+        boolean bFound = false;
+        try {
+            field = JRViewer.class.getDeclaredField("jasperPrint");
+            field.setAccessible(true);
+            JasperPrint jasperPrint = (JasperPrint) field.get(JRViewerPlus.this);
+            List pages = jasperPrint.getPages();
+            for (int i = 0; i < pages.size(); i++) {
+                JRPrintPage page = (JRPrintPage) pages.get(i);
+                List elements = page.getElements();
+                for (int j = 0; j < elements.size(); j++) {
+                    JRPrintElement element = ((JRPrintElement) elements.get(j));
+
+                    // System.out.println("el key: " + element.getKey() + " x: " + element.getX() + " y: " + element.getY());
+                    if (element.getKey() == null) {
+                        continue;
+                    }
+
+                    if (element instanceof JRPrintFrame) {
+                        JRPrintFrame frame = (JRPrintFrame) element;
+                        List elements1 = frame.getElements();
+                        for (int j1 = 0; j1 < elements1.size(); j1++) {
+                            JRPrintElement element1 = ((JRPrintElement) elements1.get(j1));
+                            if (element1.getKey() == null) {
+                                continue;
+                            }
+                            // System.out.println("el key: " + element1.getKey() + " x: " + element1.getX() + " y: " + element1.getY());
+                            if (element1.getKey().equals("logoImage") && !bFound) {
+                                globalX = element1.getX();
+                                globalY = element1.getY();
+                                globalWidth = element1.getWidth();
+                                globalHeight = element1.getHeight();
+                                bFound = true;
+                            }
+                        }
+                    }
+
+                    if (element.getKey().equals("logoImage") && !bFound) {
+                        globalX = element.getX();
+                        globalY = element.getY();
+                        globalWidth = element.getWidth();
+                        globalHeight = element.getHeight();
+                        bFound = true;
+                    }
+
+                }
+            }
+
+//            System.err.println(globalX + " " + globalY + " " + globalWidth + " " + globalHeight);
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
+    private String getDocumentName() {
+        return getDocumentName(document);
+    }
+
+    public static String getDocumentName(Document document) {
+
+        String type = document.getType();
+
+        if (type.equals(Invoice.TYPE_EXCISE)) {
+            return "excise invoice";
+        }
+
+        if (type.equals(Invoice.TYPE_RETAIL)) {
+            return "retail invoice";
+        }
+
+        if (type.equals(Invoice.TYPE_TAX)) {
+            return "tax invoice";
+        }
+
+        if (type.equals(Estimate.TYPE_DELIVERY)) {
+            return "delivery note";
+        }
+
+        if (type.equals(Estimate.TYPE_PROFORMA)) {
+            return "proforma invoice";
+        }
+
+        if (type.equals(Invoice.TYPE_STANDARD)) {
+            return document.getFlag().getInvoiceLabel().toLowerCase();
+        }
+
+        if (type.equals(Estimate.TYPE_QUOTATION)) {
+            return document.getFlag().getEstimateLabel().toLowerCase();
+        }
+
+        return document.getDocumentTypeName();
+    }
+
+    class ComboBoxRenderer extends JLabel implements ListCellRenderer {
+
+        public ComboBoxRenderer() {
+            setOpaque(true);
+            setHorizontalAlignment(LEFT);
+            setVerticalAlignment(JLabel.CENTER);
+            setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+        }
+
+        public Component getListCellRendererComponent(
+                JList list,
+                Object value,
+                int index,
+                boolean isSelected,
+                boolean cellHasFocus) {
+            //Get the selected index. (The index param isn't
+            //always valid, so just use the value.)
+
+            if (isSelected) {
+                setBackground(list.getSelectionBackground());
+                setForeground(list.getSelectionBackground());
+            } else {
+                setBackground(list.getBackground());
+                setForeground(list.getBackground());
+            }
+
+            BufferedImage bi = new BufferedImage(16, 16, BufferedImage.TYPE_INT_RGB);
+            Graphics g = bi.getGraphics();
+            Color oldColor = g.getColor();
+            g.setColor(Color.decode("0x" + value.toString()));
+            g.fillRect(0, 0, bi.getWidth(), bi.getHeight());
+            g.setColor(oldColor);
+            ImageIcon ic = new ImageIcon(bi);
+            setIcon(ic);
+
+            return this;
+        }
+    }
+
+    private class Layout {
+
+        String name;
+        int layout;
+
+        public Layout(String name, int layout) {
+            super();
+            this.name = name;
+            this.layout = layout;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public int getLayout() {
+            return layout;
+        }
+
+        public void setLayout(int layout) {
+            this.layout = layout;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+}

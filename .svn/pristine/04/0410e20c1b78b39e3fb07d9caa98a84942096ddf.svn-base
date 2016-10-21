@@ -1,0 +1,1345 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames;
+
+import java.awt.Dimension;
+import java.awt.Image;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.sql.SQLException;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import net.java.balloontip.BalloonTip;
+import net.java.balloontip.BalloonTip.Orientation;
+
+import sleekbill.Common;
+import sleekbill.Company;
+import sleekbill.Config;
+import sleekbill.Messages;
+import sleekbill.Updates;
+import sleekbill.beans.CompanyDetails;
+import sleekbill.beans.Currency;
+import sleekbill.beans.SBDaoException;
+import sleekbill.beans.State;
+import sleekbill.db.DBConnection;
+import sleekbill.db.SBConnection;
+import sleekbill.entities.StateEntity;
+import sleekbill.frames.autosuggesterdata.SBACCities;
+import sleekbill.frames.autosuggesterdata.SBACCountries;
+import sleekbill.frames.autosuggesterdata.SBACCurrency;
+import sleekbill.swingutils.ExtensionFileFilter;
+import sleekbill.swingutils.autosuggesters.AddNewActionListener;
+import sleekbill.swingutils.autosuggesters.AutosuggesterItem;
+import sleekbill.swingutils.balloons.SBSpecialBalloonTip;
+import sleekbill.util.Modules;
+import sleekbill.util.Placeholder;
+import sleekbill.util.RegionalPreparator;
+import sleekbill.util.SBSwingUtils;
+import sleekbill.utils.SBDesktop;
+import sleekbill.xmlrpc.Client;
+
+/**
+ *
+ * @author Andrei
+ */
+public class JDialogCreateCompany extends javax.swing.JDialog {
+
+    SBACCurrency param;
+    SBACCities param2;
+	SBACCountries param3;
+    Company createdCompany;
+    String createdName;
+    Dimension imageDimension = new Dimension(190, 130);
+    public final static String jpeg = "jpeg";
+    public final static String jpg = "jpg";
+    public final static String gif = "gif";
+    public final static String tiff = "tiff";
+    public final static String tif = "tif";
+    public final static String png = "png";
+    private File logo;
+    private String logoFileName;
+    CompanyDetails companyDetails;
+    SBConnection sbConnection;
+	Placeholder placeholder;
+	private static Map<String, Integer> mapCountries = new HashMap<String, Integer>();
+
+    public JDialogCreateCompany(java.awt.Frame parent, boolean modal, SBConnection sbConnection, CompanyDetails companyDetails) {
+        super(parent, modal);
+        this.sbConnection = sbConnection;
+        param = new SBACCurrency(sbConnection);
+        param2 = new SBACCities(sbConnection);
+		param3 = new SBACCountries(sbConnection);
+        initComponents();
+        setLocationRelativeTo(parent);
+		sBACPanelCountry.setSelectedItem(Common.IS_INDIA ? "India" : "United States of America");
+		Common.country = sBACPanelCountry.getText();
+
+        Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+        if (dim.height == 768) {
+            sBACPanelCity.setMaximumPopupSize(new Dimension(600, 350));
+            sBACPanelCurrency.setMaximumPopupSize(new Dimension(600, 250));
+        } else {
+            sBACPanelCity.setMaximumPopupSize(new Dimension(600, dim.height / 2));
+            sBACPanelCurrency.setMaximumPopupSize(new Dimension(600, (dim.height - 300) / 2));
+        }
+
+
+        sBACPanelCity.setAddNewActionListener(new AddNewCityListener());
+
+        SBSwingUtils.addContextMenuToChildren(this);
+        SBSwingUtils.applyFocusBorder(this);
+
+        this.companyDetails = companyDetails;
+        if (companyDetails == null) {
+            setTitle("Add Company Details");
+           
+            try {
+                Currency dollar = Currency.get(sbConnection.connection, Common.IS_INDIA ? "Indian rupee" : "United States dollar");
+                sBACPanelCurrency.setSelectedItem(new AutosuggesterItem(dollar.getId(), dollar.getCurrencyName(), dollar.getCurrencySymbol(), dollar), dollar.getCurrencyName());
+            } catch (SBDaoException ex) {
+                ex.printStackTrace();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            
+        } else {
+            setTitle("Edit Company Details");
+        }
+        jBDelete.setVisible(false);
+        initialFields(companyDetails);
+        
+        SBSwingUtils.removeTabInTextArea(jTextAreaAddress);
+        SBSwingUtils.removeTabInTextArea(jTextAreaDetails);
+        
+        this.placeholder = new Placeholder("<html><i>Add your company slogan or any other details you’d like to display in the invoice header.</i></html>", jTextAreaDetails);
+		if (sBACPanelCountry.getText().equals("Australia")) {
+			placeholder.setText(placeholder.getText().replace("</i></html>", " (like ABN or Bank details)</i></html>"));
+		} else if (sBACPanelCountry.getText().equals("India")) {
+			placeholder.setText(placeholder.getText().replace("</i></html>", " (like LST & CST numbers if you still use them)</i></html>"));
+		}
+		
+		new Placeholder("<html><i>Like: 14123456789</i></html>", jTFTin);
+		new Placeholder("<html><i>Like: AAAAA9999AST001</i></html>", jTFStn);
+		new Placeholder("<html><i>Like: AAAAA9999A</i></html>", jTFPan);
+        
+        jTextAreaAddress.setLineWrap(true);
+        jTextAreaDetails.setLineWrap(true);
+		
+		sBACPanelCountry.getSbTextField().addFocusListener(new FocusAdapter() {
+
+			@Override
+			public void focusGained(FocusEvent e) {
+				Common.connection = JDialogCreateCompany.this.sbConnection;
+				Config config = new Config();
+				if (config.get(Config.SHOW_COUNTRY_BALLOON).equals("true")) {
+					new SBSpecialBalloonTip(sBACPanelCountry, "Type your country name if it is not in the list", Orientation.LEFT_ABOVE, BalloonTip.AttachLocation.NORTHEAST, 35);
+					config.set(Config.SHOW_COUNTRY_BALLOON, "false");
+				}
+			}
+
+		});
+        
+        setMandatory();
+        checkMandatory();
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
+
+        jPanelSuper = new javax.swing.JPanel();
+        jPanelContentExtra = new javax.swing.JPanel();
+        jPanelContent = new javax.swing.JPanel();
+        jPanelTitle = new javax.swing.JPanel();
+        jLabel12 = new javax.swing.JLabel();
+        jPanelInfo = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        jTFBusinessName = new javax.swing.JTextField();
+        jPCityZip = new javax.swing.JPanel();
+        jLabel11 = new javax.swing.JLabel();
+        jTFZip = new javax.swing.JTextField();
+        jTFState = new javax.swing.JTextField();
+        jLabel2 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        jLabel5 = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
+        jLabel7 = new javax.swing.JLabel();
+        jLabel8 = new javax.swing.JLabel();
+        jLabel9 = new javax.swing.JLabel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        jTextAreaAddress = new javax.swing.JTextArea();
+        jTFEmail = new javax.swing.JTextField();
+        jTFPhone = new javax.swing.JTextField();
+        jTFWebsite = new javax.swing.JTextField();
+        sBACPanelCurrency = new sleekbill.swingutils.autosuggesters.SBACPanelTextField(param, false, false);
+        jLabelLogo = new javax.swing.JLabel();
+        jPanelLogoButtons = new javax.swing.JPanel();
+        jBEdit = new javax.swing.JButton();
+        jBDelete = new javax.swing.JButton();
+        jLabel10 = new javax.swing.JLabel();
+        filler1 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 100), new java.awt.Dimension(0, 100), new java.awt.Dimension(0, 100));
+        jLabel13 = new javax.swing.JLabel();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        jTextAreaDetails = new javax.swing.JTextArea();
+        sBACPanelCity = new sleekbill.swingutils.autosuggesters.SBACPanelTextField(param2, false, true);
+        sBACPanelCountry = new sleekbill.swingutils.autosuggesters.SBACPanelTextField(param3, false, false);
+        jLabel14 = new javax.swing.JLabel();
+        jLabel15 = new javax.swing.JLabel();
+        jLabel16 = new javax.swing.JLabel();
+        jTFTin = new javax.swing.JTextField();
+        jTFStn = new javax.swing.JTextField();
+        jTFPan = new javax.swing.JTextField();
+        jPanelButtons = new javax.swing.JPanel();
+        jPanel1 = new javax.swing.JPanel();
+        jBSave = new javax.swing.JButton();
+        jBQuit = new javax.swing.JButton();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setTitle("Company details");
+        setMinimumSize(new java.awt.Dimension(750, 470));
+        setPreferredSize(new java.awt.Dimension(750, 470));
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
+            }
+        });
+        getContentPane().setLayout(new java.awt.GridBagLayout());
+
+        jPanelSuper.setBackground(new java.awt.Color(229, 235, 242));
+        jPanelSuper.setLayout(new java.awt.GridBagLayout());
+
+        jPanelContentExtra.setBackground(new java.awt.Color(195, 210, 219));
+        jPanelContentExtra.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(195, 210, 219), 1, true));
+        jPanelContentExtra.setLayout(new java.awt.GridBagLayout());
+
+        jPanelContent.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(203, 209, 213)));
+        jPanelContent.setLayout(new java.awt.GridBagLayout());
+
+        jPanelTitle.setBackground(new java.awt.Color(253, 253, 253));
+        jPanelTitle.setLayout(new java.awt.GridBagLayout());
+
+        jLabel12.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        jLabel12.setText("Company Details");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelTitle.add(jLabel12, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.weightx = 0.01;
+        jPanelContent.add(jPanelTitle, gridBagConstraints);
+
+        jPanelInfo.setBorder(javax.swing.BorderFactory.createMatteBorder(1, 0, 1, 0, new java.awt.Color(203, 209, 213)));
+        jPanelInfo.setLayout(new java.awt.GridBagLayout());
+
+        jLabel1.setText("Company Name");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(jLabel1, gridBagConstraints);
+
+        jTFBusinessName.setName("tfCompanyName"); // NOI18N
+        jTFBusinessName.setNextFocusableComponent(sBACPanelCountry.getSbTextField());
+        jTFBusinessName.setPreferredSize(new java.awt.Dimension(200, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(jTFBusinessName, gridBagConstraints);
+
+        jPCityZip.setPreferredSize(new java.awt.Dimension(200, 30));
+        jPCityZip.setLayout(new java.awt.GridBagLayout());
+
+        jLabel11.setText("Zip");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
+        gridBagConstraints.insets = new java.awt.Insets(5, 4, 5, 0);
+        jPCityZip.add(jLabel11, gridBagConstraints);
+
+        jTFZip.setMinimumSize(new java.awt.Dimension(50, 20));
+        jTFZip.setName("tfZip"); // NOI18N
+        jTFZip.setNextFocusableComponent(jTFPhone);
+        jTFZip.setPreferredSize(new java.awt.Dimension(50, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
+        gridBagConstraints.insets = new java.awt.Insets(5, 4, 5, 0);
+        jPCityZip.add(jTFZip, gridBagConstraints);
+
+        jTFState.setMinimumSize(new java.awt.Dimension(200, 20));
+        jTFState.setName("tfState"); // NOI18N
+        jTFState.setNextFocusableComponent(jTFZip);
+        jTFState.setPreferredSize(new java.awt.Dimension(200, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.1;
+        jPCityZip.add(jTFState, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(0, 5, 0, 5);
+        jPanelInfo.add(jPCityZip, gridBagConstraints);
+
+        jLabel2.setText("Address");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(jLabel2, gridBagConstraints);
+
+        jLabel3.setText("City");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 5;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(jLabel3, gridBagConstraints);
+
+        jLabel4.setText("State");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(jLabel4, gridBagConstraints);
+
+        jLabel5.setText("Country");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(jLabel5, gridBagConstraints);
+
+        jLabel6.setText("Email");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 8;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(jLabel6, gridBagConstraints);
+
+        jLabel7.setText("Company Phone");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 7;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(jLabel7, gridBagConstraints);
+
+        jLabel8.setText("Website");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 9;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(jLabel8, gridBagConstraints);
+
+        jLabel9.setText("Currency");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 20, 5, 5);
+        jPanelInfo.add(jLabel9, gridBagConstraints);
+
+        jScrollPane2.setBorder(null);
+        jScrollPane2.setPreferredSize(new java.awt.Dimension(200, 80));
+
+        jTextAreaAddress.setColumns(17);
+        jTextAreaAddress.setRows(4);
+        jTextAreaAddress.setName("tfAddress"); // NOI18N
+        jTextAreaAddress.setNextFocusableComponent(sBACPanelCity.getSbTextField());
+        jScrollPane2.setViewportView(jTextAreaAddress);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridheight = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(jScrollPane2, gridBagConstraints);
+
+        jTFEmail.setName("tfEmail"); // NOI18N
+        jTFEmail.setNextFocusableComponent(jTFWebsite);
+        jTFEmail.setPreferredSize(new java.awt.Dimension(200, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 8;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(jTFEmail, gridBagConstraints);
+
+        jTFPhone.setName("tfCompanyPhone"); // NOI18N
+        jTFPhone.setNextFocusableComponent(jTFEmail);
+        jTFPhone.setPreferredSize(new java.awt.Dimension(200, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 7;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(jTFPhone, gridBagConstraints);
+
+        jTFWebsite.setName("tfWebsite"); // NOI18N
+        jTFWebsite.setNextFocusableComponent(jTFTin);
+        jTFWebsite.setPreferredSize(new java.awt.Dimension(200, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 9;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(jTFWebsite, gridBagConstraints);
+
+        sBACPanelCurrency.setName("tfCurrency"); // NOI18N
+        sBACPanelCurrency.setNextFocusableComponent(jBEdit);
+        sBACPanelCurrency.setPreferredSize(new java.awt.Dimension(200, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(sBACPanelCurrency, gridBagConstraints);
+
+        jLabelLogo.setPreferredSize(new java.awt.Dimension(155, 85));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 7;
+        gridBagConstraints.gridheight = 5;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(jLabelLogo, gridBagConstraints);
+
+        jPanelLogoButtons.setLayout(new java.awt.GridBagLayout());
+
+        jBEdit.setIcon(new ImageIcon("./images/buttons/open.gif"));
+        jBEdit.setText("Select");
+        jBEdit.setName("bSelect"); // NOI18N
+        jBEdit.setNextFocusableComponent(jBDelete);
+        jBEdit.setPreferredSize(new java.awt.Dimension(95, 25));
+        jBEdit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBEditActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_START;
+        gridBagConstraints.insets = new java.awt.Insets(5, 0, 5, 0);
+        jPanelLogoButtons.add(jBEdit, gridBagConstraints);
+
+        jBDelete.setIcon(new ImageIcon("./images/buttons/cross-small-enable.png"));
+        jBDelete.setText("Remove");
+        jBDelete.setName("bRemove"); // NOI18N
+        jBDelete.setNextFocusableComponent(jBSave);
+        jBDelete.setPreferredSize(new java.awt.Dimension(95, 25));
+        jBDelete.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBDeleteActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_START;
+        gridBagConstraints.insets = new java.awt.Insets(5, 0, 5, 0);
+        jPanelLogoButtons.add(jBDelete, gridBagConstraints);
+
+        jLabel10.setText("Logo");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelLogoButtons.add(jLabel10, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridheight = 3;
+        jPanelLogoButtons.add(filler1, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 7;
+        gridBagConstraints.gridheight = 5;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_START;
+        gridBagConstraints.insets = new java.awt.Insets(5, 15, 5, 5);
+        jPanelInfo.add(jPanelLogoButtons, gridBagConstraints);
+
+        jLabel13.setText("Additional Details");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 20, 5, 5);
+        jPanelInfo.add(jLabel13, gridBagConstraints);
+
+        jScrollPane3.setBorder(null);
+        jScrollPane3.setPreferredSize(new java.awt.Dimension(200, 80));
+
+        jTextAreaDetails.setColumns(17);
+        jTextAreaDetails.setRows(4);
+        jTextAreaDetails.setName("tfAddress"); // NOI18N
+        jTextAreaDetails.setNextFocusableComponent(sBACPanelCurrency.getSbTextField());
+        jScrollPane3.setViewportView(jTextAreaDetails);
+        sBACPanelCurrency.getSbTextField().setNextFocusableComponent(jBEdit);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridheight = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(jScrollPane3, gridBagConstraints);
+
+        sBACPanelCity.setName("tfCity"); // NOI18N
+        sBACPanelCity.setPreferredSize(new java.awt.Dimension(122, 20));
+        sBACPanelCity.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                sBACPanelCityFocusLost(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 5;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(sBACPanelCity, gridBagConstraints);
+
+        sBACPanelCountry.setName("tfCity"); // NOI18N
+        sBACPanelCountry.setNextFocusableComponent(jTextAreaAddress);
+        sBACPanelCountry.getSbTextField().setNextFocusableComponent(jTextAreaAddress);
+        sBACPanelCountry.setPreferredSize(new java.awt.Dimension(122, 20));
+        sBACPanelCountry.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                sBACPanelCountryFocusLost(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(sBACPanelCountry, gridBagConstraints);
+
+        jLabel14.setText("TIN");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 20, 5, 5);
+        jPanelInfo.add(jLabel14, gridBagConstraints);
+
+        jLabel15.setText("Service Tax No");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 20, 5, 5);
+        jPanelInfo.add(jLabel15, gridBagConstraints);
+
+        jLabel16.setText("PAN");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 20, 5, 5);
+        jPanelInfo.add(jLabel16, gridBagConstraints);
+
+        jTFTin.setNextFocusableComponent(jTFStn);
+        jTFTin.setPreferredSize(new java.awt.Dimension(200, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(jTFTin, gridBagConstraints);
+
+        jTFStn.setNextFocusableComponent(jTFPan);
+        jTFStn.setPreferredSize(new java.awt.Dimension(200, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(jTFStn, gridBagConstraints);
+
+        jTFPan.setNextFocusableComponent(jTextAreaDetails);
+        jTFPan.setPreferredSize(new java.awt.Dimension(200, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelInfo.add(jTFPan, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.weighty = 0.01;
+        jPanelContent.add(jPanelInfo, gridBagConstraints);
+
+        jPanelButtons.setBackground(new java.awt.Color(246, 246, 246));
+        jPanelButtons.setLayout(new java.awt.GridBagLayout());
+
+        jPanel1.setBackground(new java.awt.Color(246, 246, 246));
+
+        jBSave.setIcon(new ImageIcon("./images/buttons/ico_check.png"));
+        jBSave.setText("Save");
+        jBSave.setName("bSave"); // NOI18N
+        jBSave.setNextFocusableComponent(jBQuit);
+        jBSave.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jBSaveMouseClicked(evt);
+            }
+        });
+        jBSave.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBSaveActionPerformed(evt);
+            }
+        });
+        jPanel1.add(jBSave);
+
+        jBQuit.setText("Cancel");
+        jBQuit.setName("bCancel"); // NOI18N
+        jBQuit.setNextFocusableComponent(jTFBusinessName);
+        jBQuit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBQuitActionPerformed(evt);
+            }
+        });
+        jPanel1.add(jBQuit);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.weightx = 0.1;
+        jPanelButtons.add(jPanel1, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.SOUTHWEST;
+        gridBagConstraints.weightx = 0.01;
+        jPanelContent.add(jPanelButtons, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.weighty = 0.01;
+        jPanelContentExtra.add(jPanelContent, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.weighty = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(15, 15, 15, 15);
+        jPanelSuper.add(jPanelContentExtra, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.weighty = 0.01;
+        getContentPane().add(jPanelSuper, gridBagConstraints);
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void jBSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBSaveActionPerformed
+        boolean wasNull = false;
+        
+        if (!jTFBusinessName.getText().trim().isEmpty() && !sBACPanelCity.getText().isEmpty()) {
+            
+            setCreatedName(jTFBusinessName.getText().trim());
+            
+            try {
+
+                if (companyDetails == null) {
+                    companyDetails = new CompanyDetails();
+                    wasNull = true;
+                }
+
+                companyDetails.setName(jTFBusinessName.getText().trim());
+                companyDetails.setAddress(jTextAreaAddress.getText());
+                companyDetails.setZip(jTFZip.getText());
+                companyDetails.setEmail(jTFEmail.getText());
+                companyDetails.setTelephone(jTFPhone.getText());
+                companyDetails.setWebsite(jTFWebsite.getText());
+                companyDetails.setLogo(logoFileName);
+                companyDetails.setDetails(jTextAreaDetails.getText());
+				companyDetails.setTin(jTFTin.getText());
+				companyDetails.setPan(jTFPan.getText());
+				companyDetails.setStn(jTFStn.getText());
+
+                AutosuggesterItem selCity = sBACPanelCity.getSbTextField().getSelectedItem();
+
+                if (selCity != null) {
+                    State companystate = new State((StateEntity) selCity.getObj());
+
+                    companystate.setCountry(sBACPanelCountry.getText());
+                    
+                    State.update(sbConnection.getConnection(), companystate);
+                    
+                    companyDetails.setCity(companystate.getCity());
+                    companyDetails.setState(companystate);
+                    
+                }
+                else{
+                    State companystate = State.getSimple(sbConnection.getConnection(), jTFState.getText(), sBACPanelCity.getText(), sBACPanelCountry.getText());
+                    
+                    if (companystate == null) {
+                        companystate = new State();
+                        companystate.setCity(sBACPanelCity.getText());
+                        companystate.setCountry(sBACPanelCountry.getText());
+                        companystate.setState(jTFState.getText());
+                        State.add(sbConnection.getConnection(), companystate);
+                    }
+                    
+                    companyDetails.setCity(companystate.getCity());
+                    companyDetails.setState(companystate);
+                }
+                
+                try {
+                    String text = sBACPanelCurrency.getText();
+                    Currency currency = Currency.get(sbConnection.getConnection(), text.substring(0, (text.indexOf("(") == -1) ? (text.length() - 1) : (text.indexOf("(") - 1)));
+
+                    if (currency != null) {
+                        companyDetails.setCurrency(currency);
+                    } else {
+                        throw new Exception("Invalid currency");
+                    }
+                } catch (Exception ex) {
+                    Messages.showErrorMessage(this, "Please select a Currency from the existing list!", "Error");
+                    if (wasNull) {
+                        companyDetails = null;
+                    }
+                    setCreatedName("");
+                    return;
+                }
+
+                if (wasNull) {
+                    createdCompany = Common.createCompany(jTFBusinessName.getText().trim());
+
+                    SBConnection newConn = new SBConnection(DBConnection.getConnection(Common.user, createdCompany.getName()));
+                    Updates.updateDB(newConn, createdCompany);
+                    CompanyDetails.add(newConn.getConnection(), companyDetails);                  
+
+					Common.connection = newConn;
+					Common.selectedCompanyConfig = new Config();
+					
+                    Calendar c = Calendar.getInstance();
+                    c.setTimeInMillis(System.currentTimeMillis());
+                    c.add(Calendar.DAY_OF_YEAR, 100);
+                    Common.vKInsert(newConn, null, Common.getVersion(),
+                            String.valueOf(Common.getYear()), Common.getOsType(), new Date(c.getTimeInMillis()),
+                            Integer.toString(new Modules().getModules()), "0", "3");
+					
+					//regional customization
+					RegionalPreparator.prepare(sBACPanelCountry.getText());
+                    newConn.getConnection().close();
+                    
+                    
+                    if (logoFileName != null && !logoFileName.isEmpty() && logo != null) {
+                        copyfile(logo, new File(createdCompany.getLogoPath() + "\\" + logoFileName));
+                    }
+                } else {
+                    companyDetails.setId(0);
+                    companyDetails.create();
+                    
+                    if (!Common.isTestCompany() && !Common.selectedCompany.getName().equals(companyDetails.getName())) {
+                        try {
+                            Common.connection.getConnection().close();
+                            if (new File(Common.sanitizePath(Common.COMPANIES_PATH + Common.selectedCompany.getName())).renameTo(new File(Common.sanitizePath(Common.COMPANIES_PATH + companyDetails.getName())))) {
+                                Common.selectedCompany.setName(companyDetails.getName());
+                                Common.switchToCompany(Common.selectedCompany, false, false);
+                            }
+                            else{
+                                Common.switchToCompany(Common.selectedCompany, false, false);
+                            }
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                    
+                    if (logoFileName != null && !logoFileName.isEmpty() && logo != null) {
+                        copyfile(logo, new File(Common.SAVED_LOGOS_PATH + logoFileName));
+                    }
+                }
+
+				Common.postSilentData(companyDetails);
+                dispose();
+
+                if (wasNull) {
+                    setCreatedName(jTFBusinessName.getText().trim());
+                }
+            } catch (Exception ex) {
+            	ex.printStackTrace();
+            	if(wasNull) {
+            		companyDetails = null;
+            	}
+                Messages.showErrorMessage(this, ex.getMessage(), "Error");
+            }
+        } else {
+            Messages.showErrorMessage(this, "Please make sure you have provided a Company Name and a City", "Error");
+            setCreatedName("");
+        }
+		Common.country = sBACPanelCountry.getText();
+    }//GEN-LAST:event_jBSaveActionPerformed
+
+    private void jBEditActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBEditActionPerformed
+        JFileChooser fc = new JFileChooser();
+        fc.setFileFilter(new ExtensionFileFilter("Image Files", new String[]{"jpg", "bmp", "jpeg", "wbmp", "png", "gif"}));
+        if (fc.showDialog(this, "Select") == JFileChooser.APPROVE_OPTION) {
+            logo = fc.getSelectedFile();
+            BufferedImage siglabi = loadImageOnLabel(jLabelLogo, logo);
+            if (siglabi != null) {
+                logoFileName = "" + System.currentTimeMillis() + "_" + prepareFileName(fc.getSelectedFile().getName());
+                jBDelete.setVisible(true);
+            } else {
+                logoFileName = "";
+                jBDelete.setVisible(false);
+            }
+        }
+    }//GEN-LAST:event_jBEditActionPerformed
+
+    private void jBDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBDeleteActionPerformed
+        logoFileName = "";
+        logo = null;
+        jLabelLogo.setIcon(null);
+        jBDelete.setVisible(false);
+    }//GEN-LAST:event_jBDeleteActionPerformed
+
+    private void jBQuitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBQuitActionPerformed
+        dispose();
+    }//GEN-LAST:event_jBQuitActionPerformed
+
+    private void sBACPanelCityFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_sBACPanelCityFocusLost
+        AutosuggesterItem selectedItem = sBACPanelCity.getSbTextField().getSelectedItem();
+
+        if (selectedItem != null) {
+            StateEntity aux = (StateEntity) selectedItem.getObj();
+
+            jTFState.setText(aux.getState());
+            sBACPanelCountry.setSelectedItem(aux.getCountry());
+			Common.country = sBACPanelCountry.getText();
+            jTFState.requestFocus();
+        }
+    }//GEN-LAST:event_sBACPanelCityFocusLost
+
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+        if (jBQuit.getText().equals("Back")) {
+            if (Messages.showWarningMessage(this, "In order to be able to issue invoices, you first need to create your company's profile.\n"
+                    + "Please supply the necessary information in the company details form and save.", "Warning", new String[]{"Ok", "Exit program"}, "Exit program") == 1) {
+
+                try {
+                    java.net.URI uri = new java.net.URI((Common.IS_INDIA ? "http://www.billingsoftware.in/no-company.html" : "http://www.sleekbill.com/no-company/") + "?utm_source=product&utm_medium=exit-company&utm_campaign=product-exit&ref=" + Common.INSTALLATION_SOURCE);
+                    SBDesktop.browse(uri);
+                } catch (Exception ex1) {
+                    ex1.printStackTrace();
+                }
+                System.exit(0);
+
+            } else {
+                setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+            }
+        }
+    }//GEN-LAST:event_formWindowClosing
+
+    private void jBSaveMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jBSaveMouseClicked
+       if(!jBSave.isEnabled()){
+            if (jTFBusinessName.getText().trim().isEmpty() || sBACPanelCity.getText().isEmpty()) {
+                Messages.showErrorMessage(this, "Please make sure you have provided a Company Name and a City", "Error");
+                return;
+            }
+            
+            if (sBACPanelCurrency.getSbTextField().getSelectedItem() == null) {
+                Messages.showErrorMessage(this, "Please select a Currency from the existing list!", "Error");
+                return;
+            }
+       }
+    }//GEN-LAST:event_jBSaveMouseClicked
+
+    private void sBACPanelCountryFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_sBACPanelCountryFocusLost
+		placeholder.setText("<html><i>Add your company slogan or any other details you’d like to display in the invoice header.</i></html>");
+		if (sBACPanelCountry.getText().equals("Australia")) {
+			placeholder.setText(placeholder.getText().replace("</i></html>", " (like ABN or Bank details)</i></html>"));
+		} else if (sBACPanelCountry.getText().equals("India")) {
+			placeholder.setText(placeholder.getText().replace("</i></html>", " (like LST & CST numbers if you still use them)</i></html>"));
+		}
+		
+		Common.country = sBACPanelCountry.getText();
+
+		try {
+			Currency currency = null;
+			String currencyName = "";
+
+			mapCountries.put("United States of America", 1);
+			mapCountries.put("Canada", 2);
+			mapCountries.put("United Kingdom", 3);
+			mapCountries.put("Australia", 4);
+			mapCountries.put("India", 5);
+
+			int caseNr = mapCountries.get(sBACPanelCountry.getText()) == null ? 6 : mapCountries.get(sBACPanelCountry.getText());
+			
+			switch (caseNr) {
+				case 1: {
+					currencyName = "United States dollar";
+					break;
+				}
+
+				case 2: {
+					currencyName = "Canadian dollar";
+					break;
+				}
+
+				case 3: {
+					currencyName = "United Kingdom pound";
+					break;
+				}
+
+				case 4: {
+					currencyName = "Australian dollar";
+					break;
+				}
+				case 5: {
+					currencyName = "Indian rupee";
+					break;
+				}
+
+				default: {
+					currencyName = "";
+					break;
+				}
+
+			}
+
+			if(!currencyName.isEmpty()){
+				currency = Currency.get(sbConnection.connection, currencyName);
+				sBACPanelCurrency.setSelectedItem(new AutosuggesterItem(currency.getId(), currency.getCurrencyName(), currency.getCurrencySymbol(), currency), currency.getCurrencyName());
+			}
+
+		} catch (SBDaoException ex) {
+			ex.printStackTrace();
+		} catch (SQLException ex) {
+			ex.printStackTrace();
+		}
+
+    }//GEN-LAST:event_sBACPanelCountryFocusLost
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(JDialogCreateCompany.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(JDialogCreateCompany.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(JDialogCreateCompany.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(JDialogCreateCompany.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the dialog */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                JDialogCreateCompany dialog = new JDialogCreateCompany(new javax.swing.JFrame(), true,
+                        Common.connection, null);
+                dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+                    @Override
+                    public void windowClosing(java.awt.event.WindowEvent e) {
+                        System.exit(0);
+                    }
+                });
+                dialog.setVisible(true);
+            }
+        });
+    }
+
+    private void initialFields(CompanyDetails cd) {
+        if (cd != null) {
+            try {
+                jTFBusinessName.setText(cd.getName());
+                jTextAreaAddress.setText(cd.getAddress());
+                jTFZip.setText(cd.getZip());
+                jTextAreaDetails.setText(cd.getDetails());
+				jTFTin.setText(cd.getTin());
+				jTFPan.setText(cd.getPan());
+				jTFStn.setText(cd.getStn());
+
+                jTFEmail.setText(cd.getEmail());
+                jTFWebsite.setText(cd.getWebsite());
+                jTFPhone.setText(cd.getTelephone());
+                logoFileName = cd.getLogo();
+
+                if (cd.getState() != null) {
+                    jTFState.setText(cd.getState().getState());
+                    sBACPanelCountry.setSelectedItem(cd.getState().getCountry());
+					Common.country = cd.getState().getCountry();
+                    sBACPanelCity.setSelectedItem(new AutosuggesterItem(cd.getState().getId(), cd.getState().getCity(), cd.getState().getCity(), cd.getState()), cd.getState().getCity());
+                }
+
+                if (cd.getCurrency() != null) {
+                    Currency dollar = new Currency(cd.getCurrency());
+                    sBACPanelCurrency.setSelectedItem(new AutosuggesterItem(dollar.getId(), dollar.getCurrencyName(), dollar.getCurrencySymbol(), dollar), dollar.getCurrencyName());
+                    //sBACPanelCurrency.getDocument().insertString(0, cd.getCurrency().getCurrencyName() + " (" + cd.getCurrency().getCurrencySymbol() + ")", null);
+                }
+
+                BufferedImage siglabi = loadImageOnLabel(jLabelLogo, new File(Common.SAVED_LOGOS_PATH + logoFileName));
+                if (siglabi == null) {
+                    logoFileName = "";
+                    jBDelete.setVisible(false);
+                } else {
+                    jBDelete.setVisible(true);
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    private BufferedImage loadImageOnLabel(JLabel label, File file) {
+        BufferedImage bufimg = null;
+        try {
+            if (Common.isClient() && !file.exists()) {
+                Client.fetch(file);
+            }
+            bufimg = ImageIO.read(file);
+        } catch (IOException ex) {
+            if (jLabelLogo.isShowing()) {
+                Messages.showErrorMessage(this, "The image could not be loaded!", "Image upload");
+            }
+            label.setIcon(null);
+            label.setPreferredSize(new Dimension(100, 10));
+            return null;
+        } catch (OutOfMemoryError ome) {
+            if (jLabelLogo.isShowing()) {
+                Messages.showErrorMessage(this, "The image resolution is to big!", "Image upload");
+            }
+            label.setIcon(null);
+            label.setPreferredSize(new Dimension(100, 10));
+            return null;
+        }
+        if (bufimg == null) {
+            if(file != null){
+                Messages.showErrorMessageWithLink(this, "<b>" + file.getName() + "</b> is not a valid image! Please use a valid image format (JPG, BMP, PNG, GIF).<br>Please contact us at <a href=\"mailto:support@sleekbill.com\">support@sleekbill.com</a> if you need any assistance.", "Image upload");
+            }
+            label.setIcon(null);
+            label.setPreferredSize(new Dimension(100, 10));
+            return null;
+        }
+        if (bufimg.getWidth() > 3000 && bufimg.getHeight() > 3000) {
+            if (jLabelLogo.isShowing()) {
+                Messages.showErrorMessage(this, "The image could not be loaded because the resolution is to big!!", "Image upload");
+            }
+            label.setIcon(null);
+            label.setPreferredSize(new Dimension(100, 10));
+            return null;
+        }
+        int width, height;
+        if (bufimg.getWidth() * 6 / 10 > bufimg.getHeight()) {
+            width = (int) imageDimension.getWidth();
+            height = (int) (bufimg.getHeight() / (bufimg.getWidth() / imageDimension.getWidth()));
+        } else {
+            height = (int) imageDimension.getHeight();
+            width = (int) (bufimg.getWidth() / (bufimg.getHeight() / imageDimension.getHeight()));
+        }
+        ImageIcon scaledIcon = new ImageIcon(bufimg.getScaledInstance(width, height, Image.SCALE_SMOOTH));
+        label.setPreferredSize(new Dimension(width, height));
+        label.setIcon(scaledIcon);
+        return bufimg;
+    }
+
+    private String prepareFileName(String name) {
+        //remove extension
+        String ret = "";
+        if (name == null) {
+            return ""; //should never happen
+        }
+        int i = name.lastIndexOf(".");
+        if (i > 0 && i < name.length() - 1) {
+            ret = name.substring(0, i).toLowerCase() + name.substring(name.lastIndexOf("."), name.length());
+        }
+        return ret;
+    }
+
+    private void setMandatory() {
+        jTFBusinessName.getDocument().addDocumentListener(new DocumentListener() {
+
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+        });
+        
+        sBACPanelCity.getSbTextField().getDocument().addDocumentListener(new DocumentListener() {
+
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+        });
+        
+        sBACPanelCurrency.getSbTextField().getDocument().addDocumentListener(new DocumentListener() {
+
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+        });
+        
+        sBACPanelCity.getSbTextField().addKeyListener(new KeyListener() {
+
+            @Override
+            public void keyTyped(KeyEvent e) {
+                checkMandatory();
+            }
+
+            @Override
+            public void keyPressed(KeyEvent e) {
+                checkMandatory();
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                checkMandatory();
+            }
+        });
+        
+        sBACPanelCurrency.getSbTextField().addKeyListener(new KeyListener() {
+
+            @Override
+            public void keyTyped(KeyEvent e) {
+                checkMandatory();
+            }
+
+            @Override
+            public void keyPressed(KeyEvent e) {
+                checkMandatory();
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                checkMandatory();
+            }
+        });
+    }
+
+    private void checkMandatory() {
+        jBSave.setEnabled(!jTFBusinessName.getText().trim().isEmpty() && !sBACPanelCity.getText().isEmpty() && sBACPanelCurrency.getSbTextField().getSelectedItem() != null);  
+    }
+
+    class AddNewCityListener implements AddNewActionListener {
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+
+            JDialogCityData jDialogCityData = new JDialogCityData(JDialogCreateCompany.this, true, sbConnection);
+            jDialogCityData.setVisible(true);
+
+            if (jDialogCityData.getCreatedState() != null) {
+                State state = jDialogCityData.getCreatedState();
+                sBACPanelCity.setText(state.getCity());
+                jTFState.setText(state.getState());
+                sBACPanelCountry.setText(state.getCountry());  
+				Common.country = state.getCountry();
+            }
+        }
+    }
+
+    public Company getCreatedCompany() {
+        return createdCompany;
+    }
+
+    public String getCreatedName() {
+        return createdName;
+    }
+
+    public void setCreatedName(String createdName) {
+        this.createdName = createdName;
+    }
+    
+    public void renameCancelButton(){
+        jBQuit.setText("Back");
+        jBQuit.setIcon(new ImageIcon("./images/buttons/Left.png"));
+        jPanel1.removeAll();
+        jPanel1.add(jBQuit);
+        jPanel1.add(jBSave);
+    }
+    
+     public void hideCancelButton(){
+        jBQuit.setVisible(false);
+    }
+    
+     public void setCompanyNameEditable(boolean editale){
+        jTFBusinessName.setEditable(editale);
+    }
+
+    private static void copyfile(File srcFile, File dstFile) throws IOException {
+        try {
+
+            InputStream in = new FileInputStream(srcFile);
+
+            OutputStream out = new FileOutputStream(dstFile);
+            byte[] buf = new byte[1024];
+            int len;
+            while ((len = in.read(buf)) > 0) {
+                out.write(buf, 0, len);
+            }
+            in.close();
+            out.close();
+        } catch (FileNotFoundException ex) {
+            ex.printStackTrace();
+        }
+    }
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.Box.Filler filler1;
+    private javax.swing.JButton jBDelete;
+    private javax.swing.JButton jBEdit;
+    private javax.swing.JButton jBQuit;
+    private javax.swing.JButton jBSave;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel10;
+    private javax.swing.JLabel jLabel11;
+    private javax.swing.JLabel jLabel12;
+    private javax.swing.JLabel jLabel13;
+    private javax.swing.JLabel jLabel14;
+    private javax.swing.JLabel jLabel15;
+    private javax.swing.JLabel jLabel16;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
+    private javax.swing.JLabel jLabel9;
+    private javax.swing.JLabel jLabelLogo;
+    private javax.swing.JPanel jPCityZip;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanelButtons;
+    private javax.swing.JPanel jPanelContent;
+    private javax.swing.JPanel jPanelContentExtra;
+    private javax.swing.JPanel jPanelInfo;
+    private javax.swing.JPanel jPanelLogoButtons;
+    private javax.swing.JPanel jPanelSuper;
+    private javax.swing.JPanel jPanelTitle;
+    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JTextField jTFBusinessName;
+    private javax.swing.JTextField jTFEmail;
+    private javax.swing.JTextField jTFPan;
+    private javax.swing.JTextField jTFPhone;
+    private javax.swing.JTextField jTFState;
+    private javax.swing.JTextField jTFStn;
+    private javax.swing.JTextField jTFTin;
+    private javax.swing.JTextField jTFWebsite;
+    private javax.swing.JTextField jTFZip;
+    private javax.swing.JTextArea jTextAreaAddress;
+    private javax.swing.JTextArea jTextAreaDetails;
+    private sleekbill.swingutils.autosuggesters.SBACPanelTextField sBACPanelCity;
+    private sleekbill.swingutils.autosuggesters.SBACPanelTextField sBACPanelCountry;
+    private sleekbill.swingutils.autosuggesters.SBACPanelTextField sBACPanelCurrency;
+    // End of variables declaration//GEN-END:variables
+}

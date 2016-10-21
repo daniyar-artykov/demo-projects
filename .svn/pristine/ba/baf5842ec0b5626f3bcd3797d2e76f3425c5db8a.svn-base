@@ -1,0 +1,131 @@
+package org.capaxit.imagegenerator.imageexporter.exporters;
+
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import org.capaxit.imagegenerator.TextImage;
+import org.capaxit.imagegenerator.imageexporter.ImageWriter;
+import org.capaxit.imagegenerator.impl.TextImageImpl;
+import org.capaxit.imagegenerator.util.Validate;
+
+import javax.imageio.ImageIO;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import javax.imageio.IIOImage;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.stream.ImageOutputStream;
+
+/**
+ * Implementation of the ImageWriter which handles png exports. User: Jamie
+ * Craane
+ */
+public final class PngImageWriter implements ImageWriter {
+
+    private static final String PNG = "png";
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param image The image to write to the outputstream.
+     * @param outputStream The outputStream to write the image to.
+     */
+    public void writeImageToOutputStream(final TextImage image, final OutputStream outputStream) throws IOException {
+        Validate.notNull(image, "The image may not be null.");
+        Validate.notNull(outputStream, "The outputStream may not be null.");
+
+        ImageIO.write(((TextImageImpl) image).getBufferedImage(), PNG, outputStream);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param image The image to write to the file.
+     * @param file The outputStream to write the image to.
+     */
+    public void writeImageToFile(final TextImage image, final File file) throws IOException {
+        Validate.notNull(image, "The image may not be null.");
+        Validate.notNull(file, "The file may not be null.");
+
+        OutputStream os = new FileOutputStream(file);
+
+        try {
+            BufferedImage bufferedImage = ((TextImageImpl) image).getBufferedImage();
+
+            ImageIO.write(bufferedImage, PNG, os);
+        } finally {
+            os.close();
+        }
+    }
+
+    public void writeImageToFile(final TextImage image, final File file, String companyName, String fontName, String fontSize, String fontColor, String fontPosition) throws IOException {
+        Validate.notNull(image, "The image may not be null.");
+        Validate.notNull(file, "The file may not be null.");
+
+        OutputStream os = new FileOutputStream(file);
+
+        try {
+            BufferedImage bufferedImage = ((TextImageImpl) image).getBufferedImage();
+            os.write(writeCustomData(bufferedImage, companyName, fontName, fontSize, fontColor, fontPosition));
+        } catch (Exception ex) {
+        } finally {
+            os.close();
+        }
+    }
+
+    public byte[] writeCustomData(BufferedImage buffImg, String companyName, String fontName, String fontSize, String fontColor, String fontPosition) throws Exception {
+        javax.imageio.ImageWriter writer = ImageIO.getImageWritersByFormatName("png").next();
+
+        ImageWriteParam writeParam = writer.getDefaultWriteParam();
+        ImageTypeSpecifier typeSpecifier = ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB);
+
+        //adding metadata
+        IIOMetadata metadata = writer.getDefaultImageMetadata(typeSpecifier, writeParam);
+
+        IIOMetadataNode textEntry1 = new IIOMetadataNode("tEXtEntry");
+        textEntry1.setAttribute("keyword", "companyName");
+        textEntry1.setAttribute("value", companyName);
+
+        IIOMetadataNode textEntry2 = new IIOMetadataNode("tEXtEntry");
+        textEntry2.setAttribute("keyword", "fontName");
+        textEntry2.setAttribute("value", fontName);
+
+        IIOMetadataNode textEntry3 = new IIOMetadataNode("tEXtEntry");
+        textEntry3.setAttribute("keyword", "fontSize");
+        textEntry3.setAttribute("value", fontSize);
+
+        IIOMetadataNode textEntry4 = new IIOMetadataNode("tEXtEntry");
+        textEntry4.setAttribute("keyword", "fontColor");
+        textEntry4.setAttribute("value", fontColor);
+
+        IIOMetadataNode textEntry5 = new IIOMetadataNode("tEXtEntry");
+        textEntry5.setAttribute("keyword", "fontPosition");
+        textEntry5.setAttribute("value", fontPosition);
+
+        IIOMetadataNode text = new IIOMetadataNode("tEXt");
+        text.appendChild(textEntry1);
+        text.appendChild(textEntry2);
+        text.appendChild(textEntry3);
+        text.appendChild(textEntry4);
+        text.appendChild(textEntry5);
+
+        IIOMetadataNode root = new IIOMetadataNode("javax_imageio_png_1.0");
+        root.appendChild(text);
+
+        metadata.mergeTree("javax_imageio_png_1.0", root);
+
+        //writing the data
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageOutputStream stream = ImageIO.createImageOutputStream(baos);
+        writer.setOutput(stream);
+        writer.write(metadata, new IIOImage(buffImg, null, metadata), writeParam);
+        stream.close();
+
+        return baos.toByteArray();
+    }
+}

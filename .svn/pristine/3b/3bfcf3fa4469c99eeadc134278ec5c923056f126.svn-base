@@ -1,0 +1,86 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames.autosuggesterdata;
+
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import sleekbill.Common;
+import sleekbill.beans.AliasEmail;
+import sleekbill.entities.AliasEmailEntity;
+import sleekbill.swingutils.autosuggesters.AutosuggesterDataBuilder;
+import sleekbill.swingutils.autosuggesters.AutosuggesterItem;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.dao.GenericRawResults;
+import com.j256.ormlite.dao.RawRowMapper;
+
+/**
+ *
+ * @author dani
+ */
+public class SBACAliasEmail implements AutosuggesterDataBuilder {
+
+    @Override
+    public ArrayList<AutosuggesterItem> getData(String input, Integer rowNumber) {
+        ArrayList<AutosuggesterItem> l = new ArrayList<AutosuggesterItem>();
+        try {
+            Dao<AliasEmailEntity, Integer> taxesDao = DaoManager.createDao(
+                    Common.connection.getConnection(), AliasEmailEntity.class);
+
+            GenericRawResults<AutosuggesterItem> rawResults =
+                    taxesDao.queryRaw("SELECT "
+                    + "CASE WHEN (alias IS NOT NULL OR alias != '') "
+                    + "		THEN '<html>' || substr(alias,0,CHARINDEX(lower(?), lower(alias))) || '<b>' || substr(alias,CHARINDEX(lower(?), lower(alias)), length(lower(?))) || '</b>' || substr(alias,CHARINDEX(lower(?), lower(alias)) + length(lower(?))) || ' &lt;' || email || '&gt;' || '</html>' "
+                    + "		ELSE '<html>&lt;' || substr(email,0,CHARINDEX(lower(?), lower(email))) || '<b>' || substr(email,CHARINDEX(lower(?), lower(email)), length(lower(?))) || '</b>' || substr(email,CHARINDEX(lower(?), lower(email)) + length(lower(?))) || '&gt;' || '</html>' "
+                    + "END  AS den, "
+                    + "id, client_id, alias, email "
+                    + "FROM alias_email "
+                    + "WHERE (alias LIKE ? OR email LIKE ?) "
+                    + "ORDER by lower(alias), lower(email) ASC LIMIT " + rowNumber,
+                    new RawRowMapper<AutosuggesterItem>() {
+                public AutosuggesterItem mapRow(String[] columnNames, String[] resultColumns) {
+                    int id = 0;
+                    try {
+                        id = Integer.parseInt(resultColumns[1]);
+                    } catch (NumberFormatException e) {
+                    }
+
+                    AliasEmail aux = new AliasEmail();
+                    aux.setId(id);
+                    aux.setClientId(Integer.parseInt(resultColumns[2]));
+                    aux.setAlias(resultColumns[3]);
+                    aux.setEmail(resultColumns[4]);
+
+                    return new AutosuggesterItem(id, resultColumns[3] + "<" + resultColumns[4] + ">", resultColumns[0],
+                            aux, true);
+                }
+            },
+                    input, input, input, input, input,
+                    input, input, input, input, input,
+                    "%" + input + "%",
+                    "%" + input + "%");
+            l.addAll(rawResults.getResults());
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return l;
+    }
+
+    @Override
+    public long getCount() {
+        try {
+            Dao<AliasEmailEntity, Integer> taxesDao = DaoManager.createDao(
+                        Common.connection.getConnection(), AliasEmailEntity.class);
+            return taxesDao.countOf();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return 0;
+    }
+}

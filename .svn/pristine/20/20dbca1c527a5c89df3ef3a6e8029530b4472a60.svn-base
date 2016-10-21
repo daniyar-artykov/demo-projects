@@ -1,0 +1,26 @@
+package sleekbill.swingutils;
+
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+
+import javax.swing.JTextArea;
+import javax.swing.UIManager;
+
+/**
+ *
+ * @author  flaviu m
+ */
+public class EditablePropertyChangeListener implements PropertyChangeListener{
+
+    //fix for not working "TextArea.inactiveBackground"
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+        if(!"editable".equals(evt.getPropertyName())) return;
+        if(evt.getSource() instanceof JTextArea){
+            JTextArea ta = (JTextArea)evt.getSource();
+            if(evt.getNewValue().equals(Boolean.TRUE)) ta.setBackground(UIManager.getColor("TextField.background"));
+            else ta.setBackground(UIManager.getColor("TextField.inactiveBackground"));
+        }
+    }
+
+}

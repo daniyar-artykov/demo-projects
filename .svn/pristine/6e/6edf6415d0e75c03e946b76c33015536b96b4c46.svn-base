@@ -1,0 +1,156 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.beans;
+
+import java.sql.SQLException;
+import java.util.List;
+
+import sleekbill.Common;
+import sleekbill.db.SBConnection;
+import sleekbill.entities.VersionEntity;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.stmt.PreparedQuery;
+
+/**
+ *
+ * @author Andrei
+ */
+public class Version extends VersionEntity {
+
+	public static int DEFAULT_ID = 1;
+	
+    private Dao<VersionEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+    
+    public Version(VersionEntity versionEntity) {
+        this(0);
+        this.id = versionEntity.getId();
+        this.version = versionEntity.getVersion();
+        this.year = versionEntity.getYear();
+    }
+
+    public Version() {
+        this(0);
+    }
+
+    public Version(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager
+                        .createDao(mainConnection, VersionEntity.class);
+
+                if (id != null && id != null) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    
+     public void refreshDao(){
+            try {
+                mainDao = DaoManager
+                        .createDao(Common.connection.getConnection(), VersionEntity.class);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+    }
+
+    public void create() throws Exception {
+        mainDao.create(this);
+    }
+
+    public VersionEntity read(Integer id) throws Exception {
+        return mainDao.queryForId(id);
+    }
+
+    public void update() throws Exception {
+        mainDao.update(this);
+    }
+
+    public void delete() throws Exception {
+        mainDao.delete(this);
+    }
+
+    public static void add(JdbcConnectionSource connectionSource, Version version) throws SBDaoException, SQLException {
+
+        Dao<VersionEntity, Integer> versionDao = DaoManager.createDao(connectionSource, VersionEntity.class);
+
+        versionDao.create(version);
+    }
+
+    public static VersionEntity get(JdbcConnectionSource connectionSource, String version, String year) throws SBDaoException, SQLException {
+
+        Dao<VersionEntity, Integer> versionDao = DaoManager.createDao(connectionSource, VersionEntity.class);
+        PreparedQuery<VersionEntity> pq = versionDao.queryBuilder().where().eq(Version.VERSION, version).and().eq(Version.YEAR, year).prepare();
+        List<VersionEntity> list = versionDao.query(pq);
+
+        if (list.size() > 0) {
+            return list.get(0);
+        }
+        return null;
+    }
+    
+    public static Version get(SBConnection connection) throws SBDaoException, SQLException {
+
+        Dao<VersionEntity, Integer> versionDao = DaoManager.createDao(connection.getConnection(), VersionEntity.class);
+        VersionEntity entity = versionDao.queryForId(DEFAULT_ID);
+        return new Version(entity);
+    }
+    
+    public static void update(SBConnection connection, Version version) throws SBDaoException, SQLException {
+
+        Dao<VersionEntity, Integer> versionDao = DaoManager.createDao(connection.getConnection(), VersionEntity.class);
+        version.setId(DEFAULT_ID);
+        versionDao.update(version);
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 29 * hash + this.id;
+        hash = 29 * hash + (this.version != null ? this.version.hashCode() : 0);
+        hash = 29 * hash + (this.year != null ? this.year.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Version other = (Version) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if ((this.version == null) ? (other.version != null) : !this.version.equals(other.version)) {
+            return false;
+        }
+        if ((this.year == null) ? (other.year != null) : !this.year.equals(other.year)) {
+            return false;
+        }
+        return true;
+    }
+
+    public Dao<VersionEntity, Integer> getMainDao() {
+        return mainDao;
+    }
+
+    public void setMainDao(Dao<VersionEntity, Integer> mainDao) {
+        this.mainDao = mainDao;
+    }
+}

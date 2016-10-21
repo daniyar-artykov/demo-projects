@@ -1,0 +1,66 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package sleekbill.util;
+
+/**
+ *
+ * @author dani
+ */
+public class LastVersion {
+
+	String image;
+	String link;
+	String imageBtn;
+	String version;
+
+	public LastVersion() {
+		this("", "", "", "2011");
+	}
+
+	public LastVersion(String image, String link, String imageBtn, String version) {
+		this.image = image;
+		this.link = link;
+		this.imageBtn = imageBtn;
+		this.version = version;
+	}
+
+	public String getImage() {
+		return image;
+	}
+
+	public void setImage(String image) {
+		this.image = image;
+	}
+
+	public String getLink() {
+		return link;
+	}
+
+	public void setLink(String link) {
+		this.link = link;
+	}
+
+	public String getImageBtn() {
+		return imageBtn;
+	}
+
+	public void setImageBtn(String imageBtn) {
+		this.imageBtn = imageBtn;
+	}
+
+	public String getVersion() {
+		return version;
+	}
+
+	public void setVersion(String version) {
+		this.version = version;
+	}
+	
+	public int compareTo(String year) {
+		return version.compareTo(year);
+	}
+
+}

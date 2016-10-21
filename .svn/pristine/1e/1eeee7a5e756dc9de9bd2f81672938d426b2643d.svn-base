@@ -1,0 +1,47 @@
+/*
+ * Record.java
+ *
+ * Created on November 25, 2007, 2:05 PM
+ *
+ */
+package sleekbill.frames.records;
+
+/**
+ *
+ * @author marcu flaviu
+ */
+// Record.java
+// A simple data structure for use with the PagingModel
+//
+public class Record {
+
+    public Object[] data;
+    public int id;
+    public boolean canceled;
+    protected int extraSortAsc = 0;
+
+    public Object getValueAt(int i) {
+        return data[i];
+    }
+
+    public void setValueAt(int i, String value) {
+        data[i] = value;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public boolean isCanceled() {
+        return canceled;
+    }
+
+    public int getExtraSortAsc() {
+        return extraSortAsc;
+    }
+
+    public void setExtraSortAsc(int extraSortAsc) {
+        this.extraSortAsc = extraSortAsc;
+    }
+
+}

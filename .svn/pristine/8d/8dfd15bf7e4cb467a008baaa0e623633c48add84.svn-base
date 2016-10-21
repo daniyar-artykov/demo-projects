@@ -1,0 +1,35 @@
+package sleekbill.swingutils.datepicker;
+
+
+/**
+ *
+ * @author  f marcu
+ */
+public class Snippet {
+
+	public static void main(String[] args) {
+//		JFrame frame = new JFrame();
+//		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+//		frame.setLayout(new FlowLayout());
+//
+//		final DatePicker picker = new DatePicker(new Date(),SBConstants.ROMANIAN_DATE_FORMAT,new Locale("ro"));
+//		picker.addActionListener(new ActionListener() {
+//			public void actionPerformed(ActionEvent e) {
+//				System.out.println(picker.getDate());
+//			}
+//		});
+//
+//		JButton btn = new JButton("NULL");
+//		btn.addActionListener(new ActionListener() {
+//			public void actionPerformed(ActionEvent e) {
+//                            System.out.println("date:"+picker.getDate());
+//                            
+//			}
+//		});
+//                SBConstants.ROMANIAN_DATE_FORMAT.setLenient(false);
+//		frame.add(picker);
+//		frame.add(btn);
+//		frame.setSize(640, 480);
+//		frame.setVisible(true);
+	}
+}  

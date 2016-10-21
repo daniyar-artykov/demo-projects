@@ -1,0 +1,457 @@
+/*
+ * JDialogUpdate.java
+ *
+ * Created on May 6, 2008, 12:17 PM
+ */
+
+package sleekbill.frames;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.util.List;
+import java.util.Vector;
+import java.util.concurrent.ExecutionException;
+
+import javax.swing.ImageIcon;
+import javax.swing.SwingWorker;
+
+import sleekbill.Common;
+import sleekbill.Company;
+import sleekbill.Messages;
+import sleekbill.util.SBSwingUtils;
+import sleekbill.utils.SBDesktop;
+
+/**
+ *
+ * @author  f marcu
+ */
+public class JDialogUpdate extends javax.swing.JDialog {
+     private static final int MAX_BUFFER_SIZE = 1024;
+     
+    
+    /** Creates new form JDialogUpdate */
+    public JDialogUpdate(java.awt.Frame parent, boolean modal) {
+        super(parent, modal);
+        initComponents();
+        setLocationRelativeTo(parent);
+        update();
+        
+        SBSwingUtils.addContextMenuToChildren(this);
+        SBSwingUtils.applyFocusBorder(this);
+    }
+    
+    public void update(){
+        final UpdateTask utask = new UpdateTask();
+        utask.addPropertyChangeListener(
+             new PropertyChangeListener() {
+                 public  void propertyChange(PropertyChangeEvent evt) {
+                     if ("progress".equals(evt.getPropertyName())) {
+                         jPBUpdate.setValue((Integer)evt.getNewValue());
+                     }
+                     else if ("state".equals(evt.getPropertyName()) && SwingWorker.StateValue.DONE == evt.getNewValue() && !utask.isCancelled()) {
+                        try {
+                            File ufile=utask.get();
+                            if(ufile==null) return;
+                            if(ufile.getName().endsWith(".exe")) {
+                                try {
+                                    //String[] cmd = {"cmd","/c","start",ufile.getPath()};                                     
+                                    Runtime.getRuntime().exec(ufile.getPath(), null, ufile.getParentFile());
+                                } catch (Exception ex) {
+                                    try {
+										SBDesktop.browse(ufile.toURI());
+                                    }
+                                        catch (IOException e) {
+                                        e.printStackTrace();
+                                        throw e;
+                                    }                                    
+                                }
+                                finally{
+                                    dispose();
+                                    System.exit(0);
+                                }
+                            }
+                            
+//                            File exeDir = new File("./");                                                     
+//
+//                            String  exeName = null; //find exe before unzip :-o
+//                            
+//                            if(exeDir.isDirectory()){
+//                                File files[]=exeDir.listFiles(new FilenameFilter() {
+//                                    public boolean accept(File dir, String name) {
+//                                        if(name.endsWith("exe") && name.startsWith("Smart")) return true;
+//                                        return false;
+//                                    }
+//                                });
+//                                if(files.length>0) {
+//                                   exeName = files[0].getName();
+//                                }
+//                            }                            
+//
+//                            Ziper.unZip(new ZipFile(ufile));
+//                            
+//                            ufile.deleteOnExit();
+//                            
+//                            jLInform.setText("Fisierele au fost descarcate cu succes");
+//
+//                            String path = exeDir.getAbsolutePath();
+//                            path= path.replace("\\.","");
+//                            
+//                            if(Messages.showQuestionMessage(JDialogUpdate.this,"Pentru a definitiva actualizarea aplicatia trebuie repornita. Doriti sa reporniti acum?",
+//                                                                 "Repornire aplicatie")!=JOptionPane.YES_OPTION){
+//                                dispose();
+//                                return;                
+//                            }                              
+//                            
+//                            if(exeName!=null) Runtime.getRuntime().exec(exeName+" ok");
+                            System.exit(0);
+                            
+                        } catch (ExecutionException ex) {
+                            error();
+                            new JDialogError(null,ex).setVisible(true);
+                            ex.printStackTrace();
+                            return;
+                        } catch (InterruptedException ex) {
+                            error();
+                            new JDialogError(null,ex).setVisible(true);
+                            ex.printStackTrace();
+                            return;
+                        } catch (IOException ex) {
+                            error();
+                            new JDialogError(null,ex).setVisible(true);
+                            ex.printStackTrace();
+                            return;
+                        }                        
+                     }                     
+                 }
+             });    
+         utask.execute();             
+         jBIesire.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                utask.cancel(true);
+                dispose();
+            }
+          });          
+    }
+    
+    class UpdateTask extends SwingWorker<File, UpdateApp> {
+        @Override
+        protected File doInBackground() throws Exception {
+            try {
+                // Open connection to URL.
+                URL url = new URL(Common.updateCheckResponse);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+                // Connect to server.
+                connection.connect();
+
+                // Make sure response code is in the 200 range.
+                if (connection.getResponseCode() / 100 != 2) {
+                    error();
+                    return null;
+                }
+
+                // Check for valid content length.
+                int size = connection.getContentLength();
+                if (size < 1) {
+                    error();
+                    return null;
+                }
+
+				String fileName = Common.updateCheckResponse;
+				int type = Common.updateType;
+//				fileName = fileName.substring(fileName.lastIndexOf("Sleek"), fileName.lastIndexOf("."));
+				fileName = fileName.substring(fileName.lastIndexOf("/")+1, fileName.lastIndexOf("."));
+				fileName = fileName.replaceAll("%20", " ");
+				UpdateApp updateApp = new UpdateApp(type, fileName, size/1024 + "kB");
+				publish(updateApp);
+
+                File file = File.createTempFile(getPrefix(url),getSuffix(url));
+                // Open file 
+                FileOutputStream fos= new FileOutputStream(file); 
+
+                InputStream stream = connection.getInputStream();    
+                byte buffer[] = new byte[MAX_BUFFER_SIZE];
+                int bread = 0;
+                BigInteger downloaded=BigInteger.ZERO;
+                setProgress(0); //progress [0,100]
+                while((bread=stream.read(buffer))!=-1){
+                    fos.write(buffer,0,bread);   
+                    downloaded = downloaded.add(BigInteger.valueOf(bread));
+                    setProgress(downloaded.multiply(BigInteger.valueOf(100)).divide(BigInteger.valueOf(size)).intValue());
+                    if(isCancelled()) return null;
+                }
+                fos.close();
+                return file;
+            } catch (FileNotFoundException ex) {
+                ex.printStackTrace();
+                error();
+            } catch (MalformedURLException ex) {
+                ex.printStackTrace();
+                error();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                error();
+            }
+            return null;
+        }
+
+		@Override
+		protected void process(List<UpdateApp> chunks) {
+			for (UpdateApp chunk : chunks) {
+				jLInfo.setText(chunk.getHtmlInfoFile());
+				jLInform.setText(chunk.getHtmlInfoType());
+			}
+		}
+
+    }
+    
+    public void error(){
+        Messages.showErrorMessage(this,"An error has interrupted the update!", "Update error!");
+        dispose();
+    }
+    
+    private String getPrefix(URL url) {
+        String fileName = url.getFile();
+        fileName = fileName.substring(fileName.lastIndexOf('/') + 1);
+        try {
+            fileName = URLDecoder.decode(fileName,"UTF8");
+        } catch (UnsupportedEncodingException ex) {
+            ex.printStackTrace();
+        }
+        return fileName.substring(0,fileName.indexOf("."));
+   }
+    
+    private String getSuffix(URL url) {
+        String fileName = url.getFile();
+        fileName = fileName.substring(fileName.lastIndexOf('/') + 1);
+        try {
+            fileName = URLDecoder.decode(fileName,"UTF8");
+        } catch (UnsupportedEncodingException ex) {
+            ex.printStackTrace();
+        }        
+        return fileName.substring(fileName.lastIndexOf("."));
+   }
+
+	public class UpdateApp {
+		public static final int ACTUALIZARE = 1;
+		public static final int INSTALARE = 2;
+		int type = ACTUALIZARE;
+		String fileName = "";
+		String size;
+
+		public UpdateApp(int type, String fileName, String size) {
+			this.type = type;
+			this.fileName = fileName;
+			this.size = size;
+		}
+
+		public String getFileName() {
+			return fileName;
+		}
+
+		public String getSize() {
+			return size;
+		}
+
+		public int getType() {
+			return type;
+		}
+
+		public String getHtmlInfoFile() {
+			String text = "";
+			if(type == ACTUALIZARE) {
+				text = "<html>Files are being downloaded in order to update to a newer version "
+							+ "<span style='color:#2382a5;'><b>" + fileName + "</b></span>" +
+							"; size: <span style='color:#2382a5;'><b>" + size + "</b></span></html>";
+			} else {
+				text = "<html>Files are being downloaded in order to update the program to a newer version "
+							+ "<span style='color:#2382a5;'><b>" + fileName + "</b></span>" +
+							"; size: <span style='color:#2382a5;'><b>" + size + "</b></span></html>";
+			}
+			return text;
+		}
+
+		public String getHtmlInfoType() {
+			String text = "";
+			if(type == ACTUALIZARE) {
+				text = "<html>We recommend you to allow the program update so that you "
+						+ "may benefit from the latest improvements and features.</html>";
+			} else {
+				text = "<html>We recommend you to install and test the new version of the program "
+						+ "so that you may benefit from the latest improvements and features.</html>";
+			}
+			return text;
+		}
+	}
+
+    /** This method is called from within the constructor to
+     * initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is
+     * always regenerated by the Form Editor.
+     */
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
+
+        jPanel1 = new javax.swing.JPanel();
+        jPanel6 = new javax.swing.JPanel();
+        jPanel5 = new javax.swing.JPanel();
+        jPanel3 = new javax.swing.JPanel();
+        jLImage = new javax.swing.JLabel();
+        jLInfo = new javax.swing.JLabel();
+        jPanel2 = new javax.swing.JPanel();
+        jBIesire = new javax.swing.JButton();
+        jPanel4 = new javax.swing.JPanel();
+        jLInform = new javax.swing.JLabel();
+        jPBUpdate = new javax.swing.JProgressBar();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
+        setTitle("New update available");
+        getContentPane().setLayout(new java.awt.GridBagLayout());
+
+        jPanel1.setBackground(new java.awt.Color(229, 235, 242));
+        jPanel1.setPreferredSize(new java.awt.Dimension(500, 250));
+        jPanel1.setLayout(new java.awt.GridBagLayout());
+
+        jPanel6.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(195, 210, 219), 1, true));
+        jPanel6.setLayout(new java.awt.GridBagLayout());
+
+        jPanel5.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(203, 209, 213)));
+        jPanel5.setLayout(new java.awt.GridBagLayout());
+
+        jPanel3.setBackground(new java.awt.Color(253, 253, 253));
+        jPanel3.setBorder(javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 0, new java.awt.Color(203, 209, 213)));
+        jPanel3.setLayout(new java.awt.GridBagLayout());
+
+        jLImage.setIcon(new ImageIcon("./images/icons/sleekbill-icon-update.png"));
+        jPanel3.add(jLImage, new java.awt.GridBagConstraints());
+
+        jLInfo.setBackground(new java.awt.Color(253, 253, 253));
+        jLInfo.setText("Update Smart Bill");
+        jLInfo.setPreferredSize(new java.awt.Dimension(22, 50));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(0, 15, 0, 0);
+        jPanel3.add(jLInfo, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        jPanel5.add(jPanel3, gridBagConstraints);
+
+        jPanel2.setBackground(new java.awt.Color(246, 246, 246));
+        jPanel2.setLayout(new java.awt.GridBagLayout());
+
+        jBIesire.setText("Abort");
+        jBIesire.setName("bAbort"); // NOI18N
+        jBIesire.setPreferredSize(new java.awt.Dimension(120, 23));
+        jBIesire.setIcon(new ImageIcon("./images/buttons/viewer_ico_exit.png"));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel2.add(jBIesire, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.1;
+        jPanel5.add(jPanel2, gridBagConstraints);
+
+        jPanel4.setBorder(javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 0, new java.awt.Color(203, 209, 213)));
+        jPanel4.setLayout(new java.awt.GridBagLayout());
+
+        jLInform.setText("<html>We recommend you to install and test the new version of the program so that you may benefit from the latest improvements and features.</html>");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(10, 30, 10, 10);
+        jPanel4.add(jLInform, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(10, 10, 10, 10);
+        jPanel4.add(jPBUpdate, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        jPanel5.add(jPanel4, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        jPanel6.add(jPanel5, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(10, 10, 10, 10);
+        jPanel1.add(jPanel6, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        getContentPane().add(jPanel1, gridBagConstraints);
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+    
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                try {
+                    Common.checkOnlineXML(new Vector<Company>());
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+                new JDialogUpdate(null, true).setVisible(true);
+            }
+        });
+    }
+    
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jBIesire;
+    private javax.swing.JLabel jLImage;
+    private javax.swing.JLabel jLInfo;
+    private javax.swing.JLabel jLInform;
+    private javax.swing.JProgressBar jPBUpdate;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel4;
+    private javax.swing.JPanel jPanel5;
+    private javax.swing.JPanel jPanel6;
+    // End of variables declaration//GEN-END:variables
+    
+}

@@ -1,0 +1,133 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.entities;
+
+import com.j256.ormlite.field.DataType;
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+
+/**
+ *
+ * @author Andrei
+ */
+@DatabaseTable(tableName = "currencies")
+public class CurrencyEntity {
+    
+    public static final String CURRENCY_SYMBOL = "currency_symbol";
+    public static final String CURRENCY_NAME = "currency_name";
+    public static final String IS_USED = "is_used";
+    public static final String SYMBOL = "symbol";
+    
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+    @DatabaseField(columnName = CURRENCY_SYMBOL, canBeNull = false)
+    protected String currencySymbol;
+    @DatabaseField(columnName = CURRENCY_NAME, canBeNull = false)
+    protected String currencyName;
+    @DatabaseField(columnName = IS_USED, canBeNull = true, dataType = DataType.BOOLEAN, defaultValue = "0")
+    protected boolean isUsed;
+    @DatabaseField(columnName = SYMBOL, canBeNull = true)
+    protected String symbol;
+
+    public CurrencyEntity(CurrencyEntity currenciesEntity) {
+        this.id = currenciesEntity.id;
+        this.currencySymbol = currenciesEntity.currencySymbol;
+        this.currencyName = currenciesEntity.currencyName;
+        this.isUsed = currenciesEntity.isUsed;
+        this.symbol = currenciesEntity.symbol;
+    }
+
+    public CurrencyEntity() {
+    }
+
+    public CurrencyEntity(String currencySymbol, String currencyName) {
+        this.currencySymbol = currencySymbol;
+        this.currencyName = currencyName;
+    }
+
+    public CurrencyEntity(String currencySymbol, String currencyName, boolean isUsed) {
+        this.currencySymbol = currencySymbol;
+        this.currencyName = currencyName;
+        this.isUsed = isUsed;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getCurrencySymbol() {
+        return currencySymbol;
+    }
+
+    public void setCurrencySymbol(String currencySymbol) {
+        this.currencySymbol = currencySymbol;
+    }
+
+    public String getCurrencyName() {
+        return currencyName;
+    }
+
+    public void setCurrencyName(String currencyName) {
+        this.currencyName = currencyName;
+    }
+
+    public boolean isUsed() {
+        return isUsed;
+    }
+
+    public void setIsUsed(boolean isUsed) {
+        this.isUsed = isUsed;
+    }
+
+    public String getSymbol() {
+        return symbol;
+    }
+
+    public void setSymbol(String symbol) {
+        this.symbol = symbol;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 31 * hash + this.id;
+        hash = 31 * hash + (this.currencySymbol != null ? this.currencySymbol.hashCode() : 0);
+        hash = 31 * hash + (this.currencyName != null ? this.currencyName.hashCode() : 0);
+        hash = 31 * hash + (this.isUsed ? 1 : 0);
+        hash = 31 * hash + (this.symbol != null ? this.symbol.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final CurrencyEntity other = (CurrencyEntity) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if ((this.currencySymbol == null) ? (other.currencySymbol != null) : !this.currencySymbol.equals(other.currencySymbol)) {
+            return false;
+        }
+        if ((this.currencyName == null) ? (other.currencyName != null) : !this.currencyName.equals(other.currencyName)) {
+            return false;
+        }
+        if (this.isUsed != other.isUsed) {
+            return false;
+        }
+        if ((this.symbol == null) ? (other.symbol != null) : !this.symbol.equals(other.symbol)) {
+            return false;
+        }
+        return true;
+    }
+}

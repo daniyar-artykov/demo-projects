@@ -1,0 +1,257 @@
+package sleekbill.xmlrpc;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Set;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.xmlrpc.XmlRpcException;
+import org.apache.xmlrpc.XmlRpcRequest;
+import org.apache.xmlrpc.client.util.ClientFactory;
+import org.apache.xmlrpc.common.XmlRpcHttpRequestConfigImpl;
+import org.apache.xmlrpc.server.PropertyHandlerMapping;
+import org.apache.xmlrpc.server.RequestProcessorFactoryFactory;
+import org.apache.xmlrpc.server.RequestProcessorFactoryFactory.RequestSpecificProcessorFactoryFactory;
+import org.apache.xmlrpc.server.XmlRpcServerConfigImpl;
+import org.apache.xmlrpc.webserver.ServletWebServer;
+import org.apache.xmlrpc.webserver.XmlRpcServlet;
+import org.apache.xmlrpc.webserver.XmlRpcServletServer;
+
+import sleekbill.Common;
+import sleekbill.Config;
+import sleekbill.db.DBConnection;
+
+/**
+ *
+ * @author  flaviu marcu
+ */
+public class Server {
+
+    private static ServletWebServer webServer;
+    private static HashMap<String, DB> dbList = new HashMap<String, DB>();
+
+    public static void start() throws Exception {
+        int port;
+        boolean paranoid =false;
+        Config c = new Config();
+        port = Integer.parseInt(c.get("port"));
+            
+        /*
+        XmlRpcServer xmlRpcServer = webServer.getXmlRpcServer();
+        
+        PropertyHandlerMapping phm = new PropertyHandlerMapping();
+        
+        phm.addHandler(Handlers.class.getName(),HandlersImpl.class);
+        
+        
+        AuthenticationHandler pAuthenticationHandler = new AuthenticationHandler() {
+        
+        @Override
+        public boolean isAuthorized(XmlRpcRequest pRequest) throws XmlRpcException {
+        XmlRpcClientConfigImpl config = (XmlRpcClientConfigImpl) pRequest.getConfig();
+        String user = config.getBasicUserName();
+        String pass = config.getBasicPassword();
+        return (User.getLoggedUser(user,pass)!=null);
+        }
+        };
+        phm.setAuthenticationHandler(pAuthenticationHandler);
+         */
+        SBXmlRpcServlet servlet = new SBXmlRpcServlet();
+//		servlet.setAuthenticationHandler(new AuthenticationHandler() {
+//
+//			@Override
+//			public boolean isAuthorized(XmlRpcRequest xrr) throws XmlRpcException {
+////				XmlRpcRequestConfig config = xrr.getConfig();
+////				if(config instanceof SBConfig){
+////					SBConfig config1 = (SBConfig)config;
+////					String ip = config1.getClientIpAddress();
+////					
+//				return true;
+//			}
+//		});
+        webServer = new ServletWebServer(servlet, port);
+        if("true".equals(c.get("paranoid"))) {
+            webServer.setParanoid(true);
+            webServer.acceptClient(c.get("accept_ip"));
+        }
+        XmlRpcServerConfigImpl serverConfig = (XmlRpcServerConfigImpl) servlet.getXmlRpcServletServer().getConfig();
+        serverConfig.setEnabledForExtensions(true);
+        serverConfig.setEnabledForExceptions(true);
+        serverConfig.setContentLengthOptional(false);
+
+
+        /*xmlRpcServer.setHandlerMapping(phm);
+        
+        XmlRpcServerConfigImpl serverConfig = (XmlRpcServerConfigImpl) xmlRpcServer.getConfig();
+        serverConfig.setEnabledForExtensions(true);
+        serverConfig.setContentLengthOptional(false);
+         */
+        webServer.start();
+    }
+
+    public static void stop() throws Exception {
+        if (webServer != null) {
+            webServer.shutdown();
+        }
+        webServer = null;
+    }
+
+    public static boolean isRunning(){
+        try{
+            if(webServer!=null && webServer.getPort()>0)
+                return true;
+        }
+        catch(Exception e){
+            System.err.println("server error:"+e.getMessage());
+        }
+        return false;
+    }
+    public static class SBConfig extends XmlRpcHttpRequestConfigImpl {
+
+        private String clientIpAddress;
+
+        public String getClientIpAddress() {
+            return clientIpAddress;
+        }
+
+        public void setClientIpAddress(String pClientIpAddress) {
+            clientIpAddress = pClientIpAddress;
+        }
+    }
+
+    public interface RequestInitializableRequestProcessor {
+
+        public void init(SBConfig pConfig);
+    }
+
+    public static class SBXmlRpcServlet extends XmlRpcServlet {
+        
+        public SBXmlRpcServlet(){
+            RequestProcessorFactoryFactory factory = new RequestSpecificProcessorFactoryFactory() {
+
+                @Override
+                protected Object getRequestProcessor(Class pClass, XmlRpcRequest pRequest) throws XmlRpcException {
+                    RequestInitializableRequestProcessor proc = (RequestInitializableRequestProcessor) super.getRequestProcessor(pClass, pRequest);
+                    proc.init((SBConfig) pRequest.getConfig());
+                    return proc;
+                }
+            };            
+            setRequestProcessorFactoryFactory(factory);
+        }
+
+        @Override
+        protected XmlRpcServletServer newXmlRpcServer(ServletConfig pConfig) throws XmlRpcException {
+            return new XmlRpcServletServer() {
+
+                @Override
+                protected XmlRpcHttpRequestConfigImpl newConfig(HttpServletRequest pRequest) {
+                    SBConfig config = new SBConfig();
+                    config.setClientIpAddress(pRequest.getRemoteAddr());
+                    return config;
+                }
+            };
+        }
+
+        @Override
+        protected PropertyHandlerMapping newPropertyHandlerMapping(URL url) throws IOException, XmlRpcException {
+            PropertyHandlerMapping mapping = super.newPropertyHandlerMapping(url);
+            return mapping;
+        }
+    }
+
+    public static boolean refreshMaxClients(String firma) {
+    	if(Common.isClient()){
+			ClientFactory factory = sleekbill.xmlrpc.Client.getFactory();
+            Handlers hs = (Handlers) factory.newInstance(Handlers.class);
+            hs.refreshMaxClients(firma);
+			return true;
+    	}
+    	if(dbList.containsKey(firma)) {
+//    		DB db = dbList.get(firma);
+//    		db.setMaxClients(Integer.valueOf(Common.getMaxClientsDb(firma)));
+			dbList.remove(firma);
+    	}
+    	return true;
+    }
+    
+    public static boolean isAuthorized(String firma, String ip) {
+		if (firma.equals(DBConnection.DEFAULT_DBKEY)) {
+			//userdata
+			return true;
+		}
+
+//		DB db;
+//		if(!dbList.containsKey(firma)) {
+//			db = new DB(Common.getMaxClientsDb(firma));
+//		} else {
+//			db = dbList.get(firma);
+//		}
+//		if(!db.addClient(ip)) {
+//			return false;
+//		}
+//		dbList.put(firma, db);
+		return true;
+    }
+    
+    public static int getNrMaxClients(String firma) {
+		DB db = dbList.get(firma);
+    	return (db == null ? 0 : db.getMaxClients());
+    }
+
+	public static class DB {
+		
+		private int maxClients = 0;
+		private HashMap<String, Date> ipList = new HashMap<String, Date>();
+		private int deleteTime = 1000 * 60 * 60 * 24;
+		
+		public DB(int maxClients) {
+			super();
+			this.maxClients = maxClients;
+		}
+		
+		public DB(String maxClients) {
+			super();
+			try {
+				this.maxClients = Integer.valueOf(maxClients);
+			} catch (NumberFormatException e) {
+				this.maxClients = 0;
+			}
+		}
+		
+		public int getMaxClients() {
+			return maxClients;
+		}
+
+		public void setMaxClients(int maxClients) {
+			this.maxClients = maxClients;
+		}
+
+		public boolean addClient(String ip) {
+			if(!ipList.containsKey(ip)){
+				//delete old clients
+				HashMap<String, Date> newIpList = new LinkedHashMap<String, Date>();
+				Set<String> set = ipList.keySet();
+				for (Iterator<String> iterator = set.iterator(); iterator.hasNext();) {
+					String ip1 = (String) iterator.next();
+					Date d = ipList.get(ip1);
+					if(System.currentTimeMillis() - d.getTime() < (deleteTime)){
+						newIpList.put(ip1, d);
+					}
+				}
+				ipList = newIpList;
+				if(ipList.size() >= maxClients){
+					return false;
+				}
+			}
+			ipList.put(ip, new Date());
+			return true;
+		}
+		
+	}
+}

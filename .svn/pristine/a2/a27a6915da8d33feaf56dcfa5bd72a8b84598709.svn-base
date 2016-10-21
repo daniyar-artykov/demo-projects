@@ -1,0 +1,337 @@
+/*
+ * SBPagingModel.java
+ *
+ * Created on May 2, 2008, 1:20 PM
+ */
+package sleekbill.swingutils.pm;
+
+import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.HashMap;
+import sleekbill.Common;
+import sleekbill.beans.Flag;
+
+import sleekbill.frames.records.Record;
+import sleekbill.swingutils.SBAbstractTableModel;
+
+/**
+ *
+ * @author flaviu marcu
+ */
+public class SBPagingModel extends SBAbstractTableModel {
+
+    /**
+     * Creates a new instance of SBPagingModel
+     */
+    boolean bExtra = false;
+    String DOCUMENT_TYPE = "";
+    int precision = Common.PRECISION;
+
+    public SBPagingModel() {
+        try {
+            precision = Flag.getLast(Common.connection.getConnection()).getDecimals();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public SBPagingModel(SBAbstractTableModel sbtm, boolean bExtra, String dt) {
+        this();
+        this.sbtm = sbtm;
+        preferredColumnWidths = sbtm.getPreferredColumnWidths();
+        this.bExtra = bExtra;
+        this.DOCUMENT_TYPE = dt;
+        try {
+            precision = Flag.getLast(Common.connection.getConnection()).getDecimals();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+    }
+    public int pageSize = 50;
+    public int pageOffset;
+    public int length;
+    protected HashMap<String, Integer> columnNameToIndex = new HashMap<String, Integer>();
+    boolean isExporting = false;
+    int tempPageSize = 0;
+    int anulate = 0;
+    boolean hasAnulate = false;
+    int duplicates = 0;
+    SBAbstractTableModel sbtm;
+    // Return values appropriate for the visible table part.
+
+    @Override
+    public int getRowCount() {
+        if (sbtm == null || getDataLength() == 0) {
+            return 0;
+        }
+        if (getDataLength() <= pageSize) {
+            return getDataLength() + (bExtra ? 2 : 0);
+        }
+        if (getDataLength() - (pageSize * pageOffset) >= pageSize) {
+            return pageSize + (bExtra ? 3 : 0);
+        }
+        return getDataLength() - (pageSize * pageOffset) + (bExtra ? 3 : 0);
+    }
+
+    @Override
+    public int getColumnCount() {
+        return sbtm.getColumnCount();
+    }
+
+    @Override
+    public boolean isCellEditable(int row, int col) {
+        int realRow = row + (pageOffset * pageSize);
+        return sbtm.isCellEditable(realRow, col);
+    }
+
+    @Override
+    public int getId(int row) {
+        int realRow = row + (pageOffset * pageSize);
+        return sbtm.getId(realRow);
+    }
+
+    public Object getTotalValue(int col) {
+
+        BigDecimal val = BigDecimal.ZERO;
+        for (int i = 0; i < getDataLength(); i++) {
+            if (sbtm.getValueAt(i, col).toString() == null || sbtm.getValueAt(i, col).toString().isEmpty()) {
+                continue;
+            }
+            String value = sbtm.getValueAt(i, col).toString();
+            BigDecimal toAdd = null;
+            if ("(".equals(value.substring(0, 1))
+                    && ")".equals(value.substring(value.length() - 1, value.length()))) {
+                toAdd = new BigDecimal(value.replace("(", "").replace(")", "")).negate();
+            } else {
+                toAdd = new BigDecimal(value);
+            }
+            toAdd = toAdd == null ? BigDecimal.ZERO : toAdd;
+            val = val.add(toAdd);
+        }
+        return val.setScale(precision, RoundingMode.HALF_UP);
+    }
+
+    public Object getPageTotalValue(int col) {
+        int pgsize = getPageSize();
+        BigDecimal ptotal = BigDecimal.ZERO;
+
+        int realFirstRow = 0 + (pageOffset * pageSize);
+        for (int i = realFirstRow; i < realFirstRow + pgsize; i++) {
+            if (i < getDataLength()) {
+                if (sbtm.getValueAt(i, col).toString() == null || sbtm.getValueAt(i, col).toString().isEmpty()) {
+                    continue;
+                }
+                BigDecimal toAdd = new BigDecimal(sbtm.getValueAt(i, col).toString());
+                toAdd = toAdd == null ? BigDecimal.ZERO : toAdd;
+                ptotal = ptotal.add(toAdd != null ? toAdd : BigDecimal.ZERO);
+
+            }
+        }
+        return ptotal.setScale(precision, RoundingMode.HALF_UP);
+    }
+
+    @Override
+    public Object getValueAt(int row, int col) {
+        Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+
+        if (row >= pageSize && bExtra) {
+
+            int diff = getRowCount() <= pageSize ? 2 : 3;
+            if (getDataLength() == pageSize) {
+                diff = 2;
+            }
+            if (row == getRowCount() - 1 && col == 1) {
+                return "TOTAL " + DOCUMENT_TYPE;
+            }
+            if (row == getRowCount() - 1 && col == 5) {
+                return getTotalValue(col);
+            }
+            if (row == getRowCount() - 1 && col == 6) {
+                return getTotalValue(col);
+            }
+            if (row == getRowCount() - 1 && col == 7) {
+                return getTotalValue(col);
+            }
+            if (row == getRowCount() - 1 && col == 11 && dim.width >= 1360) {
+                return getTotalValue(col);
+            }
+            if (row == getRowCount() - 1 && col == 12 && dim.width >= 1360) {
+                return getTotalValue(col);
+            }
+
+            if (row == getRowCount() - 2 && col == 1 && diff == 3) {
+                return "TOTAL On Page";
+            }
+            if (row == getRowCount() - 2 && col == 5 && diff == 3) {
+                return getPageTotalValue(col);
+            }
+            if (row == getRowCount() - 2 && col == 6 && diff == 3) {
+                return getPageTotalValue(col);
+            }
+            if (row == getRowCount() - 2 && col == 7 && diff == 3) {
+                return getPageTotalValue(col);
+            }
+            if (row == getRowCount() - 2 && col == 11 && dim.width >= 1360 && diff == 3) {
+                return getPageTotalValue(col);
+            }
+            if (row == getRowCount() - 2 && col == 12 && dim.width >= 1360 && diff == 3) {
+                return getPageTotalValue(col);
+            }
+
+            return "";
+        }
+
+        if (row <= pageSize && bExtra) {
+
+            if (row == getRowCount() - 1 && col == 1) {
+                return "TOTAL " + DOCUMENT_TYPE;
+            }
+            if (row == getRowCount() - 1 && col == 5) {
+                return getTotalValue(col);
+            }
+            if (row == getRowCount() - 1 && col == 6) {
+                return getTotalValue(col);
+            }
+            if (row == getRowCount() - 1 && col == 7) {
+                return getTotalValue(col);
+            }
+            if (row == getRowCount() - 1 && col == 11 && dim.width >= 1360) {
+                return getTotalValue(col);
+            }
+            if (row == getRowCount() - 1 && col == 12 && dim.width >= 1360) {
+                return getTotalValue(col);
+            }
+
+            if (getPageCount() > 1) {
+                if (row == getRowCount() - 2 && col == 1) {
+                    return "TOTAL On Page";
+                }
+                if (row == getRowCount() - 2 && col == 5) {
+                    return getPageTotalValue(col);
+                }
+                if (row == getRowCount() - 2 && col == 6) {
+                    return getPageTotalValue(col);
+                }
+                if (row == getRowCount() - 2 && col == 7) {
+                    return getPageTotalValue(col);
+                }
+                if (row == getRowCount() - 2 && col == 11 && dim.width >= 1360) {
+                    return getPageTotalValue(col);
+                }
+                if (row == getRowCount() - 2 && col == 12 && dim.width >= 1360) {
+                    return getPageTotalValue(col);
+                }
+
+            }
+        }
+
+        int realRow = row + (pageOffset * pageSize);
+        return sbtm.getValueAt(realRow, col);
+    }
+
+    @Override
+    public String getColumnName(int col) {
+        return sbtm.getColumnName(col);
+    }
+    // Use this method to figure out which page you are on.
+
+    public int getPageOffset() {
+        return pageOffset;
+    }
+
+    public void setPageOffset(int pOfs) {
+        pageOffset = pOfs;
+    }
+
+    public int getPageCount() {
+        return (int) Math.ceil((double) getDataLength() / pageSize);
+    }
+    // Use this method if you want to know how big the real table is. You could also
+    // write "getRealValueAt( )" if needed.
+
+    public int getRealRowCount() {
+        return getDataLength();
+    }
+
+    public int getPageSize() {
+        return pageSize;
+    }
+
+    public void setPageSize(int s) {
+        if (s == pageSize) {
+            return;
+        }
+        int oldPageSize = pageSize;
+        pageSize = s;
+        pageOffset = pageSize != 0 ? (oldPageSize * pageOffset) / pageSize : 0;
+        fireTableDataChanged();
+    }
+    // Update the page offset and fire a data changed event (all rows).
+
+    public void pageDown() {
+        if (pageOffset < getPageCount() - 1) {
+            pageOffset++;
+            fireTableDataChanged();
+        }
+    }
+    // Update the page offset and fire a data changed (all rows).
+
+    public void pageUp() {
+        if (pageOffset > 0) {
+            pageOffset--;
+            fireTableDataChanged();
+        }
+    }
+
+    public void pageFirst() {
+        if (pageOffset > 0) {
+            pageOffset = 0;
+            fireTableDataChanged();
+        }
+    }
+
+    public void pageLast() {
+        if (pageOffset < getPageCount() - 1) {
+            pageOffset = getPageCount() - 1;
+            fireTableDataChanged();
+        }
+    }
+
+    public int getPageRowCount() {
+        return getDataLength() - (pageSize * pageOffset) >= pageSize ? pageSize : getDataLength() - (pageSize * pageOffset);
+    }
+
+    public int getDataLength() {
+        return sbtm.getRowCount();
+    }
+
+    public int getRealRow(int row) {
+        return row + (pageOffset * pageSize);
+    }
+
+    /*
+     * JTable uses this method to determine the default renderer/
+     * editor for each cell.  If we didn't implement this method,
+     * then the last column would contain text ("true"/"false"),
+     * rather than a component.
+     */
+    @Override
+    public Class getColumnClass(int c) {
+        return getValueAt(0, c).getClass();
+    }
+
+    @Override
+    public ArrayList<Record> getData() {
+        return null;
+    }
+
+    @Override
+    public void setValueAt(Object value, int row, int col) {
+        int realRow = row + (pageOffset * pageSize);
+        sbtm.setValueAt(value, realRow, col);
+    }
+}

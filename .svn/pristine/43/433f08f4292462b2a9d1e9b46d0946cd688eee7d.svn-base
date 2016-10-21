@@ -1,0 +1,121 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.entities;
+
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+
+/**
+ *
+ * @author Andrei
+ */
+@DatabaseTable(tableName = "tips")
+public class TipEntity {
+    
+    public static final String TEXT = "text";
+    public static final String PRIORITY = "priority";
+    public static final String VERSION = "version";
+    public static final String COUNT = "count";
+    
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+    @DatabaseField(columnName = TEXT, canBeNull = true)
+    protected String text;
+    @DatabaseField(columnName = PRIORITY, canBeNull = true, defaultValue = "0")
+    protected Integer priority;
+    @DatabaseField(columnName = VERSION, canBeNull = true, defaultValue = "0")
+    protected Integer version;
+    @DatabaseField(columnName = COUNT, canBeNull = true, defaultValue = "0")
+    protected Integer count;
+
+    public TipEntity() {
+    }
+
+    public TipEntity(TipEntity tipEntity) {
+        this.id = tipEntity.id;
+        this.text = tipEntity.text;
+        this.priority = tipEntity.priority;
+        this.version = tipEntity.version;
+        this.count = tipEntity.count;
+    }          
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
+
+    public Integer getPriority() {
+        return priority;
+    }
+
+    public void setPriority(Integer priority) {
+        this.priority = priority;
+    }
+
+    public Integer getVersion() {
+        return version;
+    }
+
+    public void setVersion(Integer version) {
+        this.version = version;
+    }
+
+    public Integer getCount() {
+        return count;
+    }
+
+    public void setCount(Integer count) {
+        this.count = count;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 11 * hash + this.id;
+        hash = 11 * hash + (this.text != null ? this.text.hashCode() : 0);
+        hash = 11 * hash + (this.priority != null ? this.priority.hashCode() : 0);
+        hash = 11 * hash + (this.version != null ? this.version.hashCode() : 0);
+        hash = 11 * hash + (this.count != null ? this.count.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final TipEntity other = (TipEntity) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if ((this.text == null) ? (other.text != null) : !this.text.equals(other.text)) {
+            return false;
+        }
+        if (this.priority != other.priority && (this.priority == null || !this.priority.equals(other.priority))) {
+            return false;
+        }
+        if (this.version != other.version && (this.version == null || !this.version.equals(other.version))) {
+            return false;
+        }
+        if (this.count != other.count && (this.count == null || !this.count.equals(other.count))) {
+            return false;
+        }
+        return true;
+    }
+}

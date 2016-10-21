@@ -1,0 +1,32 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames.records;
+
+import java.math.BigDecimal;
+import java.util.Date;
+import static sleekbill.beans.Estimate.TYPE_DELIVERY;
+import static sleekbill.beans.Estimate.TYPE_PROFORMA;
+import static sleekbill.beans.Estimate.TYPE_QUOTATION;
+import sleekbill.utils.SBStringUtils;
+
+/**
+ *
+ * @author Andrei
+ */
+public class EstimateRecord extends Record{
+	
+    public EstimateRecord(Integer id, String name, String number, Date issueDate, Date dueDate, BigDecimal value, BigDecimal tax, BigDecimal total, String notes, boolean isSent, String type) {       
+        if(type.equals(TYPE_QUOTATION)){
+			type = "Quotation";
+		} else if(type.equals(TYPE_PROFORMA)){
+			type = "Proforma";
+		} else if(type.equals(TYPE_DELIVERY)){
+			type = "Delivery Note";
+		}
+		this.data = new Object[]{name, number, issueDate, dueDate, value, tax, total, notes, isSent ? "1" : "0", type, ""};
+        this.id = id;
+    }   
+
+}

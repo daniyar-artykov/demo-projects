@@ -1,0 +1,303 @@
+/*
+ * SBJTable.java
+ *
+ * Created on November 8, 2007, 6:18 PM
+ */
+package sleekbill.swingutils;
+
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Point;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.swing.BorderFactory;
+import javax.swing.JPanel;
+import javax.swing.JTable;
+import javax.swing.border.LineBorder;
+import javax.swing.event.TableModelEvent;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableModel;
+
+/**
+ *
+ * @author flaviu marcu
+ */
+public abstract class SBJTable extends JTable implements Runnable {
+
+    public static int MINIMUM = 23;
+
+    Map<Integer, Integer> colWithMinHeightOfRow = new HashMap<Integer, Integer>();
+    Map<Integer, Integer> minHeightOfRow = new HashMap<Integer, Integer>();
+
+    ArrayList<DoubleClickActionListener> doubleClickActionListeners = new ArrayList<DoubleClickActionListener>();
+    SBButtonActionListener bal;
+
+    Color borderHeaderColor = new Color(0x16, 0x68, 0x8e);
+
+    public SBJTable(JPanel panel) {
+        this();
+        panel.add(getTableHeader());
+        getTableHeader().setMinimumSize(new Dimension(10, 30));
+        getTableHeader().setPreferredSize(new Dimension(10, 25));
+        getTableHeader().setMaximumSize(new Dimension(10000, 30));
+    }
+
+    /**
+     * Creates a new instance of SBJTable
+     */
+    public SBJTable() {
+        setRowSelectionAllowed(true);
+        setColumnSelectionAllowed(false);
+        JTableHeader nheader = getTableHeader();
+        nheader.setBorder(BorderFactory.createLineBorder(borderHeaderColor, 1));
+        nheader.setDefaultRenderer(new SortButtonRenderer());
+        nheader.setPreferredSize(new Dimension(10, 30));
+        nheader.setMinimumSize(new Dimension(10, 30));
+        nheader.setReorderingAllowed(false);
+        setBorder(new LineBorder(Color.LIGHT_GRAY));
+        setRowHeight(23);
+        addMouseMotionListener(new MouseMotionListener() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+            }
+
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                int r = rowAtPoint(e.getPoint());
+                int c = columnAtPoint(e.getPoint());
+                if (r == -1 || c == -1) {
+                    return;
+                }
+                if (getCellRenderer(r, c) instanceof MultiButtonCell
+                        || getCellRenderer(r, c) instanceof ButtonColumn
+                        || getCellRenderer(r, c) instanceof EditDeleteButtonCell) {
+                    setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                } else if (doubleClickActionListeners.size() > 0) {
+                    for (DoubleClickActionListener dcal : doubleClickActionListeners) {
+                        int doubleClickCol = dcal.getColumn();
+                        if (c == doubleClickCol && !"".equals(getValueAt(r, c)) && getValueAt(r, c) != null) {
+                            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                            break;
+                        } else {
+                            setCursor(Cursor.getDefaultCursor());
+                        }
+                    }
+                } else {
+                    setCursor(Cursor.getDefaultCursor());
+                }
+            }
+        });
+
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                SBJTable table = SBJTable.this;
+                Point p = e.getPoint();
+                if (e.getClickCount() != 2) {
+                    return;
+                }
+                int row = table.rowAtPoint(p);
+                int col = table.columnAtPoint(p);
+                if (table.isCellEditable(row, col)) {
+                    return;
+                }
+                if (doubleClickActionListeners.size() > 0) {
+                    for (DoubleClickActionListener dcal : doubleClickActionListeners) {
+                        int doubleClickCol = dcal.getColumn();
+                        if (col == doubleClickCol && getValueAt(row, col) != null && !"".equals(getValueAt(row, col))) {
+                            dcal.actionPerformed(null);
+                        } else if (doubleClickCol < 0) {
+                            dcal.actionPerformed(null);
+                        }
+                    }
+                }
+            }
+
+        });
+    }
+
+    /* fixes scroll in jscrollpane of jtable */
+    @Override
+    public void run() {
+        scrollRectToVisible(getCellRect(getRowCount(), 0, true));
+    }
+
+    ;     
+    
+    @Override
+    public void tableChanged(TableModelEvent e) {
+        super.tableChanged(e);
+        if (getModel() instanceof SBAbstractTableModel) {
+            SBAbstractTableModel tableModel = (SBAbstractTableModel) getModel();
+            if (tableModel.isBusyLoading()) {
+                firePropertyChange("tableBusyLoading", false, true);
+            } else {
+                firePropertyChange("tableBusyLoading", true, false);
+            }
+        }
+    }
+
+    public void setPreferredColumnWidths() {
+        if (getModel() instanceof SBAbstractTableModel) {
+            SBAbstractTableModel tableModel = (SBAbstractTableModel) getModel();
+            if (tableModel == null) {
+                return;
+            }
+            if (tableModel.getPreferredColumnWidths() == null || tableModel.getPreferredColumnWidths().length != getColumnCount()) {
+                return;
+            }
+            for (int i = 0; i < getColumnCount(); i++) {
+                getColumnModel().getColumn(i).setPreferredWidth(tableModel.getPreferredColumnWidths()[i]);
+            }
+        } else if (getModel() instanceof SBArticoleTableModel) {
+            SBArticoleTableModel tableModel = (SBArticoleTableModel) getModel();
+            if (tableModel == null) {
+                return;
+            }
+            if (tableModel.getPreferredColumnWidths() == null || tableModel.getPreferredColumnWidths().length != getColumnCount()) {
+                return;
+            }
+            for (int i = 0; i < getColumnCount(); i++) {
+                getColumnModel().getColumn(i).setPreferredWidth(tableModel.getPreferredColumnWidths()[i]);
+            }
+        }
+    }
+
+    @Override
+    public void setModel(TableModel dataModel) {
+        super.setModel(dataModel);
+        setPreferredColumnWidths();
+
+//        dataModel.addTableModelListener(new TableModelListener(){
+//
+//			@Override
+//			public void tableChanged(TableModelEvent e) {
+//				SwingUtilities.invokeLater(new Runnable() {
+//					
+//					@Override
+//					public void run() {
+//						SBTableUtilities.setPreferredRowHeights(SBJTable.this, minimum);
+//					}
+//				});
+////				SBTableUtilities.setPreferredRowHeights(SBJTable.this, minimum);
+//			}
+//        	
+//        });
+    }
+
+    /* to overwrite */
+    public void actionEdit() {
+    }
+
+    public void actionDelete() {
+    }
+
+    public void actionCancel() {
+    }
+
+    public void actionPreview() {
+    }
+
+    public void actionExtra() {
+    }
+
+    public void actionExtra2() {
+    }
+
+    public boolean isAnulat(int row) {
+        return false;
+    }
+
+    public void actionOf(int buttonIndex, int row, int x, int y) {
+        /*convert row index*/
+        //int r = convertRowIndexToModel(row);
+        if (bal != null) {
+            bal.actionOf(buttonIndex, row, x, y);
+        } else {
+            System.out.println("button " + buttonIndex + " pushed on row " + row);
+        }
+    }
+
+    public void actionOf(int buttonIndex, int row) {
+        /*convert row index*/
+        //int r = convertRowIndexToModel(row);
+        if (bal != null) {
+            bal.actionOf(buttonIndex, row);
+        } else {
+            System.out.println("button " + buttonIndex + " pushed on row " + row);
+        }
+    }
+
+    /*
+    public String getToolTipText( MouseEvent e ){
+            int row = rowAtPoint( e.getPoint() );
+            int column = columnAtPoint( e.getPoint() );
+            Component c = prepareRenderer(getCellRenderer(row,column), row, column);
+            c.doLayout();
+            c.validate();
+            JPanel p=null;
+            if(c instanceof JPanel) 
+                p = (JPanel)c;
+
+            if (p!=null && p.getComponentCount() > 1)
+            {
+                for (int i = 0; i <  p.getComponentCount(); i++) {
+                    if(! (p.getComponent(i) instanceof JButton)) continue;
+                    JButton b = (JButton)p.getComponent(i);
+                    if(b.getBounds().contains(e.getPoint()))
+                        return b.getToolTipText();
+                }
+            }
+            return super.getToolTipText(e);
+    }    
+     */
+    public int getMinimumRowHeight(int row, int col) {
+        if (colWithMinHeightOfRow.get(row) != null) {
+            return (Integer) minHeightOfRow.get(row);
+        }
+        return MINIMUM;
+    }
+
+    public void setMinimumRowHeight(int min, int row, int col) {
+        if (colWithMinHeightOfRow.get(row) == null) {
+            colWithMinHeightOfRow.put(row, col);
+            minHeightOfRow.put(row, min);
+            return;
+        }
+        if (colWithMinHeightOfRow.get(row) != col && min > minHeightOfRow.get(row)) {
+            colWithMinHeightOfRow.put(row, col);
+            minHeightOfRow.put(row, min);
+        }
+        if (colWithMinHeightOfRow.get(row) == col) {
+            minHeightOfRow.put(row, min);
+        }
+    }
+
+    public void addDoubleClickActionListener(DoubleClickActionListener doubleClickActionListener) {
+        doubleClickActionListeners.add(doubleClickActionListener);
+    }
+
+    public void removeAllDoubleClickActionListeners() {
+        doubleClickActionListeners.removeAll(doubleClickActionListeners);
+    }
+
+    public void setSBButtonActionListener(SBButtonActionListener bal) {
+        this.bal = bal;
+    }
+
+    public static abstract class SBButtonActionListener {
+
+        public void actionOf(int buttonIndex, int row) {
+        }
+
+        public void actionOf(int buttonIndex, int row, int x, int y) {
+        }
+    }
+
+}

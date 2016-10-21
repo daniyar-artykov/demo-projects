@@ -1,0 +1,113 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.entities;
+
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+
+/**
+ *
+ * @author dani
+ */
+@DatabaseTable(tableName = "alias_email")
+public class AliasEmailEntity {
+
+    public static final String CLIENT_ID = "client_id";
+    public static final String ALIAS = "alias";
+    public static final String EMAIL = "email";
+
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+    @DatabaseField(columnName = CLIENT_ID, canBeNull = true)
+    protected Integer clientId;
+    @DatabaseField(columnName = ALIAS, canBeNull = false)
+    protected String alias;
+    @DatabaseField(columnName = EMAIL, canBeNull = false)
+    protected String email;
+
+    public AliasEmailEntity(AliasEmailEntity aliasEmail) {
+        this.id = aliasEmail.id;
+        this.clientId = new Integer(aliasEmail.clientId.intValue());
+        this.alias = new String(aliasEmail.alias);
+        this.email = new String(aliasEmail.email);
+    }
+
+    public AliasEmailEntity(Integer clientId, String alias, String email) {
+        super();
+        this.clientId = clientId;
+        this.alias = alias;
+        this.email = email;
+    }
+
+    public AliasEmailEntity() {
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public Integer getClientId() {
+        return clientId;
+    }
+
+    public void setClientId(Integer clientId) {
+        this.clientId = clientId;
+    }
+
+    public String getAlias() {
+        return alias;
+    }
+
+    public void setAlias(String alias) {
+        this.alias = alias;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 53 * hash + this.id;
+        hash = 53 * hash + (this.clientId != null ? this.clientId.hashCode() : 0);
+        hash = 53 * hash + (this.alias != null ? this.alias.hashCode() : 0);
+        hash = 53 * hash + (this.email != null ? this.email.hashCode() : 0);
+        
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final AliasEmailEntity other = (AliasEmailEntity) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (this.clientId != other.clientId && (this.clientId == null || !this.clientId.equals(other.clientId))) {
+            return false;
+        }
+        if ((this.alias == null) ? (other.alias != null) : !this.alias.equals(other.alias)) {
+            return false;
+        }
+        if ((this.email == null) ? (other.email != null) : !this.email.equals(other.email)) {
+            return false;
+        }
+        return true;
+    }
+}

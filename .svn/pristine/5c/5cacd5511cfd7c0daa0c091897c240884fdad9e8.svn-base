@@ -1,0 +1,95 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.excel;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
+/**
+ *
+ * @author Andrei
+ */
+public class NameType {
+    
+    public static  enum Types {
+        STRING,
+        NUMBER,
+        DATE,
+		DECIMAL
+    }
+    
+    public String name;
+    public Types type;
+
+    public NameType(String name, Types type) {
+        this.name = name;
+        this.type = type;
+    }
+
+    public NameType() {
+    }
+    
+    public static ArrayList<NameType> CLIENT_COLUMNS = new ArrayList(Arrays.asList(new NameType[]{  new NameType("Client Name", NameType.Types.STRING),
+                                                                                                    new NameType("Contact Name", NameType.Types.STRING),
+																									new NameType("Client TIN", NameType.Types.STRING),
+                                                                                                    new NameType("Email", NameType.Types.STRING),
+                                                                                                    new NameType("Phone", NameType.Types.STRING),
+                                                                                                    new NameType("Billing Address", NameType.Types.STRING),
+                                                                                                    new NameType("Billing Zip", NameType.Types.STRING),
+                                                                                                    new NameType("Billing City", NameType.Types.STRING),
+                                                                                                    new NameType("Billing State", NameType.Types.STRING),
+                                                                                                    new NameType("Billing County", NameType.Types.STRING),
+                                                                                                    new NameType("Billing Country", NameType.Types.STRING),
+                                                                                                    new NameType("Shipping Address", NameType.Types.STRING),
+                                                                                                    new NameType("Shipping Zip", NameType.Types.STRING),
+                                                                                                    new NameType("Shipping City", NameType.Types.STRING),
+                                                                                                    new NameType("Shipping State", NameType.Types.STRING),
+                                                                                                    new NameType("Shipping County", NameType.Types.STRING),
+                                                                                                    new NameType("Shipping Country", NameType.Types.STRING),
+                                                                                                    new NameType("Private Details", NameType.Types.STRING),
+                                                                                                    new NameType("Public Details", NameType.Types.STRING)
+    }));
+    
+    public static ArrayList<NameType> PRODUCT_COLUMNS = new ArrayList(Arrays.asList(new NameType[]{ new NameType("Product Name", NameType.Types.STRING),
+                                                                                                    new NameType("Unit Price", NameType.Types.DECIMAL),
+																									new NameType("UoM", NameType.Types.STRING),
+                                                                                                    new NameType("Tax (%)", NameType.Types.STRING),
+                                                                                                    new NameType("Description", NameType.Types.STRING),
+    }));
+    
+    public static ArrayList<NameType> PRODUCT_COLUMNS_QUANTITY = new ArrayList(Arrays.asList(new NameType[]{ new NameType("Product Name", NameType.Types.STRING),
+                                                                                                    new NameType("Unit Price", NameType.Types.DECIMAL),
+																									new NameType("UoM", NameType.Types.STRING),
+                                                                                                    new NameType("Tax (%)", NameType.Types.STRING),
+                                                                                                    new NameType("Description", NameType.Types.STRING),
+                                                                                                    new NameType("Quantity", NameType.Types.STRING),
+    }));
+    
+    public static ArrayList<NameType> INVOICE_COLUMNS = new ArrayList(Arrays.asList(new NameType[]{ new NameType("Client Name", NameType.Types.STRING),
+                                                                                                    new NameType("Invoice Number", NameType.Types.STRING),
+                                                                                                    new NameType("Issue Date", NameType.Types.DATE),
+                                                                                                    new NameType("Due Date", NameType.Types.DATE),
+                                                                                                    new NameType("Amount", NameType.Types.DECIMAL),
+                                                                                                    new NameType("Tax", NameType.Types.DECIMAL),
+                                                                                                    new NameType("Total", NameType.Types.DECIMAL),
+                                                                                                    new NameType("Status", NameType.Types.STRING),
+																									new NameType("Amount Paid", NameType.Types.DECIMAL),
+																									new NameType("Balance", NameType.Types.DECIMAL),
+																									new NameType("Dr. / Cr.", NameType.Types.STRING),
+																									new NameType("Date Of Payment", NameType.Types.DATE),
+																									new NameType("Type", NameType.Types.STRING),
+    }));
+    
+    public static ArrayList<NameType> ESTIMATE_COLUMNS = new ArrayList(Arrays.asList(new NameType[]{ new NameType("Client Name", NameType.Types.STRING),
+                                                                                                    new NameType("Estimate Number", NameType.Types.STRING),
+                                                                                                    new NameType("Issue Date", NameType.Types.DATE),
+                                                                                                    new NameType("Valid Until", NameType.Types.DATE),
+                                                                                                    new NameType("Amount", NameType.Types.DECIMAL),
+                                                                                                    new NameType("Tax", NameType.Types.DECIMAL),
+                                                                                                    new NameType("Total", NameType.Types.DECIMAL),
+																									new NameType("Type", NameType.Types.STRING),
+    }));
+
+}

@@ -1,0 +1,55 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.updatedata;
+
+/**
+ *
+ * @author Andrei
+ */
+public class Tips {
+
+    public static String tips[] = new String[]{"<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> You can import a list of clients and/or a list of products/services from an <b>Excel</b> file (.xls)! <br/> Please feel free to download the sample Excel file provided in the relevant section and use it to perform a proper import.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> You can export your list of clients and/or list of products/services! <br/> The exported file is an Excel file (.xls).</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> <b>Sleek Bill</b> features various reports of the relevant information for your business. <br/> All reports can be exported as Excel files (.xls).</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> In the <b>Estimates Report</b> you can convert your estimates to invoices by clicking a single button. <br/> You do not need to exit the current report for this action.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> You can customize your documents in the <b>Preview</b> screen: you can switch between <b>Letter</b> and <b>A4</b> paper formats and you can select the desired colour accents, with instant preview on the current document.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> You can add customized taxes to be used when issuing documents.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> You can convert an estimate to an invoice by two clicks.<br/> You can perform the conversion operation from the <b>Estimates Report</b> <br/> The program will autocomplete all the information on the invoice, as it is on the estimate. </p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p><b>Back up your database! </b> <br/> A backup is necessary in case of accidents that might result in data loss, such as system or hardware failure. We strongly recommend that you back up your data <b>every day</b>. <br/> You can generate the backup file in the <b>Tools > Backup Data</b> menu. Keep this file in a safe place, so that you can use it if needed.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p><b>Forgot to include something in your document? </b> <br/> You don't need to leave the new document form in case you forgot to add some new input to be used. <br/> You can add new clients, taxes and products/services directly in the document new form, using the <b>Add New</b> option in the relevant select boxes. </p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p>Individual record <b>action buttons</b> are available to the right of each row in each report. <br/> You can <b>View</b>, <b>Edit</b> or <b>Delete</b> an individual record using the relevant action button on each row.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p><b>Double-click</b> any row in the reports to edit the associated invoice product/service or client. <br/> <b>Double-click</b> any row in the Estimates Report to begin converting an estimate to an invoice. </p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p>If you want to issue invoices on behalf of more than one company, you can add a profile for each of them. <br/>You can then easily switch from one to another to issue documents for each separate entity. </p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> After saving a document, you can save it in PDF format, print it or email it directly from the program. </p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p>Visit the Dashboard for quick access to Sleek Bill features. </p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p>Work more efficiently with keyboard shortcuts! You’ll find them to the right of the commands on the toolbar menus. </p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> You can add a custom <b>Purchase Order</b> to each estimate and invoice.<br/>When you convert an estimate to an invoice, the purchase order number set on the estimate will automatically be displayed and editable on the invoice.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> <b>Need to make a change? Sleek Bill</b> allows you to edit documents you’ve already created. <br/><b>Please take extra care when editing documents previously issued.</b></p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> After you issue a document, you can decide what you wish to do next with it: you can save it in PDF format, print it or email it directly from the program, or you can further edit it, as needed. <br/><b>Please take extra care when editing documents previously issued.</b></p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> <b>Need us to get out of the way for a moment?</b> <br/>Use the <b>CTRL+M</b> key combination to minimize all <b>Sleek Bill</b> windows and get to your Desktop.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p>If you own more than one company, you can add a profile for each of them. <br/>You can then easily switch form one to another using the <b>Tools > Switch Current Company menu</b> in the tool bar or the link on the dashboard. </p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> In the <b>Invoices Report</b> you can easily identify which invoices are paid, due or overdue.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> In the <b>Invoices Report</b> you can easily filter invoices by client name, invoice number, status, issue date or due date.<br/> You can also perform a quick search by product name or notes for client/private notes.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> In the <b>Estimates Report</b> you can easily filter estimates by client name, estimate number or issue date.<br/> You can also perform a quick search by product name or notes for client/private notes.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> You can add custom <b>Notes</b> on each estimate and invoice.<br/>When you convert an estimate to invoice, the notes set on the estimate will automatically be displayed and editable on the invoice. Private notes will not be printed on the invoice and will be visible only to you.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> <b>Personalize your documents!</b> Add your company's <b>logo</b>, change the <b>colour scheme</b> or select your own <b>paper format</b> (letter, A4).</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p><b>Sleek Bill</b> includes a preset list of US cities to select from when creating your company profile. <br/> To add a city in another country or not on the list, choose the <b>Add New</b> option from the list. You can also add a new country. </p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p><b>Sleek Bill</b> includes a preset list of US cities to select from when creating a client record. <br/> To add a city in another country or not on the list, choose the <b>Add New</b> option from the list. You can also add a new country. </p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> <b>Sleek Bill</b> learns on the go! <br/> The application remembers previously entered clients, products and services so it can autocomplete them the next time.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> You can set the desired <b>due date</b> on your invoice by selecting a preset payment term or by supplying a custom date.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> When you mark your invoice as paid, the amount due is set to 0.00.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> You can delete any document in the program. <br/> Please be aware that this will not erase any saved copies or the copies already sent to your customers.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> <b>Sleek Bill</b> keeps your documents safely. <br/> All the issued documents are automatically saved in the program database and on your hard disk.<br/> </p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> To add a product to your document, you only need to input the name, quantity, unit price and tax and press the <b>+ADD</b> button.</br> The program will do all the math!</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> The taxes used on your products will be shown on the printed document.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> You can change the number of results per page returned in the reports.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> <b>Sleek Bill</b> allows you to set the currency your company works with.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> <b>Sleek Bill</b> allows you to use a company logo on your invoices.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> <b>Sleek Bill</b> allows you to control the information to be printed on your invoices.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p>Use the <b>Reports</b> section to achieve maximum efficiency with your business. <br/>You can use either the menu on the tool bar or the links on the dashboard.</p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> You can receive fast and secure payments using PayPal. <br/> You only need to provide your PayPal account email address and your customer will be able to pay directly from the PDF or from the customized email message. </p>",
+        "<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> You can <b>fully customize the emails Sleek Bill</b> generates for your customers.<br/> Add custom fields such as document type, document number, issue date, client name and PayPal ID. </p>"};
+    public static Integer priorities[] = new Integer[]{5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 5, 4};
+}

@@ -1,0 +1,50 @@
+package sleekbill.swingutils;
+
+import java.awt.Color;
+import java.text.DateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+
+import javax.swing.JFormattedTextField;
+import javax.swing.UIManager;
+
+import sleekbill.swingutils.datepicker.calendar.CalendarPane;
+import sleekbill.swingutils.datepicker.calendar.DatePicker;
+import sleekbill.swingutils.datepicker.calendar.HolidayPolicy;
+import sleekbill.swingutils.datepicker.common.AbstractPolicy;
+
+/**
+ *
+ * @author  flaviu marcu
+ */
+public class SBDatePicker extends DatePicker {
+
+    public SBDatePicker(Date initialDate) {
+        super(initialDate, DateFormat.MEDIUM, new Locale("en"));
+        setHolidayPolicy(new HolidayPol());
+        Map ov = new HashMap();
+        ov.put(CalendarPane.COLOR_CALENDAR_GRID_SELECTION_BACKGROUND_ENABLED,UIManager.getDefaults().get("Table.oddRowColor")==null?new Color(0xE7,0xED,0xF9):UIManager.getDefaults().get("Table.oddRowColor"));
+        ov.put(CalendarPane.COLOR_CALENDAR_HEADER_BACKGROUND_ENABLED,UIManager.getDefaults().get("Table.oddRowColor")==null?new Color(0xE7,0xED,0xF9):UIManager.getDefaults().get("Table.oddRowColor"));                
+        ov.put(CalendarPane.COLOR_CALENDAR_GRID_BACKGROUND_MOUSEOVER_ENABLED,UIManager.getDefaults().get("Table.oddRowColor")==null?new Color(0xE7,0xED,0xF9):UIManager.getDefaults().get("Table.oddRowColor"));                
+        setColorOverrideMap(ov);
+        setFocusLostBehavior(JFormattedTextField.COMMIT);
+    }
+
+    private class HolidayPol extends AbstractPolicy implements HolidayPolicy {
+
+        public String getHollidayName(Object source, Calendar date) {
+            return null;
+        }
+
+        public boolean isHolliday(Object source, Calendar date) {
+            return false;
+        }
+
+        public boolean isWeekend(Object source, Calendar date) {
+            return date.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY;
+        }
+    }
+}

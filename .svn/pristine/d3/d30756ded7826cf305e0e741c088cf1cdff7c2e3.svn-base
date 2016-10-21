@@ -1,0 +1,224 @@
+package sleekbill.frames.BackupRestore;
+
+import java.awt.Dialog.ModalityType;
+import java.io.File;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
+
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+
+import sleekbill.Common;
+import sleekbill.Company;
+import sleekbill.Config;
+import sleekbill.Messages;
+import sleekbill.Ziper;
+
+/**
+ *
+ * @author sun
+ */
+public class BackupRestore {
+
+    private JFileChooser fc = new JFileChooser();
+
+    {
+        fc.setFileFilter(new javax.swing.filechooser.FileFilter() {
+            public boolean accept(File f) {
+                if (f.isDirectory()) {
+                    return true;
+                }
+                if (f.getName().endsWith(".sbf")) {
+                    return true;
+                }
+                return false;
+            }
+
+            public String getDescription() {
+                return "SleekBill backup files";
+            }
+        });
+    }
+    private boolean confirmed = false;
+    private javax.swing.JDialog dialog = null;
+    private boolean isForSalvare;
+    private boolean isFromAdaugareFirma = false;
+    private boolean activat2012 = false;
+    private boolean activat2011 = false;
+    private boolean test = false;
+
+    public BackupRestore(java.awt.Window parent, ModalityType mt, boolean salvare, boolean isFromAdaugareFirma) {
+        isForSalvare = salvare;
+        this.isFromAdaugareFirma = isFromAdaugareFirma;
+        this.test = test;
+
+//        int nrZile2012 = Common.vKCheck();
+//        if (nrZile2012 == -1) {
+//            activat2012 = true;
+//        }
+//
+//        int nrZile2011 = Common.vKCheck2011(DBAccess.getFirmakey(), Common.getCif());   //verifica daca firma curenta este activata pe 2011        
+//        if (nrZile2011 == -1) {
+//            activat2011 = true;
+//        }
+
+        //salvare
+        if (salvare) {
+            dialog = new JDialogSimpleSave(parent, mt, this);
+            dialog.setVisible(true);
+            return;
+
+        } //restaurare
+        else {
+            dialog = new JDialogSimpleRestore(parent, mt, this, true);
+            dialog.setVisible(true);
+            return;
+        }
+    }
+
+    public void salvareRestaurareSimple() {
+//        operatiuneJurnal = new OperatiuneJurnal(isForSalvare ? "Salvare date" : "Restaurare date", "", "", Common.getServerDate(),
+//                Common.getLoggedUser().getUserName(), null);
+        if (isForSalvare) {
+            salvare();
+        } else {
+            try {
+                restaurare();
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    public void salvare() {
+
+        File file;
+        Calendar date = new GregorianCalendar();
+        String name = Common.getSelectedCompany().getName() + "_";
+        fc.setSelectedFile(new File(name + date.get(Calendar.DAY_OF_MONTH) + "_"
+                + (date.get(Calendar.MONTH) + 1) + "_"
+                + date.get(Calendar.YEAR)
+                + ".sbf"));
+        if (fc.showDialog(dialog, "Save") == JFileChooser.APPROVE_OPTION) {
+            file = fc.getSelectedFile();
+            if (file.exists()) {
+                if (Messages.showQuestionMessage(dialog, "The file already exists. Would you like to overwrite?", "Save file") != JOptionPane.YES_OPTION) {
+                    return;
+                }
+            }
+            try {
+                Ziper.zipFolder(Common.USERDATA_FOLDER_PATH, file);
+            } catch (Exception e) {
+                Messages.showErrorMessage(dialog, "The backup couldn't complete:" + e.getMessage(), "Save file");
+                e.printStackTrace();
+                return;
+            }
+            //TODO de implementat
+//            Common.setLastSave();
+            confirmed = true;
+//            DBAccess.beginTransaction();
+//            operatiuneJurnal.setAdresa(DBAccess.getCurrentLock(DBAccess.getFirmakey()));
+//            OperatiuneJurnal.insert(operatiuneJurnal);
+//            DBAccess.commitTr();
+            Messages.showOkMessage(dialog, "You have successfully saved the file!", "Save file");
+            Common.selectedCompanyConfig.set(Config.LAST_BACKUP, new Long(System.currentTimeMillis()).toString());
+            dialog.dispose();
+        }
+    }
+
+    public static void autosave(String version) {
+        Calendar date = new GregorianCalendar();
+        String name = Common.getSelectedCompany().getName();
+        if (!name.isEmpty()) {
+            File file = new File(Common.REPORTS_FOLDER_PATH + name + "/" + name + "_" + date.get(Calendar.DAY_OF_MONTH) + "_"
+                    + (date.get(Calendar.MONTH) + 1) + "_"
+                    + date.get(Calendar.YEAR) + "_v" + version
+                    + ".sbf");
+
+            try {
+                Ziper.zipFolder(Common.USERDATA_FOLDER_PATH, file);
+            } catch (Exception ex) {
+                Logger.getLogger(BackupRestore.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+
+    public void restaurare() {
+        File file;
+
+        if (fc.showDialog(dialog, "Restore") == JFileChooser.APPROVE_OPTION) {
+            file = fc.getSelectedFile();
+
+            if (file.getName().endsWith(".sbf")) {
+                try {
+                    Ziper.unZip(new ZipFile(file), Common.COMPANIES_PATH);
+                } catch (ZipException ex) {
+                    Messages.showErrorMessage(fc, ex.getMessage(), "Error");
+                } catch (IOException ex) {
+                    Messages.showErrorMessage(fc, ex.getMessage(), "Error");
+                }
+
+                if (Messages.showQuestionMessage(fc, "Are you sure you want to restore? All changes will be lost.", "Confirmation") != JOptionPane.YES_OPTION) {
+                    return;
+                }
+
+                Common.companies = Company.getCompaniesList();
+
+                String aux = "";
+                try {
+                    aux = Common.getDenumireFolderFirma(new ZipFile(file));
+                } catch (ZipException ex) {
+                    ex.printStackTrace();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+
+                for (Company company : Company.getCompaniesList()) {
+                    if (company.getName().equalsIgnoreCase(aux)) {
+                        final Company comp = company;
+
+                        try {
+                            Common.switchToCompany(company);
+                            confirmed = true;
+
+                            SwingUtilities.invokeLater(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Messages.showOkMessage(dialog, "You have successfully restored your file!", "Info");
+                                }
+                            });
+
+                            dialog.dispose();
+                        } catch (SQLException ex) {
+                            Messages.showErrorMessage(fc, ex.getMessage(), "Error");
+                        }
+                        break;
+                    }
+                }
+            } else {
+                Messages.showErrorMessage(fc, "Invalid file !!!", "Error");
+            }
+
+        }
+    }
+
+    public boolean isTest() {
+        return test;
+    }
+
+    public void setTest(boolean test) {
+        this.test = test;
+    }
+
+    public boolean isConfirmed() {
+        return confirmed;
+    }
+}

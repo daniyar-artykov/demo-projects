@@ -1,0 +1,92 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames.autosuggesterdata;
+
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import sleekbill.db.SBConnection;
+import sleekbill.entities.StateEntity;
+import sleekbill.swingutils.autosuggesters.AutosuggesterDataBuilder;
+import sleekbill.swingutils.autosuggesters.AutosuggesterItem;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.dao.GenericRawResults;
+import com.j256.ormlite.dao.RawRowMapper;
+
+/**
+ *
+ * @author Andrei
+ */
+public class SBACCountries implements AutosuggesterDataBuilder {
+
+	SBConnection sbConnection;
+
+	public SBACCountries(SBConnection sbConnection) {
+		super();
+		this.sbConnection = sbConnection;
+	}
+
+	@Override
+	public ArrayList<AutosuggesterItem> getData(final String input, Integer rowNumber) {
+		ArrayList<AutosuggesterItem> l = new ArrayList<AutosuggesterItem>();
+		try {
+			Dao<StateEntity, Integer> stateDao = DaoManager.createDao(
+					sbConnection.getConnection(), StateEntity.class);
+
+			//long x = System.currentTimeMillis();
+			GenericRawResults<AutosuggesterItem> rawResults
+					= stateDao.queryRaw("select country from ( "
+							+ "select 'India' as country "
+							+ "UNION "
+							+ "select 'United Kingdom' as country "
+							+ "UNION "
+							+ "select 'United States of America' as country "
+							+ "UNION "
+							+ "select 'Canada' as country "
+							+ "UNION "
+							+ "select 'Australia' as country "
+							+ "UNION "
+							+ "select distinct country from states "
+							+ "ORDER by country ASC "
+							+ ") "
+							+ "where lower(country) like ?",
+							new RawRowMapper<AutosuggesterItem>() {
+								public AutosuggesterItem mapRow(String[] columnNames, String[] resultColumns) {
+
+									String found = resultColumns[0];
+
+									int i = found.toLowerCase().indexOf(input.toLowerCase());
+									if (i >= 0 && !input.equals("")) {
+										found = "<html>" + found.substring(0, i) + "<b>" + found.substring(i, i + input.length()) + "</b>" + found.substring(i + input.length()) + "</html>";
+									}
+
+									return new AutosuggesterItem(0, resultColumns[0], found,
+											resultColumns[0], true);
+								}
+							},
+							"%" + input + "%");
+			l.addAll(rawResults.getResults());
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+		return l;
+	}
+
+	@Override
+	public long getCount() {
+		try {
+			Dao<StateEntity, Integer> stateDao = DaoManager.createDao(
+					sbConnection.getConnection(), StateEntity.class);
+			return stateDao.countOf();
+		} catch (SQLException ex) {
+			ex.printStackTrace();
+		}
+		return 0;
+	}
+}

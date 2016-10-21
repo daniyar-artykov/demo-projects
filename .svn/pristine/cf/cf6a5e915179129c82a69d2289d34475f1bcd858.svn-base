@@ -1,0 +1,22 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package sleekbill.utils;
+
+/**
+ *
+ * @author dani
+ */
+public interface SBDateFirma {
+
+		public String getCif();
+		public String getDenumire();
+		public String getAdresa();
+		public String getJudet();
+		public String getLocalitate();
+		public String getNrRegCom();
+		public char getPlatitorTva();
+
+}

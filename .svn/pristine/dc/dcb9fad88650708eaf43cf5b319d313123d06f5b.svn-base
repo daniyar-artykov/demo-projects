@@ -1,0 +1,100 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.beans;
+
+import sleekbill.Common;
+import sleekbill.entities.FacturiStornateEntity;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+
+/**
+ *
+ * @author dani
+ */
+public class FacturiStornate extends FacturiStornateEntity {
+
+    private Dao<FacturiStornateEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+
+    public FacturiStornate(FacturiStornateEntity facturiStornate) {
+        this.id = facturiStornate.getId();
+        this.facturaId = new Integer(facturiStornate.getFacturaId().intValue());
+        this.dataStornarii = new String(facturiStornate.getDataStornarii());
+        this.valoare1 = new String(facturiStornate.getValoare1());
+        this.valoare2 = new String(facturiStornate.getValoare2());
+    }    
+
+    public FacturiStornate() {
+        this(0);
+    }
+
+    public FacturiStornate(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager
+                        .createDao(mainConnection, FacturiStornateEntity.class);
+
+                if (id != null && id != 0) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void refreshDao() {
+        try {
+            mainDao = DaoManager
+                    .createDao(Common.connection.getConnection(), FacturiStornateEntity.class);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void create() throws Exception {
+        mainDao.create(this);
+    }
+
+    public FacturiStornateEntity read(Integer id) throws Exception {
+        return mainDao.queryForId(id);
+    }
+
+    public void update() throws Exception {
+        mainDao.update(this);
+    }
+
+    public void delete() throws Exception {
+        mainDao.delete(this);
+    }
+
+    public Dao<FacturiStornateEntity, Integer> getMainDao() {
+        return mainDao;
+    }
+
+    public void setMainDao(Dao<FacturiStornateEntity, Integer> mainDao) {
+        this.mainDao = mainDao;
+    }
+
+//    public static int getMaxConfigId(JdbcConnectionSource connectionSource) throws SQLException {
+//    	Dao<ConfigEntity, Integer> configDao = DaoManager.createDao(connectionSource, ConfigEntity.class);
+//    	PreparedQuery<ConfigEntity> pq = configDao.queryBuilder().orderBy(CONFIG_ID, false).limit(1L).prepare();
+//    	ConfigEntity c = configDao.queryForFirst(pq);
+//    	if(c != null) {
+//    		return c.getConfigId();
+//    	}
+//    	return 1;
+//    }
+
+
+
+}

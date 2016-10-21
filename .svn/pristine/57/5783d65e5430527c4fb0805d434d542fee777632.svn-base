@@ -1,0 +1,139 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames.autosuggesterdata;
+
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import sleekbill.Common;
+import sleekbill.beans.Client;
+import sleekbill.beans.State;
+import sleekbill.entities.ClientEntity;
+import sleekbill.swingutils.autosuggesters.AutosuggesterDataBuilder;
+import sleekbill.swingutils.autosuggesters.AutosuggesterItem;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.dao.GenericRawResults;
+import com.j256.ormlite.dao.RawRowMapper;
+
+/**
+ *
+ * @author Andrei
+ */
+public class SBACClients implements AutosuggesterDataBuilder {
+
+    String extraWhere = "";
+
+    public SBACClients() {
+        this("");
+    }
+
+    public SBACClients(String extraWhere) {
+        super();
+        this.extraWhere = extraWhere;
+    }
+
+    @Override
+    public ArrayList<AutosuggesterItem> getData(String input, Integer rowNumber) {
+        ArrayList<AutosuggesterItem> l = new ArrayList<AutosuggesterItem>();
+        try {
+            Dao<ClientEntity, Integer> clientsDao = DaoManager.createDao(
+                    Common.connection.getConnection(), ClientEntity.class);
+
+            //long x = System.currentTimeMillis();
+            GenericRawResults<AutosuggesterItem> rawResults
+                    = clientsDao.queryRaw("SELECT "
+                            + "'<html>' || substr(name,0,CHARINDEX(lower(?), lower(name))) || '<b>' || substr(name,CHARINDEX(lower(?), lower(name)), length(lower(?))) || '</b>' || substr(name,CHARINDEX(lower(?), lower(name)) + length(lower(?))) || '</html>' AS den, "
+                            + "id, name, code, email, telephone, contact, billing_address, billing_zip, billing_city, shipping_address, shipping_zip, shipping_city, billing_state_id, shipping_state_id, details "
+                            + "FROM clients "
+                            + "WHERE name LIKE ? "
+                            + " " + extraWhere + " ORDER BY lower(name) ASC "
+                            + "LIMIT " + rowNumber,
+                            new RawRowMapper<AutosuggesterItem>() {
+
+                        @Override
+                        public AutosuggesterItem mapRow(String[] columnNames, String[] resultColumns) {
+                            int id = 0;
+                            try {
+                                id = Integer.parseInt(resultColumns[1]);
+                                State billing = new State();
+                                State shipping = new State();
+
+                                billing.setId(Integer.parseInt(resultColumns[13]));
+                                shipping.setId(Integer.parseInt(resultColumns[14]));
+                            } catch (NumberFormatException e) {
+                            }
+
+                            Client aux = new Client();
+                            aux.setId(id);
+                            aux.setName(resultColumns[2]);
+                            aux.setCode(resultColumns[3]);
+                            aux.setEmail(resultColumns[4]);
+                            aux.setTelephone(resultColumns[5]);
+                            aux.setContact(resultColumns[6]);
+                            aux.setBillingAddress(resultColumns[7]);
+                            aux.setBillingZip(resultColumns[8]);
+                            aux.setBillingCity(resultColumns[9]);
+                            aux.setShippingAddress(resultColumns[10]);
+                            aux.setShippingZip(resultColumns[11]);
+                            aux.setShippingCity(resultColumns[12]);
+                            aux.setDetails(resultColumns[15]);
+
+                            StringBuilder clientData = new StringBuilder();
+                            if (resultColumns[0] != null
+                                    && resultColumns[0].length() <= 41) {
+                                // remove close html tag, it should be last 
+                                clientData.append(resultColumns[0].substring(0,
+                                        resultColumns[0].length() - 7));
+                                clientData.append(" | ");
+                            } else if (resultColumns[0] != null
+                                    && resultColumns[0].length() > 41) {
+                                String contactName = resultColumns[0].substring(
+                                        resultColumns[0].indexOf("</b>") + 4,
+                                        resultColumns[0].indexOf("</html>"));
+
+                                if (contactName.length() > 22) {
+                                    clientData.append(resultColumns[0].substring(0,
+                                            resultColumns[0].indexOf("</b>") + 4));
+                                    clientData.append(contactName.substring(0, 22));
+                                    clientData.append("... | ");
+                                } else {
+                                    clientData.append(resultColumns[0].substring(0,
+                                            resultColumns[0].length() - 7));
+                                    clientData.append(" | ");
+                                }
+                            }
+
+                            clientData.append(resultColumns[9]);
+                            // append close html tag
+                            clientData.append("</html>");
+
+                            return new AutosuggesterItem(id, resultColumns[2],
+                                    clientData.toString(), aux, true);
+                        }
+                    },
+                            input, input, input, input, input, "%" + input + "%");
+            l.addAll(rawResults.getResults());
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return l;
+    }
+
+    @Override
+    public long getCount() {
+        try {
+            Dao<ClientEntity, Integer> clientsDao = DaoManager.createDao(
+                    Common.connection.getConnection(), ClientEntity.class);
+            return clientsDao.countOf();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return 0;
+    }
+}

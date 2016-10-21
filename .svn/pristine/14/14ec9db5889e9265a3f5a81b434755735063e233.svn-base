@@ -1,0 +1,1275 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames;
+
+import java.awt.Dialog;
+import java.awt.Dimension;
+import java.awt.Frame;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.sql.SQLException;
+
+import javax.swing.ImageIcon;
+import javax.swing.JOptionPane;
+
+import sleekbill.Common;
+import sleekbill.Messages;
+import sleekbill.beans.Client;
+import sleekbill.beans.SBDaoException;
+import sleekbill.beans.State;
+import sleekbill.entities.StateEntity;
+import sleekbill.frames.autosuggesterdata.SBACCities;
+import sleekbill.swingutils.autosuggesters.AddNewActionListener;
+import sleekbill.swingutils.autosuggesters.AutosuggesterItem;
+import sleekbill.swingutils.autosuggesters.DeleteActionListener;
+import sleekbill.util.SBSwingUtils;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import javax.swing.JTextArea;
+import javax.swing.UIManager;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import sleekbill.swingutils.JTABackground;
+import sleekbill.util.Placeholder;
+
+/**
+ *
+ * @author Andrei
+ */
+public class JDialogClientData extends javax.swing.JDialog {
+
+    SBACCities asData1 = new SBACCities(Common.connection);
+    SBACCities asData2 = new SBACCities(Common.connection);
+    public Client client;
+    boolean bEdit = false;
+    boolean isDirty = false;
+    JDialogClientData main = this;
+    private Placeholder placeholder;
+
+    public JDialogClientData(Client client, boolean bEdit, Frame frame, boolean bln) {
+        super(frame, bln);
+        initComponents();
+        setLocationRelativeTo(frame);
+        this.client = client;
+        this.bEdit = bEdit;
+        init();
+        setAutosuggestersProperties();
+        SBSwingUtils.applyFocusBorder(this);
+        SBSwingUtils.addContextMenuToChildren(this);
+        SBSwingUtils.removeTabInTextArea(jTextAreaBillingAddress);
+        SBSwingUtils.removeTabInTextArea(jTextAreaShippingAddress);
+        jBQuit.setVisible(false);
+
+        setupMandatory();
+        checkMandatory();
+        pack();
+    }
+
+    /**
+     * Creates new form JDialogClient
+     */
+    public JDialogClientData(java.awt.Frame parent, boolean modal) {
+        super(parent, modal);
+        initComponents();
+        setLocationRelativeTo(parent);
+        initDialog();
+        hideFields();
+
+        client = new Client();
+        setAutosuggestersProperties();
+        SBSwingUtils.applyFocusBorder(this);
+        SBSwingUtils.addContextMenuToChildren(this);
+        SBSwingUtils.removeTabInTextArea(jTextAreaBillingAddress);
+        SBSwingUtils.removeTabInTextArea(jTextAreaShippingAddress);
+        jBQuit.setVisible(false);
+
+        setupMandatory();
+        checkMandatory();
+
+        //precompletare a tarii automata
+        try {
+            jTFCountry.setText(Common.companyDetails.getState().getCountry());
+            if (jTFCountry.getText().equals("Australia")) {
+                placeholder.setText(placeholder.getText() + " (like ABN or Bank details)");
+            } else if (jTFCountry.getText().equals("India")) {
+                placeholder.setText(placeholder.getText() + " (like LST & CST numbers)");
+            }
+            placeholder.setText("<html><i>" + placeholder.getText() + "</i></html>");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        pack();
+    }
+
+    public JDialogClientData(Client client, boolean bEdit, Dialog frame, boolean modal) {
+        super(frame, modal);
+        initComponents();
+        setLocationRelativeTo(frame);
+        this.client = client;
+        this.bEdit = bEdit;
+        init();
+        setAutosuggestersProperties();
+        SBSwingUtils.applyFocusBorder(this);
+        SBSwingUtils.addContextMenuToChildren(this);
+        SBSwingUtils.removeTabInTextArea(jTextAreaBillingAddress);
+        SBSwingUtils.removeTabInTextArea(jTextAreaShippingAddress);
+        jBQuit.setVisible(false);
+
+        setupMandatory();
+        checkMandatory();
+        pack();
+    }
+
+    /**
+     * Creates new form JDialogClient
+     */
+    public JDialogClientData(Dialog parent, boolean modal) {
+        super(parent, modal);
+        initComponents();
+        setLocationRelativeTo(parent);
+        initDialog();
+        hideFields();
+
+        client = new Client();
+        setAutosuggestersProperties();
+        SBSwingUtils.applyFocusBorder(this);
+        SBSwingUtils.addContextMenuToChildren(this);
+        SBSwingUtils.removeTabInTextArea(jTextAreaBillingAddress);
+        SBSwingUtils.removeTabInTextArea(jTextAreaShippingAddress);
+        jBQuit.setVisible(false);
+
+        setupMandatory();
+        checkMandatory();
+
+        //precompletare a tarii automata
+        try {
+            jTFCountry.setText(Common.companyDetails.getState().getCountry());
+            if (jTFCountry.getText().equals("Australia")) {
+                placeholder.setText(placeholder.getText() + " (like ABN or Bank details)");
+            } else if (jTFCountry.getText().equals("India")) {
+                placeholder.setText(placeholder.getText() + " (like LST & CST numbers)");
+            }
+            placeholder.setText("<html><i>" + placeholder.getText() + "</i></html>");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        pack();
+    }
+
+    private void initDialog() {
+
+        sBACPanelCity.setAddNewActionListener(new AddNewActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                sBACPanelCity.getSbTextField().hidePopup();
+                JDialogCityData jDialogCityData = new JDialogCityData(JDialogClientData.this, true, Common.connection);
+                jDialogCityData.setVisible(true);
+
+                if (jDialogCityData.getCreatedState() != null) {
+                    State state = jDialogCityData.getCreatedState();
+                    sBACPanelCity.setSelectedItem(new AutosuggesterItem(state.getId(), state.getCity(), state.getCity(), state), state.getCity());
+                    jTFState.setText(state.getState());
+                    jTFCountry.setText(state.getCountry());
+                }
+            }
+        });
+
+        sBACPanelShippingCity.setAddNewActionListener(new AddNewActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                sBACPanelShippingCity.getSbTextField().hidePopup();
+                JDialogCityData jDialogCityData = new JDialogCityData(JDialogClientData.this, true, Common.connection);
+                jDialogCityData.setVisible(true);
+
+                if (jDialogCityData.getCreatedState() != null) {
+                    State state = jDialogCityData.getCreatedState();
+                    sBACPanelShippingCity.setSelectedItem(new AutosuggesterItem(state.getId(), state.getCity(), state.getCity(), state), state.getCity());
+                    jTFShippingState.setText(state.getState());
+                    jTFShippingCountry.setText(state.getCountry());
+                }
+            }
+        });
+
+        this.placeholder = new Placeholder("Printed on documents", jTFPublicDetails);
+        new Placeholder("<html><i>Like: 14123456789</i></html>", jTFTin);
+    }
+
+    private void setViewMode(boolean bEditable) {
+
+        jTFClient.setEditable(bEditable);
+        jTFContact.setEditable(bEditable);
+        jTFEmail.setEditable(bEditable);
+        jTFPhone.setEditable(bEditable);
+        jTextAreaBillingAddress.setEditable(bEditable);
+        //jTextAreaBillingAddress.setBackground(bEditable? Color.white : Color.lightGray);
+        jTFZip.setEditable(bEditable);
+        sBACPanelCity.getSbTextField().setEditable(bEditable);
+        sBACPanelCity.getButton().setEnabled(bEditable);
+        jTFState.setEditable(bEditable);
+        jTFCountry.setEditable(bEditable);
+        jTextAreaShippingAddress.setEditable(bEditable);
+        //jTextAreaShippingAddress.setBackground(bEditable? Color.white : Color.lightGray);
+        jTFShippingZip.setEditable(bEditable);
+        sBACPanelShippingCity.getSbTextField().setEditable(bEditable);
+        sBACPanelShippingCity.getButton().setEnabled(bEditable);
+        jTFShippingState.setEditable(bEditable);
+        jTFShippingCountry.setEditable(bEditable);
+        jTFPrivateDetails.setEditable(bEditable);
+        jTFPublicDetails.setEditable(bEditable);
+        jTFTin.setEditable(bEditable);
+        jCheckShip.setEnabled(bEditable);
+    }
+
+    private void fillClientFields() {
+
+        if (client == null) {
+            return;
+        }
+
+        if (client.getName() != null) {
+            jTFClient.setText(client.getName());
+        }
+
+        if (client.getContact() != null) {
+            jTFContact.setText(client.getContact());
+        }
+
+        if (client.getEmail() != null) {
+            jTFEmail.setText(client.getEmail());
+        }
+
+        if (client.getTelephone() != null) {
+            jTFPhone.setText(client.getTelephone());
+        }
+
+        if (client.getBillingAddress() != null) {
+            jTextAreaBillingAddress.setText(client.getBillingAddress());
+        }
+
+        if (client.getBillingZip() != null) {
+            jTFZip.setText(client.getBillingZip());
+        }
+
+        if (client.getBillingCity() != null) {
+            sBACPanelCity.setText(client.getBillingCity());
+        }
+
+        if (client.getBillingState() != null && client.getBillingState().getState() != null) {
+            jTFState.setText(client.getBillingState().getState());
+        }
+
+        if (client.getBillingState() != null && client.getBillingState().getCountry() != null) {
+            jTFCountry.setText(client.getBillingState().getCountry());
+        }
+
+        if (client.getDetails() != null) {
+            jTFPrivateDetails.setText(client.getDetails());
+        }
+
+        if (client.getDetailsPublic() != null) {
+            jTFPublicDetails.setText(client.getDetailsPublic());
+        }
+
+        if (client.getTin() != null) {
+            jTFTin.setText(client.getTin());
+        }
+
+        boolean bSetCheck = false;
+
+        if (client.getShippingAddress() != null && !client.getShippingAddress().isEmpty()) {
+            jTextAreaShippingAddress.setText(client.getShippingAddress());
+            bSetCheck = true;
+        }
+
+        if (client.getShippingZip() != null && !client.getShippingZip().isEmpty()) {
+            jTFShippingZip.setText(client.getShippingZip());
+            bSetCheck = true;
+        }
+
+        if (client.getShippingCity() != null && !client.getShippingCity().isEmpty()) {
+            sBACPanelShippingCity.setText(client.getShippingCity());
+            bSetCheck = true;
+        }
+
+        if (client.getShippingState() != null && client.getShippingState().getState() != null && !client.getShippingState().getState().isEmpty()) {
+            jTFShippingState.setText(client.getShippingState().getState());
+            bSetCheck = true;
+        }
+
+        if (client.getShippingState() != null && client.getShippingState().getCountry() != null && !client.getShippingState().getCountry().isEmpty()) {
+            jTFShippingCountry.setText(client.getShippingState().getCountry());
+            bSetCheck = true;
+        }
+
+        if (bSetCheck) {
+            jCheckShip.setSelected(true);
+            //if (bEdit) {
+            showFields();
+            //}
+        } else {
+            jCheckShip.setSelected(false);
+            //if (bEdit) {
+            hideFields();
+            //}
+        }
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
+
+        jPanelSuperContent = new javax.swing.JPanel();
+        jPanelBorder = new javax.swing.JPanel();
+        jPanelTitle = new javax.swing.JPanel();
+        jLabel7 = new javax.swing.JLabel();
+        jPanelButtons = new javax.swing.JPanel();
+        jBSave = new javax.swing.JButton();
+        jBQuit = new javax.swing.JButton();
+        jPanelContent = new javax.swing.JPanel();
+        jPanel1 = new javax.swing.JPanel();
+        jCheckShip = new javax.swing.JCheckBox();
+        jLabel13 = new javax.swing.JLabel();
+        jLabel10 = new javax.swing.JLabel();
+        jLabel15 = new javax.swing.JLabel();
+        jTFPrivateDetails = new javax.swing.JTextField();
+        jLabel8 = new javax.swing.JLabel();
+        jLabel1 = new javax.swing.JLabel();
+        jTFClient = new javax.swing.JTextField();
+        jTFContact = new javax.swing.JTextField();
+        jLabel5 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        sBACPanelShippingCity = new sleekbill.swingutils.autosuggesters.SBACPanelTextField(asData2, true, true);
+        sBACPanelCity = new sleekbill.swingutils.autosuggesters.SBACPanelTextField(asData1, true, true);
+        jTFShippingState = new javax.swing.JTextField();
+        jLabel11 = new javax.swing.JLabel();
+        jLabel12 = new javax.swing.JLabel();
+        jLabel16 = new javax.swing.JLabel();
+        jTFState = new javax.swing.JTextField();
+        jLabel6 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        jTFEmail = new javax.swing.JTextField();
+        jTFZip = new javax.swing.JTextField();
+        jTFShippingZip = new javax.swing.JTextField();
+        jLabel4 = new javax.swing.JLabel();
+        jTFPhone = new javax.swing.JTextField();
+        jLabel9 = new javax.swing.JLabel();
+        jTFCountry = new javax.swing.JTextField();
+        jLabel14 = new javax.swing.JLabel();
+        jTFShippingCountry = new javax.swing.JTextField();
+        jTFPublicDetails = new javax.swing.JTextField();
+        jLabel17 = new javax.swing.JLabel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jTextAreaBillingAddress = new JTABackground();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        jTextAreaShippingAddress = new JTABackground();
+        filler1 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 250), new java.awt.Dimension(0, 250), new java.awt.Dimension(0, 250));
+        jLabel18 = new javax.swing.JLabel();
+        jTFTin = new javax.swing.JTextField();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setTitle("Add New Client");
+        setMinimumSize(new java.awt.Dimension(500, 760));
+        getContentPane().setLayout(new java.awt.GridBagLayout());
+
+        jPanelSuperContent.setBackground(new java.awt.Color(229, 235, 242));
+        jPanelSuperContent.setLayout(new java.awt.GridBagLayout());
+
+        jPanelBorder.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(195, 210, 219), 1, true));
+        jPanelBorder.setLayout(new java.awt.GridBagLayout());
+
+        jPanelTitle.setBackground(new java.awt.Color(253, 253, 253));
+        jPanelTitle.setBorder(javax.swing.BorderFactory.createMatteBorder(1, 1, 0, 1, new java.awt.Color(203, 209, 213)));
+        jPanelTitle.setLayout(new java.awt.GridBagLayout());
+
+        jLabel7.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        jLabel7.setText("Add Client");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelTitle.add(jLabel7, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        jPanelBorder.add(jPanelTitle, gridBagConstraints);
+
+        jPanelButtons.setBackground(new java.awt.Color(246, 246, 246));
+        jPanelButtons.setBorder(javax.swing.BorderFactory.createMatteBorder(0, 1, 1, 1, new java.awt.Color(203, 209, 213)));
+        jPanelButtons.setLayout(new java.awt.GridBagLayout());
+
+        jBSave.setIcon(new ImageIcon("./images/buttons/ico_check.png"));
+        jBSave.setText("Save");
+        jBSave.setName("bSave"); // NOI18N
+        jBSave.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jBSaveMouseClicked(evt);
+            }
+        });
+        jBSave.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBSaveActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelButtons.add(jBSave, gridBagConstraints);
+
+        jBQuit.setText("Cancel");
+        jBQuit.setName("bCancel"); // NOI18N
+        jBQuit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBQuitActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelButtons.add(jBQuit, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        jPanelBorder.add(jPanelButtons, gridBagConstraints);
+
+        jPanelContent.setBorder(javax.swing.BorderFactory.createMatteBorder(1, 1, 1, 1, new java.awt.Color(203, 209, 213)));
+        jPanelContent.setLayout(new java.awt.GridBagLayout());
+
+        jPanel1.setLayout(new java.awt.GridBagLayout());
+
+        jCheckShip.setText("Ship to a Different Address");
+        jCheckShip.setName("cbDifferentAddress"); // NOI18N
+        jCheckShip.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCheckShipActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 9;
+        gridBagConstraints.gridwidth = 4;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 0, 5, 5);
+        jPanel1.add(jCheckShip, gridBagConstraints);
+
+        jLabel13.setText("Shipping Address");
+        jLabel13.setMaximumSize(new java.awt.Dimension(90, 14));
+        jLabel13.setMinimumSize(new java.awt.Dimension(90, 14));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 10;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel13, gridBagConstraints);
+
+        jLabel10.setText("City");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel10, gridBagConstraints);
+
+        jLabel15.setText("Private Client Details");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 15;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel15, gridBagConstraints);
+
+        jTFPrivateDetails.setMinimumSize(new java.awt.Dimension(150, 20));
+        jTFPrivateDetails.setName("tfDetails"); // NOI18N
+        jTFPrivateDetails.setPreferredSize(new java.awt.Dimension(150, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 15;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jTFPrivateDetails, gridBagConstraints);
+
+        jLabel8.setText("Billing Address");
+        jLabel8.setMaximumSize(new java.awt.Dimension(90, 14));
+        jLabel8.setMinimumSize(new java.awt.Dimension(90, 14));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 5;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel8, gridBagConstraints);
+
+        jLabel1.setText("Client Name");
+        jLabel1.setMaximumSize(new java.awt.Dimension(90, 14));
+        jLabel1.setMinimumSize(new java.awt.Dimension(90, 14));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel1, gridBagConstraints);
+
+        jTFClient.setMinimumSize(new java.awt.Dimension(150, 20));
+        jTFClient.setName("tfClientName"); // NOI18N
+        jTFClient.setPreferredSize(new java.awt.Dimension(150, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jTFClient, gridBagConstraints);
+
+        jTFContact.setMinimumSize(new java.awt.Dimension(150, 20));
+        jTFContact.setName("tfContact"); // NOI18N
+        jTFContact.setPreferredSize(new java.awt.Dimension(150, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jTFContact, gridBagConstraints);
+
+        jLabel5.setText("City");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 11;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel5, gridBagConstraints);
+
+        jLabel2.setText("Contact Name");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel2, gridBagConstraints);
+
+        sBACPanelShippingCity.setMaximumSize(new java.awt.Dimension(100, 20));
+        sBACPanelShippingCity.setMinimumSize(new java.awt.Dimension(100, 20));
+        sBACPanelShippingCity.setName("tfShippingCity"); // NOI18N
+        sBACPanelShippingCity.setPreferredSize(new java.awt.Dimension(75, 20));
+        sBACPanelShippingCity.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                sBACPanelShippingCityFocusLost(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 11;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(sBACPanelShippingCity, gridBagConstraints);
+
+        sBACPanelCity.setMaximumSize(new java.awt.Dimension(100, 20));
+        sBACPanelCity.setMinimumSize(new java.awt.Dimension(100, 20));
+        sBACPanelCity.setName("tfCity"); // NOI18N
+        sBACPanelCity.setPreferredSize(new java.awt.Dimension(75, 20));
+        sBACPanelCity.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                sBACPanelCityFocusLost(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(sBACPanelCity, gridBagConstraints);
+
+        jTFShippingState.setMaximumSize(new java.awt.Dimension(100, 20));
+        jTFShippingState.setMinimumSize(new java.awt.Dimension(100, 20));
+        jTFShippingState.setName("tfShippingState"); // NOI18N
+        jTFShippingState.setPreferredSize(new java.awt.Dimension(100, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 12;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 6, 5, 6);
+        jPanel1.add(jTFShippingState, gridBagConstraints);
+
+        jLabel11.setText("Zip");
+        jLabel11.setMaximumSize(new java.awt.Dimension(70, 14));
+        jLabel11.setMinimumSize(new java.awt.Dimension(70, 14));
+        jLabel11.setPreferredSize(new java.awt.Dimension(70, 14));
+        jLabel11.setText((Common.country.equals("Canada") || Common.country.equals("United Kingdom") ? "Postal Code" : "Zip"));
+        if(jLabel11.getText().equals("Zip")){
+            jLabel11.setMaximumSize(new java.awt.Dimension(30, 14));
+            jLabel11.setMinimumSize(new java.awt.Dimension(30, 14));
+            jLabel11.setPreferredSize(new java.awt.Dimension(30, 14));
+        }
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 12;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel11, gridBagConstraints);
+
+        jLabel12.setText("State");
+        jLabel12.setText((Common.country.equals("United Kingdom") ? "County" : "State"));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 7;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel12, gridBagConstraints);
+
+        jLabel16.setText("State");
+        jLabel16.setText((Common.country.equals("United Kingdom") ? "County" : "State"));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 12;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel16, gridBagConstraints);
+
+        jTFState.setMaximumSize(new java.awt.Dimension(100, 20));
+        jTFState.setMinimumSize(new java.awt.Dimension(100, 20));
+        jTFState.setName("tfState"); // NOI18N
+        jTFState.setPreferredSize(new java.awt.Dimension(100, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 7;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 6, 5, 6);
+        jPanel1.add(jTFState, gridBagConstraints);
+
+        jLabel6.setText("Zip");
+        jLabel6.setMaximumSize(new java.awt.Dimension(70, 14));
+        jLabel6.setMinimumSize(new java.awt.Dimension(70, 14));
+        jLabel6.setPreferredSize(new java.awt.Dimension(70, 14));
+        jLabel6.setText((Common.country.equals("Canada") || Common.country.equals("United Kingdom") ? "Postal Code" : "Zip"));
+        if(jLabel6.getText().equals("Zip")){
+            jLabel6.setMaximumSize(new java.awt.Dimension(30, 14));
+            jLabel6.setMinimumSize(new java.awt.Dimension(30, 14));
+            jLabel6.setPreferredSize(new java.awt.Dimension(30, 14));
+        }
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 7;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel6, gridBagConstraints);
+
+        jLabel3.setText("Email");
+        jLabel3.setMaximumSize(new java.awt.Dimension(30, 14));
+        jLabel3.setMinimumSize(new java.awt.Dimension(30, 14));
+        jLabel3.setPreferredSize(new java.awt.Dimension(30, 14));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel3, gridBagConstraints);
+
+        jTFEmail.setMinimumSize(new java.awt.Dimension(150, 20));
+        jTFEmail.setName("tfEmail"); // NOI18N
+        jTFEmail.setPreferredSize(new java.awt.Dimension(150, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jTFEmail, gridBagConstraints);
+
+        jTFZip.setMaximumSize(new java.awt.Dimension(60, 20));
+        jTFZip.setMinimumSize(new java.awt.Dimension(60, 20));
+        jTFZip.setName("tfZip"); // NOI18N
+        jTFZip.setPreferredSize(new java.awt.Dimension(75, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 7;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jTFZip, gridBagConstraints);
+
+        jTFShippingZip.setMaximumSize(new java.awt.Dimension(60, 20));
+        jTFShippingZip.setMinimumSize(new java.awt.Dimension(60, 20));
+        jTFShippingZip.setName("tfShippingZip"); // NOI18N
+        jTFShippingZip.setPreferredSize(new java.awt.Dimension(75, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 12;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jTFShippingZip, gridBagConstraints);
+
+        jLabel4.setText("Phone");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel4, gridBagConstraints);
+
+        jTFPhone.setMinimumSize(new java.awt.Dimension(150, 20));
+        jTFPhone.setName("tfPhone"); // NOI18N
+        jTFPhone.setPreferredSize(new java.awt.Dimension(150, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jTFPhone, gridBagConstraints);
+
+        jLabel9.setText("Country");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 8;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel9, gridBagConstraints);
+
+        jTFCountry.setMaximumSize(new java.awt.Dimension(120, 20));
+        jTFCountry.setMinimumSize(new java.awt.Dimension(120, 20));
+        jTFCountry.setName("tfCountry"); // NOI18N
+        jTFCountry.setPreferredSize(new java.awt.Dimension(120, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 8;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jTFCountry, gridBagConstraints);
+
+        jLabel14.setText("Country");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 13;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel14, gridBagConstraints);
+
+        jTFShippingCountry.setMaximumSize(new java.awt.Dimension(120, 20));
+        jTFShippingCountry.setMinimumSize(new java.awt.Dimension(120, 20));
+        jTFShippingCountry.setName("tfShippingCountry"); // NOI18N
+        jTFShippingCountry.setPreferredSize(new java.awt.Dimension(120, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 13;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jTFShippingCountry, gridBagConstraints);
+
+        jTFPublicDetails.setMinimumSize(new java.awt.Dimension(150, 20));
+        jTFPublicDetails.setPreferredSize(new java.awt.Dimension(150, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 14;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jTFPublicDetails, gridBagConstraints);
+
+        jLabel17.setText("Other Client Details");
+        jLabel17.setMaximumSize(new java.awt.Dimension(110, 14));
+        jLabel17.setMinimumSize(new java.awt.Dimension(110, 14));
+        jLabel17.setPreferredSize(new java.awt.Dimension(110, 14));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 14;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel17, gridBagConstraints);
+
+        jScrollPane1.setBorder(null);
+        jScrollPane1.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        jTextAreaBillingAddress.setColumns(30);
+        jTextAreaBillingAddress.setFont(new java.awt.Font("Tahoma", 0, 11)); // NOI18N
+        jTextAreaBillingAddress.setLineWrap(true);
+        jTextAreaBillingAddress.setRows(5);
+        jTextAreaBillingAddress.setWrapStyleWord(true);
+        jTextAreaBillingAddress.setMinimumSize(new java.awt.Dimension(244, 74));
+        jTextAreaBillingAddress.setName("taNotes1"); // NOI18N
+        jScrollPane1.setViewportView(jTextAreaBillingAddress);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 5;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jScrollPane1, gridBagConstraints);
+
+        jScrollPane3.setBorder(null);
+        jScrollPane3.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        jTextAreaShippingAddress.setColumns(30);
+        jTextAreaShippingAddress.setFont(new java.awt.Font("Tahoma", 0, 11)); // NOI18N
+        jTextAreaShippingAddress.setLineWrap(true);
+        jTextAreaShippingAddress.setRows(5);
+        jTextAreaShippingAddress.setWrapStyleWord(true);
+        jTextAreaShippingAddress.setMinimumSize(new java.awt.Dimension(244, 74));
+        jTextAreaShippingAddress.setName("taNotes1"); // NOI18N
+        jScrollPane3.setViewportView(jTextAreaShippingAddress);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 10;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jScrollPane3, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 10;
+        gridBagConstraints.gridheight = 7;
+        jPanel1.add(filler1, gridBagConstraints);
+
+        jLabel18.setText("TIN");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel18, gridBagConstraints);
+
+        jTFTin.setMinimumSize(new java.awt.Dimension(150, 20));
+        jTFTin.setPreferredSize(new java.awt.Dimension(150, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jTFTin, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        jPanelContent.add(jPanel1, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        jPanelBorder.add(jPanelContent, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(15, 15, 15, 15);
+        jPanelSuperContent.add(jPanelBorder, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        getContentPane().add(jPanelSuperContent, gridBagConstraints);
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void jBQuitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBQuitActionPerformed
+        dispose();
+    }//GEN-LAST:event_jBQuitActionPerformed
+
+    private void jCheckShipActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckShipActionPerformed
+        if (!jCheckShip.isSelected()) {
+            hideFields();
+            //jCheckShip.setNextFocusableComponent(jTFPrivateDetails);
+        } else {
+            showFields();
+            //jCheckShip.setNextFocusableComponent(jTextAreaShippingAddress);
+        }
+    }//GEN-LAST:event_jCheckShipActionPerformed
+
+    private void sBACPanelShippingCityFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_sBACPanelShippingCityFocusLost
+        AutosuggesterItem selectedItem = sBACPanelShippingCity.getSbTextField().getSelectedItem();
+
+        if (selectedItem != null) {
+            StateEntity aux = (StateEntity) selectedItem.getObj();
+
+            jTFShippingCountry.setText(aux.getCountry());
+            jTFShippingState.setText(aux.getState());
+        }
+    }//GEN-LAST:event_sBACPanelShippingCityFocusLost
+
+    private void sBACPanelCityFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_sBACPanelCityFocusLost
+        AutosuggesterItem selectedItem = sBACPanelCity.getSbTextField().getSelectedItem();
+
+        if (selectedItem != null) {
+            StateEntity aux = (StateEntity) selectedItem.getObj();
+
+            jTFCountry.setText(aux.getCountry());
+            jTFState.setText(aux.getState());
+        }
+    }//GEN-LAST:event_sBACPanelCityFocusLost
+
+    private void setupMandatory() {
+        jTFClient.getDocument().addDocumentListener(new DocumentListener() {
+
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+        });
+    }
+
+    private void checkMandatory() {
+        jBSave.setEnabled(!jTFClient.getText().isEmpty());
+    }
+
+    private void jBSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBSaveActionPerformed
+
+        if (jBSave.getText().equals("Edit")) {
+            jBSave.setText("Save");
+            bEdit = true;
+            setTitle("Edit Client");
+            jLabel7.setText("Edit Client");
+            setViewMode(true);
+
+            if (jCheckShip.isSelected()) {
+                showFields();
+            } else {
+                hideFields();
+            }
+
+            return;
+        }
+
+        if (jTFClient.getText().isEmpty()) {
+            Messages.showErrorMessage(this, "<html>Please supply a valid <b>Client Name</b></html>!", "Error");
+            return;
+        } else {
+            try {
+                if (!bEdit && Client.get(Common.connection.getConnection(), jTFClient.getText()) != null) {
+                    if (Messages.showQuestionMessage(this, "You already have a client with the same name. Would you like to continue the save?", "Confirmation") != JOptionPane.YES_OPTION) {
+                        return;
+                    }
+                }
+            } catch (SBDaoException ex) {
+                ex.printStackTrace();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        }
+
+        client.setName(jTFClient.getText());
+        client.setContact(jTFContact.getText());
+        client.setEmail(jTFEmail.getText());
+        client.setTelephone(jTFPhone.getText());
+        client.setBillingAddress(jTextAreaBillingAddress.getText());
+        client.setShippingAddress(jTextAreaShippingAddress.getText());
+        client.setDetails(jTFPrivateDetails.getText());
+        client.setBillingCity(sBACPanelCity.getSbTextField().getText());
+        client.setBillingZip(jTFZip.getText());
+        client.setShippingCity(sBACPanelShippingCity.getSbTextField().getText());
+        client.setShippingZip(jTFShippingZip.getText());
+        client.setDetailsPublic(jTFPublicDetails.getText());
+        client.setTin(jTFTin.getText());
+
+        AutosuggesterItem selectedBCity = sBACPanelCity.getSbTextField().getSelectedItem();
+        if (selectedBCity != null) {
+            StateEntity aux = (StateEntity) selectedBCity.getObj();
+            client.setBillingState(aux);
+        } else {
+            try {
+                State billingState = State.getSimple(Common.connection.getConnection(), jTFState.getText(), sBACPanelCity.getText(), jTFCountry.getText());
+                if (billingState == null) {
+                    billingState = new State();
+                    billingState.setCity(sBACPanelCity.getText());
+                    billingState.setCountry(jTFCountry.getText());
+                    billingState.setState(jTFState.getText());
+                    billingState.setCounty("");
+                    billingState.create();
+                }
+                client.setBillingState(billingState);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+
+            }
+        }
+
+        AutosuggesterItem selectedSCity = sBACPanelShippingCity.getSbTextField().getSelectedItem();
+        if (selectedSCity != null) {
+            StateEntity aux = (StateEntity) selectedSCity.getObj();
+            client.setShippingState(aux);
+        } else if (jCheckShip.isSelected()) {
+            try {
+                State shippingState = State.getSimple(Common.connection.getConnection(), jTFShippingState.getText(), sBACPanelShippingCity.getText(), jTFShippingCountry.getText());
+                if (shippingState == null) {
+                    shippingState = new State();
+                    shippingState.setCity(sBACPanelShippingCity.getText());
+                    shippingState.setCountry(jTFShippingCountry.getText());
+                    shippingState.setState(jTFShippingState.getText());
+                    shippingState.setCounty("");
+                    shippingState.create();
+                }
+                client.setShippingState(shippingState);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+
+            }
+        }
+        try {
+            isDirty = true;
+            if (bEdit) {
+                client.update();
+                dispose();
+                return;
+            }
+            client.create();
+        } catch (Exception ex) {
+            isDirty = false;
+            Messages.showErrorMessage(this, ex.getMessage(), "Error");
+            return;
+        }
+
+        dispose();
+    }//GEN-LAST:event_jBSaveActionPerformed
+
+    private void jBSaveMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jBSaveMouseClicked
+        if (!jBSave.isEnabled()) {
+            if (jTFClient.getText().isEmpty()) {
+                Messages.showErrorMessage(this, "<html>Please supply a valid <b>Client Name</b></html>!", "Error");
+                return;
+            }
+        }
+    }//GEN-LAST:event_jBSaveMouseClicked
+
+    private void hideFields() {
+        jLabel13.setVisible(false);
+        jLabel5.setVisible(false);
+        jLabel11.setVisible(false);
+        jLabel16.setVisible(false);
+        jLabel14.setVisible(false);
+
+        jScrollPane3.setVisible(false);
+        //jTextAreaShippingAddress.setBackground(Color.lightGray);
+        sBACPanelShippingCity.setVisible(false);
+        //sBACPanelShippingCity.getButton().setVisible(false);
+        jTFShippingCountry.setVisible(false);
+        jTFShippingState.setVisible(false);
+        jTFShippingZip.setVisible(false);
+    }
+
+    private void showFields() {
+        jLabel13.setVisible(true);
+        jLabel5.setVisible(true);
+        jLabel11.setVisible(true);
+        jLabel16.setVisible(true);
+        jLabel14.setVisible(true);
+
+        jScrollPane3.setVisible(true);
+        //jTextAreaShippingAddress.setBackground(Color.white);
+        sBACPanelShippingCity.setVisible(true);
+        //sBACPanelShippingCity.getButton().setEnabled(true);
+        jTFShippingCountry.setVisible(true);
+        jTFShippingState.setVisible(true);
+        jTFShippingZip.setVisible(true);
+    }
+
+    private void init() {
+        SBSwingUtils.applyFocusBorder(this);
+
+        initDialog();
+
+        if (this.client == null) {
+            this.client = new Client();
+        }
+
+        if (!this.bEdit) {
+            setViewMode(false);
+            jBSave.setText("Edit");
+            setTitle("View Client");
+            jLabel7.setText("View Client");
+        } else {
+            setTitle("Edit Client");
+            jLabel7.setText("Edit Client");
+        }
+
+        fillClientFields();
+    }
+
+    private void setAutosuggestersProperties() {
+
+        DeleteActionListener cityDelete = new DeleteActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e, AutosuggesterItem item) {
+                if (item != null) {
+
+                    if (Messages.showQuestionMessage(main, "Are you sure you want to delete this record?", "Confirmation") == JOptionPane.YES_OPTION) {
+                        try {
+                            Dao<StateEntity, Integer> stateDao = DaoManager.createDao(Common.connection.getConnection(), StateEntity.class);
+                            stateDao.deleteById(item.getId());
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                            Messages.showErrorMessage(main, "The selected City can not be deleted. It is used in some of your documents.", "Error");
+                        }
+                    }
+
+                }
+            }
+        };
+
+        sBACPanelCity.setDeleteActionListener(cityDelete);
+        sBACPanelShippingCity.setDeleteActionListener(cityDelete);
+
+        Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+        if (dim.height == 768) {
+            sBACPanelCity.setMaximumPopupSize(new Dimension(600, 350));
+            sBACPanelShippingCity.setMaximumPopupSize(new Dimension(600, 350));
+            return;
+        }
+        sBACPanelCity.setMaximumPopupSize(new Dimension(600, dim.height / 2));
+        sBACPanelShippingCity.setMaximumPopupSize(new Dimension(600, (dim.height - 160) / 2));
+    }
+
+    public Client getClient() {
+        return client;
+    }
+
+    public void setName(String name) {
+        jTFClient.setText(name);
+
+    }
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(JDialogClientData.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(JDialogClientData.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(JDialogClientData.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(JDialogClientData.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the dialog */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                JDialogClientData dialog = new JDialogClientData(new javax.swing.JFrame(), true);
+                dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+                    @Override
+                    public void windowClosing(java.awt.event.WindowEvent e) {
+                        System.exit(0);
+                    }
+                });
+                dialog.setVisible(true);
+            }
+        });
+    }
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.Box.Filler filler1;
+    private javax.swing.JButton jBQuit;
+    private javax.swing.JButton jBSave;
+    private javax.swing.JCheckBox jCheckShip;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel10;
+    private javax.swing.JLabel jLabel11;
+    private javax.swing.JLabel jLabel12;
+    private javax.swing.JLabel jLabel13;
+    private javax.swing.JLabel jLabel14;
+    private javax.swing.JLabel jLabel15;
+    private javax.swing.JLabel jLabel16;
+    private javax.swing.JLabel jLabel17;
+    private javax.swing.JLabel jLabel18;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
+    private javax.swing.JLabel jLabel9;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanelBorder;
+    private javax.swing.JPanel jPanelButtons;
+    private javax.swing.JPanel jPanelContent;
+    private javax.swing.JPanel jPanelSuperContent;
+    private javax.swing.JPanel jPanelTitle;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JTextField jTFClient;
+    private javax.swing.JTextField jTFContact;
+    private javax.swing.JTextField jTFCountry;
+    private javax.swing.JTextField jTFEmail;
+    private javax.swing.JTextField jTFPhone;
+    private javax.swing.JTextField jTFPrivateDetails;
+    private javax.swing.JTextField jTFPublicDetails;
+    private javax.swing.JTextField jTFShippingCountry;
+    private javax.swing.JTextField jTFShippingState;
+    private javax.swing.JTextField jTFShippingZip;
+    private javax.swing.JTextField jTFState;
+    private javax.swing.JTextField jTFTin;
+    private javax.swing.JTextField jTFZip;
+    private javax.swing.JTextArea jTextAreaBillingAddress;
+    private javax.swing.JTextArea jTextAreaShippingAddress;
+    private sleekbill.swingutils.autosuggesters.SBACPanelTextField sBACPanelCity;
+    private sleekbill.swingutils.autosuggesters.SBACPanelTextField sBACPanelShippingCity;
+    // End of variables declaration//GEN-END:variables
+
+}

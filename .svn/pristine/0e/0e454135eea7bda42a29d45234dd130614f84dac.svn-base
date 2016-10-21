@@ -1,0 +1,147 @@
+package sleekbill.swingutils;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+
+import javax.swing.AbstractCellEditor;
+import javax.swing.JButton;
+import javax.swing.JPanel;
+import javax.swing.JTable;
+import javax.swing.UIManager;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumnModel;
+
+
+/**
+ *
+ * @author  flaviu marcu
+ */
+public class MultiButtonCell extends AbstractCellEditor
+        implements TableCellRenderer, TableCellEditor, ActionListener {
+
+    SBJTable table;
+    public JPanel renderPanel;
+    public JPanel editPanel;
+    int row;
+    protected final ArrayList<JButton> renderButtons;
+    protected final ArrayList<JButton> editButtons;
+
+    public MultiButtonCell(final SBJTable table, final ArrayList<JButton> renderButtons, final ArrayList<JButton> editButtons) {
+        super();
+        this.table = table;
+        this.renderButtons = renderButtons;
+        this.editButtons = editButtons;
+
+        renderPanel = new JPanel() {
+
+            @Override
+            public String getToolTipText(MouseEvent e) {
+                for (int i = 0; i < renderButtons.size(); i++) {
+                    JButton jButton = renderButtons.get(i);
+                    if (jButton.getBounds().contains(e.getPoint())) {
+                        return jButton.getToolTipText();
+                    }
+                }
+                return "";
+            }           
+        };
+        renderPanel.setLayout(new GridBagLayout());
+
+        for (int i = 0; i < renderButtons.size(); i++) {
+            JButton rb = renderButtons.get(i);
+            rb.setPreferredSize(new Dimension(20,17));
+            renderPanel.add(rb, new GridBagConstraints(i, 0, 1, 1, 0.0, 0, GridBagConstraints.CENTER, 0, new Insets(0, 2, 0, 1), 0, 0));
+        }
+
+
+        renderPanel.setPreferredSize(new Dimension(60, 17));
+
+        editPanel = new JPanel();
+        editPanel.setLayout(new GridBagLayout());
+        for (int i = 0; i < editButtons.size(); i++) {
+            JButton rb = editButtons.get(i);
+            rb.setPreferredSize(new Dimension(20,17));
+            rb.addActionListener(this);
+            editPanel.add(rb, new GridBagConstraints(i, 0, 1, 1, 0.0, 0, GridBagConstraints.CENTER, 0, new Insets(0, 2, 0, 1), 0, 0));
+        }
+
+    }
+
+    public MultiButtonCell(final SBJTable table, final ArrayList<JButton> renderButtons, final ArrayList<JButton> editButtons, int column) {
+        this(table, renderButtons, editButtons);
+        TableColumnModel columnModel = table.getColumnModel();
+        columnModel.getColumn(column).setCellRenderer(this);
+        columnModel.getColumn(column).setCellEditor(this);
+    }
+
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        this.row = row;
+        if (table instanceof SBJTable) {
+            this.table = (SBJTable) table;
+        }
+        if (isSelected) {
+            renderPanel.setForeground(table.getSelectionForeground());
+            renderPanel.setBackground(table.getSelectionBackground());
+        } else {
+            if (UIManager.get("Table.evenRowColor") instanceof Color && UIManager.get("Table.evenRowColor") instanceof Color) {
+                Color rc = row % 2 == 0 ? (Color) UIManager.get("Table.evenRowColor") : (Color) UIManager.get("Table.oddRowColor");
+                renderPanel.setForeground(rc);
+                renderPanel.setBackground(rc);
+            } else {
+                renderPanel.setForeground(table.getForeground());
+                renderPanel.setBackground(table.getBackground());
+            }
+        }
+        
+        renderPanel.revalidate();
+        return renderPanel;
+
+    }
+
+    @Override
+    public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+        this.row = row;
+        editPanel.setForeground(table.getSelectionForeground());
+        editPanel.setBackground(table.getSelectionBackground());
+        return editPanel;
+    }
+
+    @Override
+    public Object getCellEditorValue() {
+        return "";
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        fireEditingStopped();
+        if (!(e.getSource() instanceof JButton)) {
+            return;
+        }
+
+        JButton button = (JButton) e.getSource();
+        Rectangle b = button.getBounds();
+        int x = b.x;
+        int y = b.y + (int) b.getHeight();
+//        if (table instanceof RaportGeneralTable || table instanceof RaportAvizeTable || table instanceof  RaportProformeTable || table instanceof RaportIncasariTable) {
+//            table.actionOf(editButtons.indexOf(e.getSource()), table.getSelectedRow(), x, y);
+//        } else {
+            table.actionOf(editButtons.indexOf(e.getSource()), table.getSelectedRow());
+//        }(andrei)
+        e.setSource(null);//?!
+    }
+
+    public boolean isButtonEnabled(int row,int index){
+        return true;
+    }
+}

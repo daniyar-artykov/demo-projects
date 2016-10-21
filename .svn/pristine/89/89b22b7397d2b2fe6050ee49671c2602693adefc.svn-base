@@ -1,0 +1,1542 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames;
+
+import java.awt.Component;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.beans.PropertyVetoException;
+import java.io.File;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+
+import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.JTextPane;
+import javax.swing.ToolTipManager;
+import javax.swing.event.CellEditorListener;
+import javax.swing.event.ChangeEvent;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
+
+import sleekbill.Common;
+import sleekbill.Messages;
+import sleekbill.beans.Invoice;
+import sleekbill.beans.InvoiceProduct;
+import sleekbill.entities.InvoiceEntity;
+import sleekbill.entities.InvoiceProductEntity;
+import sleekbill.excel.Export;
+import sleekbill.excel.NameType;
+import sleekbill.frames.autosuggesterdata.SBACClients;
+import sleekbill.frames.records.InvoiceRecord;
+import sleekbill.frames.records.Record;
+import sleekbill.jasper.ReportGenerator;
+import sleekbill.swingutils.ButtonsInvoices;
+import sleekbill.swingutils.CellLabel;
+import sleekbill.swingutils.MultiLineCellEditor;
+import sleekbill.swingutils.SBDatePicker;
+import sleekbill.swingutils.SBJTable;
+import sleekbill.swingutils.PaymentCellRenderer;
+import sleekbill.util.SBSwingUtils;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.stmt.PreparedQuery;
+import com.j256.ormlite.stmt.QueryBuilder;
+import com.j256.ormlite.stmt.SelectArg;
+import com.j256.ormlite.stmt.UpdateBuilder;
+import com.j256.ormlite.stmt.Where;
+import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.util.TreeSet;
+import javax.swing.JDialog;
+import javax.swing.SwingConstants;
+import sleekbill.Config;
+import sleekbill.beans.Flag;
+import sleekbill.beans.InvoicePayment;
+import sleekbill.beans.SBDaoException;
+import sleekbill.beans.Stock;
+import sleekbill.entities.FlagEntity;
+import sleekbill.entities.StateEntity;
+import sleekbill.frames.autosuggesterdata.SBACCities;
+import sleekbill.swingutils.InvoiceNumberCellRenderer;
+import sleekbill.swingutils.YesNoCellRenderer;
+import sleekbill.swingutils.autosuggesters.AutosuggesterItem;
+
+/**
+ *
+ * @author Andrei
+ */
+public class JDialogInvoicesReport extends JDialogBaseReport {
+
+    SBACClients asData = new SBACClients();
+    SBACCities asData1 = new SBACCities(Common.connection);
+
+    private static final String[] COLUMN_NAMES = {"No.", "Client Name",
+        "Invoice No.", "Issue Date", "Due Date", "Amount", "Tax", "Total",
+        "Status", "Private Notes", "Emailed", "Amount Paid", "Balance",
+        "Dr. / Cr.", "Date Of Payment", "Type", "Fisc Year", "Action"};
+
+    //in functie de vectorul asta se mai fac si alte calcule (cauta "calcul dimensiuni")
+    private static final int[] PREFFERED_COLUMN_WIDTHS = {25, 125, 65, 80, 80,
+        70, 60, 70, 50, 120, 45, 70, 65, 40, 90, 60, 72, 80};
+
+    SBDatePicker issueStartDp;
+    SBDatePicker issueEndDp;
+    SBDatePicker dueStartDp;
+    SBDatePicker dueEndDp;
+    //global search fields
+    String client;
+    String number;
+    String paid;
+    String type;
+    Date issuedStart;
+    Date issuedEnd;
+    Date dueStart;
+    Date dueEnd;
+    String quick;
+    int toolTipDelay = 0;
+    int precision = Common.PRECISION;
+//    SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+    int columnDiff = 0;
+    String city = "";
+    String state = "";
+    private FlagEntity activeFlag;
+
+    public JDialogInvoicesReport(java.awt.Frame parent, boolean modal) {
+        super(parent, modal);
+        try {
+            activeFlag = Flag.getLast(Common.connection.getConnection());
+        } catch (SBDaoException e) {
+            e.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+
+        int diff = 3;
+        if (dim.width < 1360) {
+            diff = 1;
+            columnDiff = 5;
+        }
+
+        //calcul dimensiuni (inceput)
+        int all = 0;
+        for (int i = 0; i < PREFFERED_COLUMN_WIDTHS.length; i++) {
+            if (i > 1) {
+                PREFFERED_COLUMN_WIDTHS[i] -= 3;
+                all += diff;
+            }
+        }
+        PREFFERED_COLUMN_WIDTHS[1] += all;
+        //calcul dimensiuni (sfarsit)
+
+        initComponents();
+        setLocationRelativeTo(parent);
+        jPTable = jPTableClients;
+
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(Invoice.getLastIssueDate(Common.connection));
+        cal.set(Calendar.DATE, 1);
+        Date firstDateOfMonth = cal.getTime();
+        cal.set(Calendar.DATE, cal.getActualMaximum(Calendar.DATE));
+        Date lastDateOfMonth = cal.getTime();
+//        cal.set(Calendar.DATE, 1);
+//        cal.add(Calendar.MONTH, 4);
+//        cal.set(Calendar.DATE, cal.getActualMaximum(Calendar.DATE));
+//        Date lastDateOfMonths = cal.getTime();
+
+        issueStartDp = new SBDatePicker(firstDateOfMonth);
+        issueEndDp = new SBDatePicker(lastDateOfMonth);
+        dueStartDp = new SBDatePicker(null);
+        dueEndDp = new SBDatePicker(null);
+        issueStartDp.setHorizontalAlignment(JTextField.CENTER);
+        issueEndDp.setHorizontalAlignment(JTextField.CENTER);
+        dueStartDp.setHorizontalAlignment(JTextField.CENTER);
+        dueEndDp.setHorizontalAlignment(JTextField.CENTER);
+
+        jPIssueStart.add(issueStartDp);
+        jPIssueEnd.add(issueEndDp);
+        jPDueStart.add(dueStartDp);
+        jPDueEnd.add(dueEndDp);
+
+        refreshParameters();
+
+        DOCUMENT_TYPE = "INVOICES";
+        reportTableModel = new InvoicesReportModel(COLUMN_NAMES, COLUMN_NAMES, PREFFERED_COLUMN_WIDTHS);
+        reportTable = new InvoicesReportTable(jPTable);
+
+        init(jPTableClients, jPanelNoResults, true);
+
+        GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        pmPanel.addComponentToControl(jPanelButtons, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.CENTER;
+        pmPanel.addComponentToControl(jPanelLegend, gridBagConstraints);
+
+        setLocationRelativeTo(parent);
+
+        SBSwingUtils.applyFocusBorder(this);
+        SBSwingUtils.addContextMenuToChildren(this);
+
+        try {
+            precision = Flag.getLast(Common.connection.getConnection()).getDecimals();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Override
+    public void actionDelete(int row) {
+
+        if (row >= pmPanel.sPm.getPageSize() || pmPanel.getRealRow(row) >= reportTableModel.getRealSize()) {
+            return;
+        }
+        Integer id = getRow(pmPanel.getRealRow(row)).getId();
+//        String client = (String) getRow(pmPanel.getRealRow(row)).data[0];
+        try {
+            if (Messages.showQuestionMessage(this, "Are you sure you want to delete this invoice?", "Confirmation") == JOptionPane.YES_OPTION) {
+
+                Dao<InvoiceEntity, Integer> invoiceDao = DaoManager.createDao(Common.connection.getConnection(), InvoiceEntity.class);
+                UpdateBuilder<InvoiceEntity, Integer> updateBuilder = invoiceDao.updateBuilder();
+                updateBuilder.updateColumnValue(Invoice.DELETED, "y");
+                updateBuilder.where().eq("id", id);
+                updateBuilder.update();
+
+                if (Common.keepStocks()) {
+                    Invoice invoice = new Invoice(id);
+                    for (InvoiceProductEntity product : invoice.getInvoiceProducts()) {
+                        Stock stock = Stock.getByProductId(Common.connection.getConnection(), product.getProduct().getId());
+                        if (stock != null && stock.getQuantity() != null) {
+                            stock.setProduct(product.getProduct());
+                            stock.setQuantity(stock.getQuantity().add(product.getQuantity()));
+                            stock.update();
+                        }
+                    }
+                }
+
+                glassPane.showOK("You have successfully deleted the invoice!");
+                reportTableModel.refreshDataFire();
+            }
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            glassPane.showError("This operation could not be completed!");
+        }
+    }
+
+    @Override
+    public void actionPreview(int row) {
+
+        if (row >= pmPanel.sPm.getPageSize() || pmPanel.getRealRow(row) >= reportTableModel.getRealSize()) {
+            return;
+        }
+
+        Invoice lastInvoice = null;
+        try {
+            lastInvoice = Invoice.getLast(Common.connection.getConnection());
+        } catch (Exception ex) {
+        }
+
+        Integer id = getRow(pmPanel.getRealRow(row)).getId();
+        Invoice i = new Invoice(id);
+        //i.setPrintId(Invoice.FORMAT_1INVOICE);
+        ReportGenerator r = new ReportGenerator(i);
+        r.showDocument();
+
+        Invoice lastInvoice2 = null;
+        try {
+            lastInvoice2 = Invoice.getLast(Common.connection.getConnection());
+        } catch (Exception ex) {
+        }
+
+        if (lastInvoice != null && lastInvoice2 != null) {
+            if (lastInvoice.getId() != lastInvoice2.getId()) {
+                refreshRowFromIndex(lastInvoice2, pmPanel.getRealRow(row));
+            } else {
+                refreshRowFromIndex(new Invoice(id), pmPanel.getRealRow(row));
+            }
+        }
+    }
+
+    @Override
+    public void actionEdit(int row) {
+        if (row >= pmPanel.sPm.getPageSize() || pmPanel.getRealRow(row) >= reportTableModel.getRealSize()) {
+            return;
+        }
+
+        Integer id = getRow(pmPanel.getRealRow(row)).getId();
+        Invoice invoice = new Invoice(id);
+
+        final boolean bPaid = !Common.selectedCompanyConfig.get(Config.INDIA).equals("free");
+        if (!bPaid && !invoice.getType().equals(Invoice.TYPE_STANDARD)) {
+            if (1 == Messages.showWarningMessage(null, "<html><center>This is a Premium only feature.</center></html>", "Information", new String[]{"Cancel", "Go Premium"}, "Go Premium")) {
+                new JDialogRegister(new JDialog(), true, true).setVisible(true);
+            }
+            return;
+        }
+
+        JDialogIssueInvoice jd = new JDialogIssueInvoice(this, true, invoice, false);
+        jd.enableAddPayment((InvoiceRecord) getRow(pmPanel.getRealRow(row)));
+        jd.setVisible(true);
+
+        if (jd.lastSaved != null) {
+            refreshRowFromIndex(jd.lastSaved, pmPanel.getRealRow(row));
+        } else {
+            refreshRowFromIndex(new Invoice(id), pmPanel.getRealRow(row));
+        }
+    }
+
+    @Override
+    public void actionExtra(int row) {
+
+        if (row >= pmPanel.sPm.getPageSize() || pmPanel.getRealRow(row) >= reportTableModel.getRealSize()) {
+            return;
+        }
+
+        InvoiceRecord ir = (InvoiceRecord) getRow(pmPanel.getRealRow(row));
+        if (ir.getNeedsToBePaid().compareTo(ir.getIsPaid()) == 0) {
+            if (Messages.showQuestionMessage(this, "This invoice is already paid! Would you like to continue?", "Confirmation") != JOptionPane.YES_OPTION) {
+                return;
+            }
+        }
+
+        JDialogPay jdp = new JDialogPay(this, true, new Invoice(ir.getId()));
+        jdp.setVisible(true);
+        if (jdp.isModified()) {
+            glassPane.showOK("You have successfully paid the invoice!");
+        }
+        refreshRowFromIndex(new Invoice(ir.getId()), pmPanel.getRealRow(row));
+    }
+
+    @Override
+    public void actionExtra2(int row) {
+        if (row >= pmPanel.sPm.getPageSize() || pmPanel.getRealRow(row) >= reportTableModel.getRealSize()) {
+            return;
+        }
+
+        Integer id = getRow(pmPanel.getRealRow(row)).getId();
+        Invoice invoice = new Invoice(id);
+
+        final boolean bPaid = !Common.selectedCompanyConfig.get(Config.INDIA).equals("free");
+        if (!bPaid && !invoice.getType().equals(Invoice.TYPE_STANDARD)) {
+            if (1 == Messages.showWarningMessage(null, "<html><center>This is a Premium only feature.</center></html>", "Information", new String[]{"Cancel", "Go Premium"}, "Go Premium")) {
+                new JDialogRegister(new JDialog(), true, true).setVisible(true);
+            }
+            return;
+        }
+
+        JDialogIssueInvoice jd = new JDialogIssueInvoice(this, true, invoice, true);
+        jd.reconfigureType(invoice.getType());
+        jd.setVisible(true);
+
+        if (jd.lastSaved != null) {
+            reportTableModel.refreshData();
+        }
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
+
+        jPanelContent = new javax.swing.JPanel();
+        jPanelUpper = new javax.swing.JPanel();
+        jPanelUpperTitle = new javax.swing.JPanel();
+        jLabel4 = new javax.swing.JLabel();
+        jPanelSearch = new javax.swing.JPanel();
+        jPanelSearchButtons = new javax.swing.JPanel();
+        jButtonSearch = new javax.swing.JButton();
+        jButtonReset = new javax.swing.JButton();
+        jPanelSearchFieldsLeft = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        jTextFieldInvoiceNumber = new javax.swing.JTextField();
+        sBACPanelClientName = new sleekbill.swingutils.autosuggesters.SBACPanelTextField(asData, false, false);
+        jLabel5 = new javax.swing.JLabel();
+        jComboBoxIsPaid = new javax.swing.JComboBox();
+        jLabel7 = new javax.swing.JLabel();
+        jComboBoxType = new javax.swing.JComboBox();
+        jLabel8 = new javax.swing.JLabel();
+        sBACPanelCity = new sleekbill.swingutils.autosuggesters.SBACPanelTextField(asData1, true, true);
+        jPanelSearchFieldsRight = new javax.swing.JPanel();
+        jPDueEnd = new javax.swing.JPanel();
+        jPIssueEnd = new javax.swing.JPanel();
+        jPIssueStart = new javax.swing.JPanel();
+        jLabel12 = new javax.swing.JLabel();
+        jLabel13 = new javax.swing.JLabel();
+        jLabel14 = new javax.swing.JLabel();
+        jPanelQuickSearch = new javax.swing.JPanel();
+        jTextFieldQuickSearch = new javax.swing.JTextField();
+        jLabelHelp1 = new javax.swing.JLabel();
+        jPDueStart = new javax.swing.JPanel();
+        jLabel15 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        jPanelButtons = new javax.swing.JPanel();
+        jButtonAddNew = new javax.swing.JButton();
+        jButtonExport = new javax.swing.JButton();
+        jPanelLowerBorder = new javax.swing.JPanel();
+        jPanelResults = new javax.swing.JPanel();
+        jPTableClients = new javax.swing.JPanel();
+        jPanelLegend = new javax.swing.JPanel();
+        jLabelLegend = new javax.swing.JLabel();
+        jPanelLowerTitle = new javax.swing.JPanel();
+        jLabel6 = new javax.swing.JLabel();
+        jLabelTipProduct = new javax.swing.JLabel();
+        jPanelNoResults = new sleekbill.swingutils.JPanelNoResults();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setTitle("Invoices Report");
+        getContentPane().setLayout(new java.awt.GridBagLayout());
+
+        jPanelContent.setBackground(new java.awt.Color(229, 235, 242));
+        jPanelContent.setLayout(new java.awt.GridBagLayout());
+
+        jPanelUpper.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(195, 210, 219), 1, true));
+        jPanelUpper.setLayout(new java.awt.GridBagLayout());
+
+        jPanelUpperTitle.setBackground(new java.awt.Color(253, 253, 253));
+        jPanelUpperTitle.setBorder(javax.swing.BorderFactory.createMatteBorder(1, 1, 0, 1, new java.awt.Color(203, 209, 213)));
+        jPanelUpperTitle.setLayout(new java.awt.GridBagLayout());
+
+        jLabel4.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        jLabel4.setText("Search Invoices");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelUpperTitle.add(jLabel4, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        jPanelUpper.add(jPanelUpperTitle, gridBagConstraints);
+
+        jPanelSearch.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(203, 209, 213)));
+        jPanelSearch.setLayout(new java.awt.GridBagLayout());
+
+        jPanelSearchButtons.setLayout(new java.awt.GridBagLayout());
+
+        jButtonSearch.setIcon(new ImageIcon("./images/buttons/Search.png"));
+        jButtonSearch.setText("Search");
+        jButtonSearch.setName("bSearch"); // NOI18N
+        jButtonSearch.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonSearchActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchButtons.add(jButtonSearch, gridBagConstraints);
+
+        jButtonReset.setIcon(new ImageIcon("./images/buttons/refresh.png"));
+        jButtonReset.setText("Reset");
+        jButtonReset.setName("bReset"); // NOI18N
+        jButtonReset.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonResetActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchButtons.add(jButtonReset, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridwidth = 2;
+        jPanelSearch.add(jPanelSearchButtons, gridBagConstraints);
+
+        jPanelSearchFieldsLeft.setLayout(new java.awt.GridBagLayout());
+
+        jLabel1.setText("Client Name");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFieldsLeft.add(jLabel1, gridBagConstraints);
+
+        jLabel2.setText("Invoice Number");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFieldsLeft.add(jLabel2, gridBagConstraints);
+
+        jTextFieldInvoiceNumber.setMaximumSize(new java.awt.Dimension(160, 20));
+        jTextFieldInvoiceNumber.setMinimumSize(new java.awt.Dimension(160, 20));
+        jTextFieldInvoiceNumber.setName("tfInvoiceNumber"); // NOI18N
+        jTextFieldInvoiceNumber.setPreferredSize(new java.awt.Dimension(160, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFieldsLeft.add(jTextFieldInvoiceNumber, gridBagConstraints);
+
+        sBACPanelClientName.setMaximumSize(new java.awt.Dimension(160, 20));
+        sBACPanelClientName.setMinimumSize(new java.awt.Dimension(160, 20));
+        sBACPanelClientName.setName("tfClientName"); // NOI18N
+        sBACPanelClientName.setPreferredSize(new java.awt.Dimension(160, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFieldsLeft.add(sBACPanelClientName, gridBagConstraints);
+
+        jLabel5.setText("Status");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFieldsLeft.add(jLabel5, gridBagConstraints);
+
+        jComboBoxIsPaid.setMaximumRowCount(5);
+        jComboBoxIsPaid.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "All", "Paid", "Unpaid", "Partial", "Overdue" }));
+        jComboBoxIsPaid.setMinimumSize(new java.awt.Dimension(40, 20));
+        jComboBoxIsPaid.setName("cbIsPaid"); // NOI18N
+        jComboBoxIsPaid.setPreferredSize(new java.awt.Dimension(40, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFieldsLeft.add(jComboBoxIsPaid, gridBagConstraints);
+
+        jLabel7.setText("Type");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFieldsLeft.add(jLabel7, gridBagConstraints);
+
+        jComboBoxType.setMaximumRowCount(5);
+        jComboBoxType.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "All", "Standard", "Tax", "Retail", "Excise" }));
+        jComboBoxType.setMinimumSize(new java.awt.Dimension(40, 20));
+        jComboBoxType.setName("cbIsPaid"); // NOI18N
+        jComboBoxType.setPreferredSize(new java.awt.Dimension(40, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFieldsLeft.add(jComboBoxType, gridBagConstraints);
+
+        jLabel8.setText("City");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFieldsLeft.add(jLabel8, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFieldsLeft.add(sBACPanelCity, gridBagConstraints);
+        sBACPanelCity.setName("tfCity"); // NOI18N
+
+        sBACPanelCity.setPreferredSize(new java.awt.Dimension(75, 20));
+
+        sBACPanelCity.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                sBACPanelCityFocusLost(evt);
+            }
+        });
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        jPanelSearch.add(jPanelSearchFieldsLeft, gridBagConstraints);
+
+        jPanelSearchFieldsRight.setLayout(new java.awt.GridBagLayout());
+
+        jPDueEnd.setMinimumSize(new java.awt.Dimension(80, 20));
+        jPDueEnd.setName("tfData"); // NOI18N
+        jPDueEnd.setPreferredSize(new java.awt.Dimension(10, 20));
+        jPDueEnd.setLayout(new javax.swing.BoxLayout(jPDueEnd, javax.swing.BoxLayout.LINE_AXIS));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.ipadx = 120;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 10, 5, 5);
+        jPanelSearchFieldsRight.add(jPDueEnd, gridBagConstraints);
+
+        jPIssueEnd.setMinimumSize(new java.awt.Dimension(80, 20));
+        jPIssueEnd.setName("tfData"); // NOI18N
+        jPIssueEnd.setPreferredSize(new java.awt.Dimension(10, 20));
+        jPIssueEnd.setLayout(new javax.swing.BoxLayout(jPIssueEnd, javax.swing.BoxLayout.LINE_AXIS));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.ipadx = 120;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 10, 5, 5);
+        jPanelSearchFieldsRight.add(jPIssueEnd, gridBagConstraints);
+
+        jPIssueStart.setMinimumSize(new java.awt.Dimension(80, 20));
+        jPIssueStart.setName("tfData"); // NOI18N
+        jPIssueStart.setPreferredSize(new java.awt.Dimension(10, 20));
+        jPIssueStart.setLayout(new javax.swing.BoxLayout(jPIssueStart, javax.swing.BoxLayout.LINE_AXIS));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.ipadx = 120;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFieldsRight.add(jPIssueStart, gridBagConstraints);
+
+        jLabel12.setText("and");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 10, 5, 10);
+        jPanelSearchFieldsRight.add(jLabel12, gridBagConstraints);
+
+        jLabel13.setText("Issued Between");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFieldsRight.add(jLabel13, gridBagConstraints);
+
+        jLabel14.setText("Due Between");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFieldsRight.add(jLabel14, gridBagConstraints);
+
+        jPanelQuickSearch.setLayout(new java.awt.GridBagLayout());
+
+        jTextFieldQuickSearch.setMaximumSize(new java.awt.Dimension(200, 20));
+        jTextFieldQuickSearch.setMinimumSize(new java.awt.Dimension(200, 20));
+        jTextFieldQuickSearch.setName("tfQuickSearch"); // NOI18N
+        jTextFieldQuickSearch.setPreferredSize(new java.awt.Dimension(200, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelQuickSearch.add(jTextFieldQuickSearch, gridBagConstraints);
+
+        jLabelHelp1.setIcon(new ImageIcon("./images/buttons/ico_help.png"));
+        jLabelHelp1.setToolTipText("Search invoices by product name, notes for client and private notes");
+        jLabelHelp1.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLabelHelp1.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                jLabelHelp1MouseEntered(evt);
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                jLabelHelp1MouseExited(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 2, 5, 5);
+        jPanelQuickSearch.add(jLabelHelp1, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        jPanelSearchFieldsRight.add(jPanelQuickSearch, gridBagConstraints);
+
+        jPDueStart.setMinimumSize(new java.awt.Dimension(80, 20));
+        jPDueStart.setName("tfData"); // NOI18N
+        jPDueStart.setPreferredSize(new java.awt.Dimension(10, 20));
+        jPDueStart.setLayout(new javax.swing.BoxLayout(jPDueStart, javax.swing.BoxLayout.LINE_AXIS));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.ipadx = 120;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFieldsRight.add(jPDueStart, gridBagConstraints);
+
+        jLabel15.setText("and");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 10, 5, 10);
+        jPanelSearchFieldsRight.add(jLabel15, gridBagConstraints);
+
+        jLabel3.setText("Quick Search");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFieldsRight.add(jLabel3, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.weightx = 0.1;
+        jPanelSearch.add(jPanelSearchFieldsRight, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        gridBagConstraints.weightx = 0.1;
+        jPanelUpper.add(jPanelSearch, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(15, 15, 15, 15);
+        jPanelContent.add(jPanelUpper, gridBagConstraints);
+
+        jPanelButtons.setLayout(new java.awt.GridBagLayout());
+
+        jButtonAddNew.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        jButtonAddNew.setForeground(new java.awt.Color(35, 130, 165));
+        jButtonAddNew.setIcon(new ImageIcon("./images/buttons/Page.png"));
+        jButtonAddNew.setText("New Invoice");
+        jButtonAddNew.setName("bNewInvoice"); // NOI18N
+        jButtonAddNew.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonAddNewActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelButtons.add(jButtonAddNew, gridBagConstraints);
+
+        jButtonExport.setIcon(new ImageIcon("./images/buttons/Page_export.png"));
+        jButtonExport.setText("Export");
+        jButtonExport.setName("bExport"); // NOI18N
+        jButtonExport.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonExportActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelButtons.add(jButtonExport, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.weightx = 0.1;
+        jPanelContent.add(jPanelButtons, gridBagConstraints);
+
+        jPanelLowerBorder.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(195, 210, 219), 1, true));
+        jPanelLowerBorder.setLayout(new java.awt.GridBagLayout());
+
+        jPanelResults.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(203, 209, 213)));
+        jPanelResults.setLayout(new java.awt.GridBagLayout());
+
+        jPTableClients.setName("tableInvoices"); // NOI18N
+        jPTableClients.setLayout(new javax.swing.BoxLayout(jPTableClients, javax.swing.BoxLayout.LINE_AXIS));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelResults.add(jPTableClients, gridBagConstraints);
+
+        jPanelLegend.setForeground(new java.awt.Color(255, 0, 0));
+        jPanelLegend.setLayout(new java.awt.GridBagLayout());
+
+        jLabelLegend.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        jLabelLegend.setForeground(new java.awt.Color(255, 0, 0));
+        jLabelLegend.setText("*Invoices in red are due today or overdue");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        jPanelLegend.add(jLabelLegend, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        jPanelResults.add(jPanelLegend, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        jPanelLowerBorder.add(jPanelResults, gridBagConstraints);
+
+        jPanelLowerTitle.setBackground(new java.awt.Color(253, 253, 253));
+        jPanelLowerTitle.setBorder(javax.swing.BorderFactory.createMatteBorder(1, 1, 0, 1, new java.awt.Color(203, 209, 213)));
+        jPanelLowerTitle.setLayout(new java.awt.GridBagLayout());
+
+        jLabel6.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        jLabel6.setText("Results");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelLowerTitle.add(jLabel6, gridBagConstraints);
+
+        jLabelTipProduct.setIcon(new ImageIcon("./images/buttons/ico_help.png"));
+        jLabelTipProduct.setToolTipText("<html>\nYou can customize the labels to appear on the printed documents in <b>Settings > Document Preferences</b>.<br>e.g. if you use <b>Services</b> rather than <b>Products</b>, etc\n</html>");
+        jLabelTipProduct.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLabelTipProduct.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                jLabelTipProductMouseExited(evt);
+            }
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                jLabelTipProductMouseEntered(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelLowerTitle.add(jLabelTipProduct, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        jPanelLowerBorder.add(jPanelLowerTitle, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(0, 15, 15, 15);
+        jPanelContent.add(jPanelLowerBorder, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        getContentPane().add(jPanelContent, gridBagConstraints);
+
+        jPanelNoResults.setLabel("There are no results for your search criteria...");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        getContentPane().add(jPanelNoResults, gridBagConstraints);
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void jButtonAddNewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonAddNewActionPerformed
+
+        JDialogIssueInvoice jDialogIssueInvoice = new JDialogIssueInvoice(this, true);
+        jDialogIssueInvoice.setVisible(true);
+        refreshParameters();
+        reportTableModel.refreshData();
+    }//GEN-LAST:event_jButtonAddNewActionPerformed
+
+    private void jButtonSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSearchActionPerformed
+        refreshParameters();
+        reportTableModel.refreshData();
+    }//GEN-LAST:event_jButtonSearchActionPerformed
+
+    private void jButtonResetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonResetActionPerformed
+
+        try {
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(Invoice.getLastIssueDate(Common.connection));
+            cal.set(Calendar.DATE, 1);
+            Date firstDateOfMonth = cal.getTime();
+            cal.set(Calendar.DATE, cal.getActualMaximum(Calendar.DATE));
+            Date lastDateOfMonth = cal.getTime();
+//            cal.set(Calendar.DATE, 1);
+//            cal.add(Calendar.MONTH, 4);
+//            cal.set(Calendar.DATE, cal.getActualMaximum(Calendar.DATE));
+//            Date lastDateOfMonths = cal.getTime();
+
+            issueStartDp.setDate(firstDateOfMonth);
+            issueEndDp.setDate(lastDateOfMonth);
+            dueStartDp.setDate(null);
+            dueEndDp.setDate(null);
+        } catch (PropertyVetoException ex) {
+            ex.printStackTrace();
+        }
+
+        jTextFieldQuickSearch.setText("");
+        jTextFieldInvoiceNumber.setText("");
+        sBACPanelClientName.getSbTextField().setText("");
+        jComboBoxIsPaid.setSelectedIndex(0);
+        jComboBoxType.setSelectedIndex(0);
+
+        // clear those as well
+        city = "";
+        state = "";
+
+        sBACPanelCity.getSbTextField().setText("");
+    }//GEN-LAST:event_jButtonResetActionPerformed
+
+    private void jButtonExportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonExportActionPerformed
+
+        String filename = "Invoices.xls";
+
+        File file = new File(filename);
+        JFileChooser efc = new JFileChooser();
+        efc.setSelectedFile(file);
+        if (efc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            file = efc.getSelectedFile();
+            if (file.exists()) {
+                if (Messages.showQuestionMessage(this, "The file already exists. Would you like to overwrite?", "Save file") != JOptionPane.YES_OPTION) {
+                    return;
+                }
+            }
+            try {
+                ArrayList<Integer> idList = new ArrayList<Integer>();
+                for (int i = 0; i < reportTableModel.getData().size(); i++) {
+                    idList.add(reportTableModel.getRow(i).getId());
+                }
+                StringBuilder interval = new StringBuilder();
+                interval.append(Common.companyDetails.getName());
+                interval.append(": ");
+                if (issueStartDp.getDate() == null) {
+                    interval.append("*");
+                } else {
+                    interval.append(Common.US_DATE_FORMAT.format(issueStartDp.getDate()));
+                }
+                interval.append(" - ");
+                if (issueEndDp.getDate() == null) {
+                    interval.append("*");
+                } else {
+                    interval.append(Common.US_DATE_FORMAT.format(issueEndDp.getDate()));
+                }
+//                String interval = Common.companyDetails.getName() + ": " + (issueStartDp.getDate() == null ? "*" : Common.US_DATE_FORMAT.format(issueStartDp.getDate())) + " - " + (issueEndDp.getDate() == null ? "*" : Common.US_DATE_FORMAT.format(issueEndDp.getDate()));
+                Export.DownloadInvoices(file, NameType.INVOICE_COLUMNS, idList,
+                        interval.toString());
+                glassPane.showOK("Export complete!");
+            } catch (Exception e) {
+                e.printStackTrace();
+                glassPane.showError("This operation could not be completed. If the file already exists, please check that it is closed.");
+            }
+        }
+    }//GEN-LAST:event_jButtonExportActionPerformed
+
+    private void jLabelHelp1MouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabelHelp1MouseEntered
+        toolTipDelay = ToolTipManager.sharedInstance().getInitialDelay() > 0 ? ToolTipManager.sharedInstance().getInitialDelay() : toolTipDelay;
+        ToolTipManager.sharedInstance().setInitialDelay(0);
+    }//GEN-LAST:event_jLabelHelp1MouseEntered
+
+    private void jLabelHelp1MouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabelHelp1MouseExited
+        if (toolTipDelay > 0) {
+            ToolTipManager.sharedInstance().setInitialDelay(toolTipDelay);
+        }
+    }//GEN-LAST:event_jLabelHelp1MouseExited
+
+    private void jLabelTipProductMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabelTipProductMouseEntered
+        toolTipDelay = ToolTipManager.sharedInstance().getInitialDelay() > 0 ? ToolTipManager.sharedInstance().getInitialDelay() : toolTipDelay;
+        ToolTipManager.sharedInstance().setInitialDelay(0);
+    }//GEN-LAST:event_jLabelTipProductMouseEntered
+
+    private void jLabelTipProductMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabelTipProductMouseExited
+        if (toolTipDelay > 0) {
+            ToolTipManager.sharedInstance().setInitialDelay(toolTipDelay);
+        }
+    }//GEN-LAST:event_jLabelTipProductMouseExited
+
+    private void sBACPanelCityFocusLost(java.awt.event.FocusEvent evt) {
+
+        AutosuggesterItem selectedItem = sBACPanelCity.getSbTextField().getSelectedItem();
+
+        if (selectedItem != null) {
+            StateEntity aux = (StateEntity) selectedItem.getObj();
+
+            city = aux.getCity();
+            state = aux.getState();
+
+            sBACPanelCity.setText(aux.getCity() + ", " + aux.getState());
+        }
+    }
+
+    private void setQuickMode(boolean bQuick) {
+        sBACPanelClientName.getSbTextField().setEditable(bQuick);
+        sBACPanelClientName.getButton().setEnabled(bQuick);
+        jTextFieldInvoiceNumber.setEditable(bQuick);
+        jComboBoxIsPaid.setEnabled(bQuick);
+        issueStartDp.setEnabled(bQuick);
+        issueEndDp.setEnabled(bQuick);
+        dueStartDp.setEnabled(bQuick);
+        dueEndDp.setEnabled(bQuick);
+        jTextFieldQuickSearch.setEditable(!bQuick);
+    }
+
+    private void refreshParameters() {
+
+        jLabelLegend.setVisible(false);
+        client = sBACPanelClientName.getSbTextField().getText();
+        number = jTextFieldInvoiceNumber.getText();
+        paid = "" + jComboBoxIsPaid.getSelectedIndex();
+        issuedStart = issueStartDp.getDate() == null ? new Date(0) : issueStartDp.getDate();
+        issuedEnd = issueEndDp.getDate() == null ? new Date(Long.MAX_VALUE) : issueEndDp.getDate();
+        dueStart = dueStartDp.getDate() == null ? new Date(0) : dueStartDp.getDate();
+        dueEnd = dueEndDp.getDate() == null ? new Date(Long.MAX_VALUE) : dueEndDp.getDate();
+        quick = jTextFieldQuickSearch.getText();
+
+        switch (jComboBoxType.getSelectedIndex()) {
+            case 1:
+                type = Invoice.TYPE_STANDARD;
+                break;
+            case 2:
+                type = Invoice.TYPE_TAX;
+                break;
+            case 3:
+                type = Invoice.TYPE_RETAIL;
+                break;
+            case 4:
+                type = Invoice.TYPE_EXCISE;
+                break;
+            default:
+                type = "%";
+                break;
+        }
+
+        client = "%" + client + "%";
+        number = "%" + number + "%";
+        quick = "%" + quick + "%";
+        
+        columnDiff = 0;
+    }
+
+    public class InvoicesReportModel extends ReportTableModel {
+
+        public InvoicesReportModel(String[] columnNames, String[] columns,
+                int[] preferredColumnWidths) {
+            super(columnNames, columns, preferredColumnWidths, null, null);
+        }
+
+        @Override
+        public ArrayList<Record> getData() {
+
+            ArrayList<Record> results = new ArrayList<Record>();
+            try {
+                Dao<InvoiceEntity, Integer> invoiceDao = DaoManager.createDao(
+                        Common.connection.getConnection(), InvoiceEntity.class);
+
+                SelectArg selectClient = new SelectArg();
+                SelectArg selectNumber = new SelectArg();
+
+                Where<InvoiceEntity, Integer> condition = invoiceDao.queryBuilder().orderByRaw(" issue_date DESC, CAST(number as integer) DESC ").where();
+                condition.like(Invoice.CLIENT_NAME, selectClient);
+                condition.and().like(Invoice.NUMBER, selectNumber);
+                condition.and().between(Invoice.ISSUE_DATE, issuedStart, issuedEnd);
+
+                if (dueStartDp.getDate() == null || dueEndDp.getDate() == null) {
+                    condition.and(condition.between(Invoice.DUE_DATE, dueStart, dueEnd), condition.or().isNull(Invoice.DUE_DATE));
+                } else {
+                    condition.and().between(Invoice.DUE_DATE, dueStart, dueEnd);
+                }
+                condition.and().eq(Invoice.DELETED, "n");
+                condition.and().like(Invoice.TYPE, type);
+
+                PreparedQuery<InvoiceEntity> prepare = condition.prepare();
+                selectClient.setValue(client);
+                selectNumber.setValue(number);
+
+                if (quick != null && !quick.equals("%%")) {
+
+                    SelectArg selectQuick1 = new SelectArg();
+                    SelectArg selectQuick2 = new SelectArg();
+                    SelectArg selectQuick3 = new SelectArg();
+                    Dao<InvoiceProductEntity, Integer> invoiceProductDao = DaoManager.createDao(
+                            Common.connection.getConnection(), InvoiceProductEntity.class);
+
+                    QueryBuilder<InvoiceProductEntity, Integer> queryBuilder = invoiceProductDao.queryBuilder();
+                    queryBuilder = queryBuilder.selectColumns("invoice_id");
+                    queryBuilder.setWhere(invoiceProductDao.queryBuilder().where().like(InvoiceProduct.NAME, selectQuick1));
+
+                    condition = invoiceDao.queryBuilder().where()
+                            .like(Invoice.INTERNAL_NOTES, selectQuick2)
+                            .or().like(Invoice.INVOICES_NOTES, selectQuick3)
+                            .or().in("id", queryBuilder)
+                            .and().eq(Invoice.DELETED, "n");
+
+                    selectQuick1.setValue(quick);
+                    selectQuick2.setValue(quick);
+                    selectQuick3.setValue(quick);
+                    prepare = condition.prepare();
+                }
+
+                List<InvoiceEntity> query = invoiceDao.query(prepare);
+
+                for (InvoiceEntity invoice : query) {
+                    BigDecimal totalNoTax = invoice.getTotalNoTax().setScale(precision, RoundingMode.HALF_UP);
+                    BigDecimal totalTax = invoice.getTotalTax().setScale(precision, RoundingMode.HALF_UP);
+                    BigDecimal totalAll = invoice.getTotalAll().setScale(precision, RoundingMode.HALF_UP);
+                    BigDecimal totalPaidById = InvoicePayment.getTotalPaidById(Common.connection.getConnection(), invoice.getId(), precision);
+
+                    boolean isRoundedOff = invoice.getFlag().isTotalWithoutDecimals();
+                    //in functie de status-ul facturii valoarea acestuia va fi diferita pentru sortare
+                    String statusValue = "";
+                    if (totalAll.setScale(isRoundedOff ? 0 : precision, RoundingMode.HALF_UP).compareTo(totalPaidById) == 0 || totalAll.setScale(isRoundedOff ? 0 : precision, RoundingMode.HALF_UP).compareTo(totalPaidById) == -1) {
+                        statusValue = "1";//paid
+                    } else if (totalPaidById.compareTo(BigDecimal.ZERO) == 0 || totalPaidById.compareTo(BigDecimal.ZERO) == -1) {
+                        statusValue = "4";//unpaid
+                    } else {
+                        statusValue = "2";//partial
+                    }
+
+                    if (invoice.getDueDate() != null) {
+                        if (invoice.getDueDate().compareTo(new Date()) <= 0) {
+                            if (statusValue.equals("4")) {
+                                statusValue = "5";//unpaid overdue
+                            }
+
+                            if (statusValue.equals("2")) {
+                                statusValue = "3";//partial overdue
+                            }
+                        }
+                    }
+
+                    if (!invoice.getClient().getBillingCity().toLowerCase().contains(city.toLowerCase())) {
+                        continue;
+                    }
+
+                    InvoiceRecord ir = new InvoiceRecord(invoice.getId(),
+                            invoice.getClientName(), invoice.getNumber(),
+                            invoice.getIssueDate(), invoice.getDueDate(),
+                            totalNoTax, totalTax, totalAll, statusValue,
+                            invoice.getInternalNotes(), totalAll, totalPaidById,
+                            invoice.isSent(), invoice.getType(), new Invoice(invoice),
+                            precision, isRoundedOff, invoice.getFiscalYear());
+
+                    //All, Paid, Unpaid, Partial, Overdue
+                    if (paid.equals("0")) {
+                        results.add(ir);
+                    } else if (paid.equals("1") && statusValue.equals("1")) {
+                        results.add(ir);
+                    } else if ((paid.equals("2") && statusValue.equals("4"))
+                            || (paid.equals("2") && statusValue.equals("5"))) {
+                        results.add(ir);
+                    } else if ((paid.equals("3") && statusValue.equals("2"))
+                            || (paid.equals("3") && statusValue.equals("3"))) {
+                        results.add(ir);
+                    } else if ((paid.equals("4") && statusValue.equals("3"))
+                            || (paid.equals("4") && statusValue.equals("5"))) {
+                        results.add(ir);
+                    }
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+
+            Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+            if (dim.width < 1360) {
+                alwaysHideColumns = new TreeSet<Integer>();
+                alwaysHideColumns.add(11);
+                alwaysHideColumns.add(12);
+                alwaysHideColumns.add(13);
+                alwaysHideColumns.add(14);
+                alwaysHideColumns.add(15);
+            }
+
+            // hide Fisc year column if end fiscal year didn't checked
+            if (!activeFlag.isEndFiscYear()) {
+                alwaysHideColumns.add(16);
+                columnDiff += 1;
+            }
+
+            hiddenColumns.addAll(alwaysHideColumns);
+            fireTableStructureChanged();
+
+            if (pmPanel != null) {
+                pmPanel.hardreset();
+            }
+
+            if (reportTable != null && reportTable.getColumnCount() > 0) {
+                new ButtonsInvoices(reportTable, reportTable.getColumnCount() - 1);
+            }
+
+            if (reportTable != null) {
+                for (int i = 0; i < reportTable.getColumnCount() - 1; i++) {
+                    reportTable.getColumnModel().getColumn(i).setHeaderRenderer(sortButtonRenderer);
+                }
+                reportTable.setPreferredColumnWidths();
+            }
+
+            return results;
+        }
+
+        @Override
+        public boolean isCellEditable(int row, int col) {
+            return (col == (Arrays.asList(columnNames).indexOf("Action") - columnDiff)
+                    || col == Arrays.asList(columnNames).indexOf("Private Notes"));
+        }
+    }
+
+    public class InvoicesReportTable extends ReportTable {
+
+        public InvoicesReportTable(JPanel p) {
+            super(p);
+        }
+
+        @Override
+        public TableCellEditor getCellEditor(int row, int column) {
+
+            int diff = pmPanel.sPm.getRealRowCount() <= pmPanel.sPm.pageSize ? 2 : 3;
+            if (row >= getRowCount() - diff) {
+                return null;
+            }
+
+            ColoredBasicMultiLineCellEditor mle = new ColoredBasicMultiLineCellEditor(reportTable);
+            mle.addCellEditorListener(new CellEditorListener() {
+                @Override
+                public void editingStopped(ChangeEvent e) {
+                    try {
+                        MultiLineCellEditor mle = (MultiLineCellEditor) e.getSource();
+                        int id = ((InvoicesReportModel) reportTableModel).getId(pmPanel.getRealRow(mle.getRow()));
+
+                        SelectArg selectNote = new SelectArg();
+                        Dao<InvoiceEntity, Integer> invoiceDao = DaoManager.createDao(Common.connection.getConnection(), InvoiceEntity.class);
+                        UpdateBuilder<InvoiceEntity, Integer> updateBuilder = invoiceDao.updateBuilder();
+                        updateBuilder.updateColumnValue(Invoice.INTERNAL_NOTES, selectNote);
+                        updateBuilder.where().eq("id", id);
+                        selectNote.setValue(mle.getCellEditorValue().toString());
+                        updateBuilder.update();
+
+                        reportTableModel.getRow(pmPanel.getRealRow(mle.getRow())).data[8] = mle.getCellEditorValue().toString();
+                        reportTableModel.fireTableRowsUpdated(pmPanel.getRealRow(mle.getRow()), pmPanel.getRealRow(mle.getRow()));
+
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+
+                @Override
+                public void editingCanceled(ChangeEvent e) {
+                    return;
+                }
+            });
+            if (column == Arrays.asList(COLUMN_NAMES).indexOf("Private Notes")) {
+                return mle;
+            }
+
+            return super.getCellEditor(row, column);
+        }
+
+        @Override
+        public TableCellRenderer getCellRenderer(int row, int column) {
+
+            int diff = pmPanel.sPm.getRowCount() == pmPanel.sPm.pageSize ? 2 : 3;
+            if (pmPanel.sPm.getRowCount() >= pmPanel.sPm.pageSize) {
+                diff = 2;
+            }
+            if (pmPanel.sPm.getPageCount() == 1 && pmPanel.sPm.getRowCount() <= pmPanel.sPm.pageSize) {
+                diff = 2;
+            }
+            if (pmPanel.sPm.getPageCount() > 1 && pmPanel.sPm.getPageOffset() == pmPanel.sPm.getPageCount() - 1) {
+                diff = 3;
+            }
+            if (row >= getRowCount() - diff - (pmPanel.sPm.getPageOffset() != pmPanel.sPm.getPageCount() - 1 ? 1 : 0)) {
+
+                return new BoldCellLabel();
+            }
+
+            if (Arrays.asList(COLUMN_NAMES).indexOf("Invoice No.") == column) {
+                InvoiceRecord row1 = (InvoiceRecord) getRow(pmPanel.getRealRow(row));
+
+                return new InvoiceNumberCellRenderer(row1.getInvoice().getNumber(),
+                        row1.getFullInvoiceNumber());
+            }
+
+            if (Arrays.asList(COLUMN_NAMES).indexOf("Status") == column
+                    && !getValueAt(row, column).equals("")) {
+                InvoiceRecord row1 = (InvoiceRecord) getRow(pmPanel.getRealRow(row));
+
+                Object data = pmPanel.sPm.getValueAt(row, 4);
+                boolean bool = !pmPanel.sPm.getValueAt(row, 8).toString().equals("0");
+
+                if (data != null) {
+                    Calendar cal = Calendar.getInstance(); // locale-specific
+                    cal.setTime(new Date());
+                    cal.set(Calendar.HOUR_OF_DAY, 0);
+                    cal.set(Calendar.MINUTE, 0);
+                    cal.set(Calendar.SECOND, 0);
+                    cal.set(Calendar.MILLISECOND, 0);
+                    Date date = cal.getTime();
+                    if (!data.equals("") && ((Date) data).compareTo(date) < 0 && bool) {
+                        return new PaymentCellRenderer(row1.getNeedsToBePaid(),
+                                row1.getIsPaid(), true, row1.getTooltip());
+                    }
+                }
+
+                return new PaymentCellRenderer(row1.getNeedsToBePaid(),
+                        row1.getIsPaid(), false, row1.getTooltip());
+            }
+
+            if (Arrays.asList(COLUMN_NAMES).indexOf("Emailed") == column
+                    && !getValueAt(row, column).equals("")) {
+                boolean sent = pmPanel.sPm.getValueAt(row, column).toString().equals("1");
+                return new YesNoCellRenderer(sent);
+            }
+
+            if (Arrays.asList(COLUMN_NAMES).indexOf("Private Notes") == column) {
+                return new ColoredBasicMultiLineCellRenderer(reportTable);
+            }
+
+            if (column != (Arrays.asList(COLUMN_NAMES).indexOf("Action") - columnDiff)
+                    && row < (getRowCount() - diff)) {
+                return new ColoredCellLabel();
+            }
+
+            return super.getCellRenderer(row, column);
+        }
+
+        public class ColoredCellLabel extends CellLabel {
+
+            @Override
+            public Component getTableCellRendererComponent(JTable table,
+                    Object value, boolean isSelected, boolean hasFocus, int r, int c) {
+                CellLabel cl = (CellLabel) super.getTableCellRendererComponent(
+                        table, value, isSelected, hasFocus, r, c);
+
+                if (c == 1) {
+                    setHorizontalAlignment(SwingConstants.LEFT);
+                }
+
+                return cl;
+            }
+        }
+
+        public class BoldCellLabel extends CellLabel {
+
+            @Override
+            public Component getTableCellRendererComponent(JTable table,
+                    Object value, boolean isSelected, boolean hasFocus, int r, int c) {
+                CellLabel cl = (CellLabel) super.getTableCellRendererComponent(
+                        table, value, isSelected, hasFocus, r, c);
+                cl.setFont(new Font(cl.getFont().getName(), Font.BOLD, cl.getFont().getSize() + 1));
+
+                return cl;
+            }
+        }
+
+        public class ColoredBasicMultiLineCellRenderer extends BasicMultiLineCellRenderer {
+
+            public ColoredBasicMultiLineCellRenderer(SBJTable t) {
+                super(t);
+
+            }
+
+            @Override
+            public Component getTableCellRendererComponent(JTable table,
+                    Object value, boolean isSelected, boolean hasFocus, int r, int c) {
+                JTextPane mcr = (JTextPane) super.getTableCellRendererComponent(
+                        table, value, isSelected, hasFocus, r, c);
+//                Object row = pmPanel.sPm.getValueAt(r, 4);
+//                boolean bool = !pmPanel.sPm.getValueAt(r, 8).toString().equals("0");
+//
+//                if (row != null) {
+//                    if (!row.equals("") && ((Date) row).compareTo(new Date()) <= 0 && bool) {
+//                        Style style = mcr.getStyle("selected");
+//                        StyleConstants.setForeground(style, Color.RED);
+//                        mcr.getStyledDocument().setParagraphAttributes(0, 0, style, true);
+//                    }
+//                }
+
+                return mcr;
+            }
+        }
+
+        public class ColoredBasicMultiLineCellEditor extends MultiLineCellEditor {
+
+            public ColoredBasicMultiLineCellEditor(SBJTable t) {
+                super(t);
+            }
+
+            @Override
+            public Component getTableCellEditorComponent(JTable table,
+                    Object value, boolean isSelected, int row, int column) {
+                JTextPane ed = (JTextPane) super.getTableCellEditorComponent(
+                        table, value, isSelected, row, column);
+
+//                Object rowd = pmPanel.sPm.getValueAt(row, 4);
+//                boolean bool = !pmPanel.sPm.getValueAt(row, 8).toString().equals("0");
+////                try {
+////                    if (!rowd.equals("") && sdf.parse(rowd.toString()).before(new Date()) && bool) {
+//                	if (!rowd.equals("") && ((Date)rowd).compareTo(new Date()) <= 0 && bool) {
+//                        Style style = ed.getStyle("selected");
+//                        StyleConstants.setForeground(style, Color.RED);
+//                        ed.getStyledDocument().setParagraphAttributes(0, 0, style, true);
+//                    }
+////                } catch (ParseException ex) {
+////                    ex.printStackTrace();
+////                }
+                return ed;
+
+            }
+        }
+    }
+
+    void refreshRowFromIndex(Invoice invoice, Integer row) {
+
+        BigDecimal totalNoTax = invoice.getTotalNoTax().setScale(precision, RoundingMode.HALF_UP);
+        BigDecimal totalTax = invoice.getTotalTax().setScale(precision, RoundingMode.HALF_UP);
+        BigDecimal totalAll = invoice.getTotalAll().setScale(precision, RoundingMode.HALF_UP);
+        BigDecimal totalPaidById = InvoicePayment.getTotalPaidById(Common.connection.getConnection(), invoice.getId(), precision);
+
+        boolean isRoundedOff = invoice.getFlag().isTotalWithoutDecimals();
+        InvoiceRecord ir = new InvoiceRecord(invoice.getId(), invoice.getClientName(),
+                invoice.getNumber(), invoice.getIssueDate(), invoice.getDueDate(),
+                totalNoTax, totalTax, totalAll, "" + totalAll.compareTo(totalPaidById),
+                invoice.getInternalNotes(), totalAll, totalPaidById, invoice.isSent(),
+                invoice.getType(), new Invoice(invoice), precision, isRoundedOff,
+                invoice.getFiscalYear());
+
+        reportTableModel.updateRow(ir, row);
+    }
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(JDialogClientsReport.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(JDialogClientsReport.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(JDialogClientsReport.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(JDialogClientsReport.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the dialog */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                JDialogInvoicesReport dialog = new JDialogInvoicesReport(new javax.swing.JFrame(), true);
+                dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+                    @Override
+                    public void windowClosing(java.awt.event.WindowEvent e) {
+                        System.exit(0);
+                    }
+                });
+                dialog.setVisible(true);
+            }
+        });
+    }
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButtonAddNew;
+    private javax.swing.JButton jButtonExport;
+    private javax.swing.JButton jButtonReset;
+    private javax.swing.JButton jButtonSearch;
+    private javax.swing.JComboBox jComboBoxIsPaid;
+    private javax.swing.JComboBox jComboBoxType;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel12;
+    private javax.swing.JLabel jLabel13;
+    private javax.swing.JLabel jLabel14;
+    private javax.swing.JLabel jLabel15;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
+    private javax.swing.JLabel jLabelHelp1;
+    private javax.swing.JLabel jLabelLegend;
+    private javax.swing.JLabel jLabelTipProduct;
+    private javax.swing.JPanel jPDueEnd;
+    private javax.swing.JPanel jPDueStart;
+    private javax.swing.JPanel jPIssueEnd;
+    private javax.swing.JPanel jPIssueStart;
+    private javax.swing.JPanel jPTableClients;
+    private javax.swing.JPanel jPanelButtons;
+    private javax.swing.JPanel jPanelContent;
+    private javax.swing.JPanel jPanelLegend;
+    private javax.swing.JPanel jPanelLowerBorder;
+    private javax.swing.JPanel jPanelLowerTitle;
+    private sleekbill.swingutils.JPanelNoResults jPanelNoResults;
+    private javax.swing.JPanel jPanelQuickSearch;
+    private javax.swing.JPanel jPanelResults;
+    private javax.swing.JPanel jPanelSearch;
+    private javax.swing.JPanel jPanelSearchButtons;
+    private javax.swing.JPanel jPanelSearchFieldsLeft;
+    private javax.swing.JPanel jPanelSearchFieldsRight;
+    private javax.swing.JPanel jPanelUpper;
+    private javax.swing.JPanel jPanelUpperTitle;
+    private javax.swing.JTextField jTextFieldInvoiceNumber;
+    private javax.swing.JTextField jTextFieldQuickSearch;
+    private sleekbill.swingutils.autosuggesters.SBACPanelTextField sBACPanelCity;
+    private sleekbill.swingutils.autosuggesters.SBACPanelTextField sBACPanelClientName;
+    // End of variables declaration//GEN-END:variables
+}

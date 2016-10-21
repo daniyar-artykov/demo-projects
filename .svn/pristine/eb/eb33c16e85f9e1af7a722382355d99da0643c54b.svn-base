@@ -1,0 +1,80 @@
+package sleekbill.jasper;
+    
+import java.util.Map;
+import sleekbill.Config.Flag;
+import sleekbill.entities.FlagEntity;
+
+import sleekbill.entities.PageSizeEntity;
+
+public interface Document {
+	
+	public static final int FORMAT_1INVOICE = 1;
+//	public static final int FORMAT_1FACTURA_1CHITANTA = 1;// 1 factura si 1 chitanta
+//	public static final int FORMAT_2FACTURI_2CHITANTE = 2;// 2 facturi si 2 chitante
+	public static final int FORMAT_2INVOICE = 2;// 2 facturi pe pagina
+//	public static final int FORMAT_3FACTURI = 5;// 3 facturi
+//	public static final int FORMAT_1INVOICE_A5 = 3;// pe A5
+	
+	public static final int LAYOUT1_1INVOICE = 1;
+	public static final int LAYOUT2_1INVOICE = 2;
+    public static final int LAYOUT3_1INVOICE = 3;   
+    public static final int LAYOUT2A5_1INVOICE = 2;   
+    public static final int LAYOUT2A5_2INVOICE = 2;   
+	
+//	public String getReportTitle();
+
+	public String getSerie();
+	
+	public String getType();
+
+	public String getNumber();
+
+	public int getId();
+
+	public int getClientId();
+	/*
+	 * 1 = un document pe pagina 2 = doua documente pe pagina
+	 */
+	public Integer getDocumentPrintId();
+
+	public void setDocumentPrintId(int printId);
+
+	public String[] getColumnsNames();
+
+	public Object[][] getDataForPrint();
+
+	public Object[][] getDataForPrintAlb();
+
+	public String getDocumentTypeName();
+	
+//	public DocumentType getTemplate();
+//
+//	public DocumentType getMainTemplate();
+//
+//	public DocumentType getAltTemplate();
+
+	public Integer getLayout();
+	
+	public void setLayout(Integer layout);
+
+	public Map<String, Object> getJasperParams();
+	
+	public void save() throws Exception;
+	
+	public boolean isShowResend();
+	
+	public String getSaveFilePath();
+	public void setSaveFilePath(String path);
+        
+        public String getColorText();
+        public void setColorText(String color);
+        
+        public String getPageSizeText();
+        public void setPageSize(PageSizeEntity ps);
+        
+        public String getDocumentLogo();
+        public void setDocumentLogo(String logo);
+        
+        public void setFlag(FlagEntity flagEntity);
+        public FlagEntity getFlag();
+}

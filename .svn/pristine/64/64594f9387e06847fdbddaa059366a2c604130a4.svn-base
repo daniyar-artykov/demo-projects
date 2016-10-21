@@ -1,0 +1,110 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames.autosuggesterdata;
+
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import sleekbill.db.SBConnection;
+import sleekbill.entities.StateEntity;
+import sleekbill.swingutils.autosuggesters.AutosuggesterDataBuilder;
+import sleekbill.swingutils.autosuggesters.AutosuggesterItem;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.dao.GenericRawResults;
+import com.j256.ormlite.dao.RawRowMapper;
+
+/**
+ *
+ * @author Andrei
+ */
+public class SBACUoM implements AutosuggesterDataBuilder {
+
+	SBConnection sbConnection;
+
+	public SBACUoM(SBConnection sbConnection) {
+		super();
+		this.sbConnection = sbConnection;
+	}
+
+	@Override
+	public ArrayList<AutosuggesterItem> getData(final String input, Integer rowNumber) {
+		ArrayList<AutosuggesterItem> l = new ArrayList<AutosuggesterItem>();
+		try {
+			Dao<StateEntity, Integer> stateDao = DaoManager.createDao(
+					sbConnection.getConnection(), StateEntity.class);
+			
+			//long x = System.currentTimeMillis();
+			GenericRawResults<AutosuggesterItem> rawResults
+					= stateDao.queryRaw("select distinct measuring_unit from ( "
+							+ "select ' ' as measuring_unit "
+							+ "UNION "
+							+ "select 'Piece' as measuring_unit "
+							+ "UNION "
+							+ "select 'Pieces' as measuring_unit "
+							+ "UNION "
+							+ "select 'Gram' as measuring_unit "
+							+ "UNION "
+							+ "select 'Kilogram' as measuring_unit "
+							+ "UNION "
+							+ "select 'Pound' as measuring_unit "
+							+ "UNION "
+							+ "select 'Litres' as measuring_unit "
+							+ "UNION "
+							+ "select 'Centimetres' as measuring_unit "
+							+ "UNION "
+							+ "select 'Meter' as measuring_unit "
+							+ "UNION "
+							+ "select 'Inches' as measuring_unit "
+							+ "UNION "
+							+ "select 'Square Meters' as measuring_unit "
+							+ "UNION "
+							+ "select 'Hours' as measuring_unit "
+							+ "UNION "
+							+ "select 'Cubic Meters' as measuring_unit "
+							+ "UNION "
+							+ "select 'Boxes' as measuring_unit "
+							+ "UNION "
+							+ "select distinct measuring_unit from products "
+							+ "ORDER by measuring_unit ASC "
+							+ ") "
+							+ "where lower(measuring_unit) like ?",
+							new RawRowMapper<AutosuggesterItem>() {
+								public AutosuggesterItem mapRow(String[] columnNames, String[] resultColumns) {
+
+									String found = resultColumns[0];
+
+									int i = found.toLowerCase().indexOf(input.toLowerCase());
+									if (i >= 0 && !input.equals("")) {
+										found = "<html>" + found.substring(0, i) + "<b>" + found.substring(i, i + input.length()) + "</b>" + found.substring(i + input.length()) + "</html>";
+									}
+
+									return new AutosuggesterItem(0, resultColumns[0], found,
+											resultColumns[0], true);
+								}
+							},
+							"%" + input + "%");
+			l.addAll(rawResults.getResults());
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+		return l;
+	}
+
+	@Override
+	public long getCount() {
+		try {
+			Dao<StateEntity, Integer> stateDao = DaoManager.createDao(
+					sbConnection.getConnection(), StateEntity.class);
+			return stateDao.countOf();
+		} catch (SQLException ex) {
+			ex.printStackTrace();
+		}
+		return 0;
+	}
+}

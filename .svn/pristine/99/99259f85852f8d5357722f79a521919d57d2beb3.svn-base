@@ -1,0 +1,38 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package sleekbill.util;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ *
+ * @author dani
+ */
+public class EmailValidator {
+
+	private Pattern pattern;
+	private Matcher matcher;
+	private static final String EMAIL_PATTERN =
+			"[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?";
+
+	public EmailValidator() {
+		pattern = Pattern.compile(EMAIL_PATTERN);
+	}
+
+	public boolean validate(final String text) {
+		matcher = pattern.matcher(text);
+		return matcher.matches();
+	}
+
+	public static boolean isValid(String text) {
+		Pattern pattern = Pattern.compile(EMAIL_PATTERN);
+		Matcher matcher;
+		matcher = pattern.matcher(text);
+		return matcher.matches();
+	}
+
+}

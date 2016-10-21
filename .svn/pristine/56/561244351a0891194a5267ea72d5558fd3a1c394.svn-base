@@ -1,0 +1,17 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames.records;
+
+/**
+ *
+ * @author Andrei
+ */
+public class TaxRecord extends Record{
+    
+    public TaxRecord(Integer id, String name, String percentage, Boolean isDefault) {       
+        this.data = new Object[]{"",name, percentage, isDefault, ""};
+        this.id = id;
+    }     
+}

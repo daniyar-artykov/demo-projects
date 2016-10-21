@@ -1,0 +1,104 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package sleekbill.swingutils;
+
+import java.awt.AlphaComposite;
+import java.awt.Component;
+import java.awt.Composite;
+import java.awt.Container;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagLayout;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.event.MouseAdapter;
+import java.util.LinkedHashMap;
+import java.util.Set;
+
+import javax.swing.JPanel;
+
+/**
+ *
+ * @author dani
+ */
+public class ModalJPanel extends JPanel {
+
+	LinkedHashMap<Component, Point> drawComponents;
+
+	public ModalJPanel(LinkedHashMap<Component, Point> drawComponents) {
+		this.setLayout(new GridBagLayout());
+		this.drawComponents = drawComponents;
+		this.enableDrawComponents(false);
+		this.addMouseListener(new MouseAdapter() {});
+
+////		KeyboardFocusManager.getCurrentKeyboardFocusManager().remo
+//
+//		KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new DefaultFocusManager(){
+//
+//			@Override
+//			public boolean dispatchEvent(AWTEvent e) {
+//				return super.dispatchEvent(e);
+//			}
+//
+//			@Override
+//			public boolean dispatchKeyEvent(KeyEvent e) {
+////				e.consume();
+////				return false;
+//				if(e.getKeyCode() == KeyEvent.VK_F && e.getModifiers() == KeyEvent.CTRL_MASK){
+//					e.consume();
+////					MainJFrame.this.setExtendedState(JFrame.ICONIFIED | MainJFrame.this.getExtendedState());
+//				}
+//				return super.dispatchKeyEvent(e);
+//			}
+//
+//		});
+	}
+
+	public ModalJPanel() {
+		this(null);
+	}
+
+	@Override
+	protected void paintComponent(Graphics g) {
+		super.paintComponent(g);
+		if(drawComponents != null){
+			Graphics2D g2d = (Graphics2D)g;
+			Composite oldComposite = g2d.getComposite();
+			AlphaComposite newComposite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.7f);
+			g2d.setComposite(newComposite);
+			Set<Component> keys = drawComponents.keySet();
+			for (Component component : keys) {
+				Point point = drawComponents.get(component);
+				Rectangle r = component.getBounds();
+				g2d.translate(r.x + point.x, r.y + point.y);
+				component.print(g2d);
+				g2d.translate(-r.x - point.x, -r.y - point.y);
+//				component.paint(g2d);
+			}
+			g2d.setComposite(oldComposite);
+		}
+	}
+
+	public void enableDrawComponents(boolean enable) {
+		Set<Component> keys = drawComponents.keySet();
+		for (Component component : keys) {
+			if(component instanceof Container){
+				enableComponent((Container)component, enable);
+			}
+		}
+	}
+
+	private void enableComponent(Component c, boolean enable) {
+		if(c instanceof Container){
+			Component[] components = ((Container)c).getComponents();
+			for (Component component : components) {
+				enableComponent(component, enable);
+			}
+		}
+		c.setEnabled(enable);
+	}
+
+}

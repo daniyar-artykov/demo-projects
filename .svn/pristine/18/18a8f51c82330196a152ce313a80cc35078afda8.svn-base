@@ -1,0 +1,585 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.excel;
+
+import java.io.File;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
+
+import jxl.CellView;
+import jxl.Workbook;
+import jxl.format.Alignment;
+import jxl.format.Border;
+import jxl.format.BorderLineStyle;
+import jxl.write.DateFormat;
+import jxl.write.Label;
+import jxl.write.NumberFormats;
+import jxl.write.WritableCellFormat;
+import jxl.write.WritableFont;
+import jxl.write.WritableSheet;
+import jxl.write.WritableWorkbook;
+import jxl.write.WriteException;
+import sleekbill.Common;
+import sleekbill.beans.Client;
+import sleekbill.beans.Estimate;
+import sleekbill.beans.Invoice;
+import sleekbill.beans.Product;
+import sleekbill.entities.ClientEntity;
+import sleekbill.entities.EstimateEntity;
+import sleekbill.entities.InvoiceEntity;
+import sleekbill.entities.ProductEntity;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import jxl.format.CellFormat;
+import static sleekbill.beans.Estimate.TYPE_PROFORMA;
+import static sleekbill.beans.Estimate.TYPE_QUOTATION;
+import sleekbill.beans.Flag;
+import static sleekbill.beans.Invoice.TYPE_EXCISE;
+import static sleekbill.beans.Invoice.TYPE_RETAIL;
+import static sleekbill.beans.Invoice.TYPE_STANDARD;
+import static sleekbill.beans.Invoice.TYPE_TAX;
+import sleekbill.beans.InvoicePayment;
+import sleekbill.beans.Stock;
+
+/**
+ *
+ * @author Andrei
+ */
+public class Export {
+
+    private static void WriteHeader(WritableWorkbook workbook, ArrayList<NameType> columns, String sheetName) throws WriteException {
+        WriteHeader(workbook, columns, sheetName, 0);
+    }
+
+    private static void WriteHeader(WritableWorkbook workbook, ArrayList<NameType> columns, String sheetName, int row) throws WriteException {
+        WritableSheet sheet = workbook.createSheet(sheetName, 0);
+        for (int i = 0; i < columns.size(); i++) {
+            WritableFont font = new WritableFont(WritableFont.ARIAL, 10);
+            WritableCellFormat format = null;
+
+            switch (columns.get(i).type) {
+                case DATE:
+                    format = new WritableCellFormat(new DateFormat(Common.selectedCompanyDateFormat.replace(" ", "")));
+                    break;
+                case STRING:
+                    format = new WritableCellFormat(NumberFormats.TEXT);
+                    break;
+                case NUMBER:
+                    format = new WritableCellFormat(NumberFormats.INTEGER);
+                    break;
+                case DECIMAL:
+                    format = new WritableCellFormat(NumberFormats.FORMAT3);
+                    break;
+                default:
+                    format = new WritableCellFormat(NumberFormats.DEFAULT);
+                    break;
+            }
+
+            format.setAlignment(Alignment.CENTRE);
+            format.setFont(font);
+            CellView view = new CellView();
+            view.setFormat(format);
+            //view.setSize(columns.get(i).name.length() + 4);
+            //view.setSize(view.getSize() * 256);
+            view.setAutosize(true);
+            sheet.setColumnView(i, view);
+
+            WritableCellFormat format2 = new WritableCellFormat(font);
+            format2.setAlignment(Alignment.CENTRE);
+            format2.setBorder(Border.ALL, BorderLineStyle.THIN);
+
+            sheet.addCell(new Label(i, row, columns.get(i).name, format2));
+
+        }
+    }
+
+    public static void DownloadTemplate(File file, ArrayList<NameType> columns, String sheetName) throws IOException, WriteException {
+        WritableWorkbook workbook = Workbook.createWorkbook(file);
+        WriteHeader(workbook, columns, sheetName);
+        workbook.write();
+        workbook.close();
+    }
+
+    public static void DownloadClients(File file, ArrayList<NameType> columns, ArrayList<Integer> ids) throws IOException, WriteException, SQLException {
+        WritableWorkbook workbook = Workbook.createWorkbook(file);
+        WriteHeader(workbook, columns, "Clients");
+        WritableSheet sheet = workbook.getSheet("Clients");
+
+        Dao<ClientEntity, Integer> clientsDao = DaoManager.createDao(
+                Common.connection.getConnection(), ClientEntity.class);
+        List<ClientEntity> queryForAll = clientsDao.query(clientsDao.queryBuilder().orderByRaw(getOrderBy(ids)).where().in("id", ids.toArray()).prepare());
+
+        for (int i = 0; i < queryForAll.size(); i++) {
+
+            Client client = new Client(queryForAll.get(i));
+
+            if (client.getName() != null) {
+                sheet.addCell(new Label(0, i + 1, client.getName()));
+            } else {
+                sheet.addCell(new Label(0, i + 1, ""));
+            }
+
+            if (client.getContact() != null) {
+                sheet.addCell(new Label(1, i + 1, client.getContact()));
+            } else {
+                sheet.addCell(new Label(1, i + 1, ""));
+            }
+
+            if (client.getTin() != null) {
+                sheet.addCell(new Label(2, i + 1, client.getTin()));
+            } else {
+                sheet.addCell(new Label(2, i + 1, ""));
+            }
+
+            if (client.getEmail() != null) {
+                sheet.addCell(new Label(3, i + 1, client.getEmail()));
+            } else {
+                sheet.addCell(new Label(3, i + 1, ""));
+            }
+
+            if (client.getTelephone() != null) {
+                sheet.addCell(new Label(4, i + 1, client.getTelephone()));
+            } else {
+                sheet.addCell(new Label(4, i + 1, ""));
+            }
+
+            if (client.getBillingAddress() != null) {
+                sheet.addCell(new Label(5, i + 1, client.getBillingAddress()));
+            } else {
+                sheet.addCell(new Label(5, i + 1, ""));
+            }
+
+            if (client.getBillingZip() != null) {
+                sheet.addCell(new Label(6, i + 1, client.getBillingZip()));
+            } else {
+                sheet.addCell(new Label(6, i + 1, ""));
+            }
+
+            if (client.getBillingCity() != null) {
+                sheet.addCell(new Label(7, i + 1, client.getBillingCity()));
+            } else {
+                sheet.addCell(new Label(7, i + 1, ""));
+            }
+
+            if (client.getBillingState() != null && client.getBillingState().getState() != null) {
+                sheet.addCell(new Label(8, i + 1, client.getBillingState().getState()));
+            } else {
+                sheet.addCell(new Label(8, i + 1, ""));
+            }
+
+            if (client.getBillingState() != null && client.getBillingState().getCounty() != null) {
+                sheet.addCell(new Label(9, i + 1, client.getBillingState().getCounty()));
+            } else {
+                sheet.addCell(new Label(9, i + 1, ""));
+            }
+
+            if (client.getBillingState() != null && client.getBillingState().getCountry() != null) {
+                sheet.addCell(new Label(10, i + 1, client.getBillingState().getCountry()));
+            } else {
+                sheet.addCell(new Label(10, i + 1, ""));
+            }
+
+            if (client.getShippingAddress() != null) {
+                sheet.addCell(new Label(11, i + 1, client.getShippingAddress()));
+            } else {
+                sheet.addCell(new Label(11, i + 1, ""));
+            }
+
+            if (client.getShippingZip() != null) {
+                sheet.addCell(new Label(12, i + 1, client.getShippingZip()));
+            } else {
+                sheet.addCell(new Label(12, i + 1, ""));
+            }
+
+            if (client.getShippingCity() != null) {
+                sheet.addCell(new Label(13, i + 1, client.getShippingCity()));
+            } else {
+                sheet.addCell(new Label(13, i + 1, ""));
+            }
+
+            if (client.getShippingState() != null && client.getShippingState().getState() != null) {
+                sheet.addCell(new Label(14, i + 1, client.getShippingState().getState()));
+            } else {
+                sheet.addCell(new Label(14, i + 1, ""));
+            }
+
+            if (client.getShippingState() != null && client.getShippingState().getCounty() != null) {
+                sheet.addCell(new Label(15, i + 1, client.getShippingState().getCounty()));
+            } else {
+                sheet.addCell(new Label(15, i + 1, ""));
+            }
+
+            if (client.getShippingState() != null && client.getShippingState().getCountry() != null) {
+                sheet.addCell(new Label(16, i + 1, client.getShippingState().getCountry()));
+            } else {
+                sheet.addCell(new Label(16, i + 1, ""));
+            }
+
+            if (client.getDetails() != null) {
+                sheet.addCell(new Label(17, i + 1, client.getDetails()));
+            } else {
+                sheet.addCell(new Label(17, i + 1, ""));
+            }
+
+            if (client.getDetailsPublic() != null) {
+                sheet.addCell(new Label(18, i + 1, client.getDetailsPublic()));
+            } else {
+                sheet.addCell(new Label(18, i + 1, ""));
+            }
+        }
+
+        workbook.write();
+        workbook.close();
+    }
+
+    public static void DownloadProducts(File file, ArrayList<NameType> columns, ArrayList<Integer> ids) throws IOException, WriteException, SQLException {
+        WritableWorkbook workbook = Workbook.createWorkbook(file);
+        WriteHeader(workbook, columns, "Products");
+        WritableSheet sheet = workbook.getSheet("Products");
+
+        final boolean stocks = Common.keepStocks();
+
+        Dao<ProductEntity, Integer> productsDao = DaoManager.createDao(
+                Common.connection.getConnection(), ProductEntity.class);
+        List<ProductEntity> queryForAll = productsDao.query(productsDao.queryBuilder().orderByRaw(getOrderBy(ids)).where().in("id", ids.toArray()).prepare());
+
+        for (int i = 0; i < queryForAll.size(); i++) {
+
+            Product product = new Product(queryForAll.get(i));
+
+            if (product.getName() != null) {
+                sheet.addCell(new Label(0, i + 1, product.getName()));
+            } else {
+                sheet.addCell(new Label(0, i + 1, ""));
+            }
+
+            if (product.getPrice() != null) {
+                sheet.addCell(new Label(1, i + 1, product.getPrice().toString()));
+            } else {
+                sheet.addCell(new Label(1, i + 1, ""));
+            }
+
+            if (product.getMeasuringUnit() != null) {
+                sheet.addCell(new Label(2, i + 1, product.getMeasuringUnit().toString()));
+            } else {
+                sheet.addCell(new Label(2, i + 1, ""));
+            }
+
+            if (product.getTax() != null && product.getTax().getTaxPercentage() != null) {
+                sheet.addCell(new Label(3, i + 1, product.getTax().getTaxPercentage().toString()));
+            } else {
+                sheet.addCell(new Label(3, i + 1, ""));
+            }
+
+            if (product.getDescription() != null) {
+                sheet.addCell(new Label(4, i + 1, product.getDescription()));
+            } else {
+                sheet.addCell(new Label(4, i + 1, ""));
+            }
+
+            if (stocks) {
+                try {
+                    Stock stock = Stock.getByProductId(Common.connection.getConnection(), product.getId());
+                    if (stock != null && stock.getQuantity() != null) {
+                        sheet.addCell(new Label(5, i + 1, stock.getQuantity().setScale(Common.PRECISION, RoundingMode.HALF_UP).toString()));
+                    } else {
+                        sheet.addCell(new Label(5, i + 1, ""));
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+
+        workbook.write();
+        workbook.close();
+    }
+
+    public static void DownloadProductsTemplate(File file,
+            ArrayList<NameType> columns) throws IOException, WriteException {
+        WritableWorkbook workbook = Workbook.createWorkbook(file);
+        WriteHeader(workbook, columns, "Products");
+        WritableSheet sheet = workbook.getSheet("Products");
+
+        sheet.addCell(new Label(0, 1, "Sample Product Name"));
+        sheet.addCell(new Label(1, 1, "12.34"));
+        sheet.addCell(new Label(2, 1, "12"));
+
+        if (Common.keepStocks()) {
+            sheet.addCell(new Label(4, 1, "1234.56"));
+        }
+
+        workbook.write();
+        workbook.close();
+    }
+
+    public static void DownloadInvoices(File file, ArrayList<NameType> columns,
+            ArrayList<Integer> ids, String interval) throws IOException,
+            WriteException, SQLException {
+        WritableWorkbook workbook = Workbook.createWorkbook(file);
+        WriteHeader(workbook, columns, "Documents", 1);
+        WritableSheet sheet = workbook.getSheet("Documents");
+
+        Integer precision = Common.PRECISION;
+        try {
+            precision = Flag.getLast(Common.connection.getConnection()).getDecimals();
+        } catch (Exception ex) {
+
+        }
+
+        Dao<InvoiceEntity, Integer> invoicesDao = DaoManager.createDao(
+                Common.connection.getConnection(), InvoiceEntity.class);
+        List<InvoiceEntity> queryForAll = invoicesDao.query(
+                invoicesDao.queryBuilder().orderByRaw(getOrderBy(ids))
+                        .where().in("id", ids.toArray()).prepare());
+
+        SimpleDateFormat sdf = new SimpleDateFormat(Common.selectedCompanyDateFormat.replace(" ", ""));
+
+        BigDecimal sumTotalNoTax = BigDecimal.ZERO;
+        BigDecimal sumTotalTax = BigDecimal.ZERO;
+        BigDecimal sumTotalAll = BigDecimal.ZERO;
+        BigDecimal sumAmountPaid = BigDecimal.ZERO;
+        BigDecimal sumBalance = BigDecimal.ZERO;
+        
+        sumTotalNoTax.setScale(precision, RoundingMode.HALF_UP);
+        sumTotalTax.setScale(precision, RoundingMode.HALF_UP);
+        sumTotalAll.setScale(precision, RoundingMode.HALF_UP);
+        sumAmountPaid.setScale(precision, RoundingMode.HALF_UP);
+        sumBalance.setScale(precision, RoundingMode.HALF_UP);
+        
+        for (int i = 0; i < queryForAll.size(); i++) {
+
+            Invoice invoice = new Invoice(queryForAll.get(i));
+
+            if (invoice.getClientName() != null) {
+                sheet.addCell(new Label(0, i + 2, invoice.getClientName()));
+            } else {
+                sheet.addCell(new Label(0, i + 2, ""));
+            }
+
+            if (invoice.getNumber() != null) {
+                sheet.addCell(new Label(1, i + 2, invoice.getNumber()));
+            } else {
+                sheet.addCell(new Label(1, i + 2, ""));
+            }
+
+            if (invoice.getIssueDate() != null) {
+                sheet.addCell(new Label(2, i + 2, sdf.format(invoice.getIssueDate())));
+            } else {
+                sheet.addCell(new Label(2, i + 2, ""));
+            }
+
+            if (invoice.getDueDate() != null) {
+                sheet.addCell(new Label(3, i + 2, sdf.format(invoice.getDueDate())));
+            } else {
+                sheet.addCell(new Label(3, i + 2, ""));
+            }
+
+            if (invoice.getTotalNoTax() != null) {
+                BigDecimal totalNoTax = invoice.getTotalNoTax().setScale(precision, RoundingMode.HALF_UP);
+                sumTotalNoTax = sumTotalNoTax.add(totalNoTax);
+                
+                sheet.addCell(new Label(4, i + 2, totalNoTax.toPlainString()));
+            } else {
+                sheet.addCell(new Label(4, i + 2, ""));
+            }
+
+            if (invoice.getTotalTax() != null) {
+                BigDecimal totalTax = invoice.getTotalTax().setScale(precision, RoundingMode.HALF_UP);
+                sumTotalTax = sumTotalTax.add(totalTax);
+                
+                sheet.addCell(new Label(5, i + 2, totalTax.toPlainString()));
+            } else {
+                sheet.addCell(new Label(5, i + 2, ""));
+            }
+
+            if (invoice.getTotalAll() != null) {
+                BigDecimal totalAll = invoice.getTotalAll().setScale(precision, RoundingMode.HALF_UP);
+                sumTotalAll = sumTotalAll.add(totalAll);
+                
+                sheet.addCell(new Label(6, i + 2, totalAll.toPlainString()));
+            } else {
+                sheet.addCell(new Label(6, i + 2, ""));
+            }
+
+            String statusValue = "Partial";
+            BigDecimal totalPaidById = InvoicePayment.getTotalPaidById(Common.connection.getConnection(), invoice.getId(), precision);
+            BigDecimal totalAll = invoice.getTotalAll() == null ? BigDecimal.ZERO : invoice.getTotalAll().setScale(precision, RoundingMode.HALF_UP);
+            if (totalAll.compareTo(totalPaidById) == 0 || totalAll.compareTo(totalPaidById) == -1) {
+                statusValue = "Paid";//paid
+            } else if (totalPaidById.compareTo(BigDecimal.ZERO) == 0 
+                    || totalPaidById.compareTo(BigDecimal.ZERO) == -1) {
+                statusValue = "Unpaid";//unpaid
+            }
+            sheet.addCell(new Label(7, i + 2, statusValue));
+
+            if (totalPaidById != null) {
+                sumAmountPaid = sumAmountPaid.add(totalPaidById);
+                
+                sheet.addCell(new Label(8, i + 2, totalPaidById.toPlainString()));
+            } else {
+                sheet.addCell(new Label(8, i + 2, ""));
+            }
+
+            boolean isNegativeBalance = false;
+
+            BigDecimal balance = totalAll.subtract(totalPaidById).setScale(2, RoundingMode.HALF_UP);
+            if (balance != null) {
+                isNegativeBalance = balance.compareTo(BigDecimal.ZERO) == -1;
+                sumBalance = sumBalance.add(balance);
+                
+                sheet.addCell(new Label(9, i + 2, isNegativeBalance ? ("(" + balance.setScale(precision, RoundingMode.HALF_UP).negate().toPlainString()) + ")" : balance.setScale(precision, RoundingMode.HALF_UP).toPlainString()));
+            } else {
+                sheet.addCell(new Label(9, i + 2, ""));
+            }
+
+            sheet.addCell(new Label(10, i + 2, isNegativeBalance ? "Cr." : "Dr."));
+
+            String firstPaymentDate = InvoicePayment.getFirstPaymentDate(Common.connection.getConnection(), invoice);
+            sheet.addCell(new Label(11, i + 2, firstPaymentDate));
+
+            String type = "";
+            if (invoice.getType().equals(TYPE_STANDARD)) {
+                type = "Standard";
+            } else if (invoice.getType().equals(TYPE_TAX)) {
+                type = "Tax";
+            } else if (invoice.getType().equals(TYPE_RETAIL)) {
+                type = "Retail";
+            } else if (invoice.getType().equals(TYPE_EXCISE)) {
+                type = "Excise";
+            }
+            sheet.addCell(new Label(12, i + 2, type));
+        }
+
+        sheet.addCell(new Label(0, 0, interval));
+        
+        // totals
+        CellFormat defaultFormat = sheet.getCell(0, 0).getCellFormat();
+        WritableFont boldFont = new WritableFont(defaultFormat.getFont());
+        WritableCellFormat boldFormat = new WritableCellFormat(defaultFormat);
+        boldFont.setBoldStyle(WritableFont.BOLD);
+        boldFormat.setFont(boldFont);
+        boldFormat.setWrap(true);
+        boldFormat.setAlignment(Alignment.CENTRE);
+        
+        sheet.addCell(new Label(0, queryForAll.size() + 3, 
+                "TOTAL INVOICES", boldFormat));
+        sheet.addCell(new Label(4, queryForAll.size() + 3, 
+                sumTotalNoTax.toPlainString(), boldFormat));
+        sheet.addCell(new Label(5, queryForAll.size() + 3, 
+                sumTotalTax.toPlainString(), boldFormat));
+        sheet.addCell(new Label(6, queryForAll.size() + 3, 
+                sumTotalAll.toPlainString(), boldFormat));
+        sheet.addCell(new Label(8, queryForAll.size() + 3, 
+                sumAmountPaid.toPlainString(), boldFormat));
+        sheet.addCell(new Label(9, queryForAll.size() + 3, 
+                sumBalance.toPlainString(), boldFormat));
+
+        workbook.write();
+        workbook.close();
+    }
+
+    public static void DownloadEstimates(File file, ArrayList<NameType> columns, ArrayList<Integer> ids, String interval) throws IOException, WriteException, SQLException {
+        WritableWorkbook workbook = Workbook.createWorkbook(file);
+        WriteHeader(workbook, columns, "Documents", 1);
+        WritableSheet sheet = workbook.getSheet("Documents");
+
+        Integer precision = Common.PRECISION;
+        try {
+            precision = Flag.getLast(Common.connection.getConnection()).getDecimals();
+        } catch (Exception ex) {
+
+        }
+
+        Dao<EstimateEntity, Integer> estimatesDao = DaoManager.createDao(
+                Common.connection.getConnection(), EstimateEntity.class);
+        List<EstimateEntity> queryForAll = estimatesDao.query(estimatesDao.queryBuilder().orderByRaw(getOrderBy(ids)).where().in("id", ids.toArray()).prepare());
+
+        SimpleDateFormat sdf = new SimpleDateFormat(Common.selectedCompanyDateFormat.replace(" ", ""));
+
+        for (int i = 0; i < queryForAll.size(); i++) {
+
+            Estimate estimate = new Estimate(queryForAll.get(i));
+
+            if (estimate.getClientName() != null) {
+                sheet.addCell(new Label(0, i + 2, estimate.getClientName()));
+            } else {
+                sheet.addCell(new Label(0, i + 2, ""));
+            }
+
+            if (estimate.getNumber() != null) {
+                sheet.addCell(new Label(1, i + 2, estimate.getNumber().toString()));
+            } else {
+                sheet.addCell(new Label(1, i + 2, ""));
+            }
+
+            if (estimate.getIssueDate() != null) {
+                sheet.addCell(new Label(2, i + 2, sdf.format(estimate.getIssueDate())));
+            } else {
+                sheet.addCell(new Label(2, i + 2, ""));
+            }
+
+            if (estimate.getValidUntil() != null) {
+                sheet.addCell(new Label(3, i + 2, sdf.format(estimate.getValidUntil())));
+            } else {
+                sheet.addCell(new Label(3, i + 2, ""));
+            }
+
+            if (estimate.getTotalNoTax() != null) {
+                sheet.addCell(new Label(4, i + 2, estimate.getTotalNoTax().setScale(precision, RoundingMode.HALF_UP).toString()));
+            } else {
+                sheet.addCell(new Label(4, i + 2, ""));
+            }
+
+            if (estimate.getTotalTax() != null) {
+                sheet.addCell(new Label(5, i + 2, estimate.getTotalTax().setScale(precision, RoundingMode.HALF_UP).toString()));
+            } else {
+                sheet.addCell(new Label(5, i + 2, ""));
+            }
+
+            if (estimate.getTotalAll() != null) {
+                sheet.addCell(new Label(6, i + 2, estimate.getTotalAll().setScale(precision, RoundingMode.HALF_UP).toString()));
+            } else {
+                sheet.addCell(new Label(6, i + 2, ""));
+            }
+
+            String type = "";
+            if (estimate.getType().equals(TYPE_QUOTATION)) {
+                type = "Quotation";
+            } else if (estimate.getType().equals(TYPE_PROFORMA)) {
+                type = "Proforma";
+            }
+            sheet.addCell(new Label(7, i + 2, type));
+        }
+
+        sheet.addCell(new Label(0, 0, interval));
+
+        workbook.write();
+        workbook.close();
+    }
+
+    public static String getOrderBy(ArrayList<Integer> ids) {
+
+        if (ids.isEmpty()) {
+            return "id";
+        }
+
+        String orderBy = "CASE id ";
+        for (int i = 0; i < ids.size(); i++) {
+            //System.out.println(ids.get(i));
+            orderBy += "WHEN " + ids.get(i) + " THEN " + i + " ";
+        }
+        orderBy += "END";
+
+        return orderBy;
+
+    }
+}

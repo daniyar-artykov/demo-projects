@@ -1,0 +1,59 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package sleekbill.util;
+
+import java.io.Serializable;
+
+/**
+ *
+ * @author dani
+ */
+public class Modules implements Serializable {
+
+	private static final long serialVersionUID = -2033088402443648354L;
+	public static final int CONT_PREMIUM = 1;
+	public static final int REGISTRU_CASA = 2;
+
+	private static final int MAX = CONT_PREMIUM | REGISTRU_CASA;
+
+	private int modules = 0;
+
+	public Modules() {
+		this(0);
+	}
+
+	public Modules(String modules) {
+		this(Integer.parseInt(modules));
+	}
+
+	public Modules(int modules) {
+		this.modules = modules;
+	}
+
+	public void enableModule(int module, boolean enable) {
+		if(enable) {
+			this.modules = this.modules | module;
+		} else {
+			this.modules = this.modules ^ module;
+		}
+	}
+
+	public boolean isModuleEnabled(int module) {
+		return (this.modules & module) == module;
+	}
+
+	public int getModules(){
+		return modules;
+	}
+
+	public static int addNextModule(int m) {
+		if(m < MAX) {
+			m++;
+		}
+		return  m;
+	}
+
+}

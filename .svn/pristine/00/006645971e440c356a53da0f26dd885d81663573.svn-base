@@ -1,0 +1,2514 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames;
+
+import static sleekbill.Common.VERSION;
+
+import java.awt.AWTException;
+import java.awt.Cursor;
+import java.awt.Dialog;
+import java.awt.Image;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.Robot;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.Callable;
+
+import javax.swing.Box;
+import javax.swing.ImageIcon;
+import javax.swing.JEditorPane;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JRootPane;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.Element;
+import javax.swing.text.MutableAttributeSet;
+import javax.swing.text.html.HTML;
+import javax.swing.text.html.HTMLDocument;
+
+import sleekbill.Common;
+import sleekbill.Company;
+import sleekbill.Company.OnlineStatus;
+import sleekbill.Config;
+import sleekbill.Messages;
+import sleekbill.SBConstants;
+import sleekbill.TestORMLite;
+import sleekbill.beans.Client;
+import sleekbill.beans.Invoice;
+import sleekbill.beans.SBDaoException;
+import sleekbill.db.DBConnection;
+import sleekbill.db.SBConnection;
+import sleekbill.entities.EstimateEntity;
+import sleekbill.entities.InvoiceEntity;
+import sleekbill.entities.StateEntity;
+import sleekbill.frames.BackupRestore.BackupRestore;
+import sleekbill.jasper.ReportGenerator;
+import sleekbill.swingutils.JDialogHTMLMessage;
+import sleekbill.swingutils.LabelGlassPane;
+import sleekbill.utils.SBDesktop;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.misc.TransactionManager;
+import com.j256.ormlite.stmt.PreparedQuery;
+import java.awt.KeyEventDispatcher;
+import java.awt.KeyboardFocusManager;
+import java.awt.event.KeyEvent;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import static sleekbill.Common.connection;
+import sleekbill.beans.CompanyDetails;
+import sleekbill.beans.Estimate;
+import sleekbill.swingutils.balloons.SBSpecialBalloonTip;
+
+/**
+ *
+ * @author Andrei
+ */
+public class MainFrame extends javax.swing.JFrame {
+
+    String titleStyle = "font-family:Verdana;font-size:18;text-decoration:none;color:#258BB0;white-space:nowrap;font-weight:bold;";
+    String style = "font-family:Verdana;font-size:12;text-decoration:none;color:#767676;white-space:nowrap;";
+    String hover = "font-family:Verdana;font-size:12;text-decoration:none;color:#0057da;white-space:nowrap;";
+    public static String STYLE_NAME = "style";
+    public static String HIGHLIGHTEDHYPERLINK_STYLE_NAME = "HighlightedHyperlink";
+    private Element lastHyperlinkElement;
+    private HTMLDocument lastHyperlinkDocument;
+    MainFrame main;
+    LabelGlassPane glassPane = new LabelGlassPane();
+
+    /**
+     * Creates new form MainFrame
+     */
+    public MainFrame() {
+        initComponents();
+        setLocationRelativeTo(null);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        main = this;
+
+        jMenu1.setVisible(false);
+        jMenuItemFeedback.setVisible(false);
+
+//jLabel1.setVisible(false);		
+//jLIconSettings.setBorder(BorderFactory.createLineBorder(Color.BLUE));
+//jLIconTools.setBorder(BorderFactory.createLineBorder(Color.BLUE));
+//jLIconReports.setBorder(BorderFactory.createLineBorder(Color.BLUE));
+//		
+//jEPSettings.setBorder(BorderFactory.createLineBorder(Color.RED));
+//jEPTools.setBorder(BorderFactory.createLineBorder(Color.RED));
+//jEPReports.setBorder(BorderFactory.createLineBorder(Color.RED));
+        ArrayList<Image> imageList = new ArrayList<Image>();
+        imageList.add(new ImageIcon(SBConstants.ICON).getImage());
+        setIconImages(imageList);
+
+        initDashboard();
+        jPDashBoard.setVisible(false);
+
+        JRootPane pane = SwingUtilities.getRootPane(this);
+        pane.setGlassPane(glassPane);
+
+        jMenuItemSwitch.setVisible(Common.companies.size() > 1);
+    }
+
+    public void initDashboard() {
+        jMenuTest.setVisible(Common.isTestCompany());
+        if (Common.isTestCompany()) {
+            jMenuOrder.setVisible(false);
+        }
+
+        MouseExitedHyperlink mouseExitedHyperlink = new MouseExitedHyperlink();
+        MouseMotionHyperlink mouseMotionHyperlink = new MouseMotionHyperlink();
+
+        jEPSettings.setText("<html>"
+                + "<style type=\"text/css\">"
+                + "." + STYLE_NAME + " {" + style + "} "
+                + "." + HIGHLIGHTEDHYPERLINK_STYLE_NAME + " {" + hover + "} "
+                + "</style>"
+                + "<div style='margin-bottom:7px;" + titleStyle + "'>SETTINGS:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>"
+                //                + "<hr>"
+                + "<a href='company details' class='style'>Company Details</a><br>"
+                + "<a href='taxes' class='style'>Taxes</a><br>"
+                + "<a href='email' class='style'>Email</a><br>"
+                + "<a href='preferences' class='style'>Preferences</a><br>"
+                + "</html>");
+        if (jEPSettings.getHyperlinkListeners().length > 0) {
+            jEPSettings.removeHyperlinkListener(jEPSettings.getHyperlinkListeners()[0]);
+        }
+        jEPSettings.addMouseListener(mouseExitedHyperlink);
+        jEPSettings.addMouseMotionListener(mouseMotionHyperlink);
+
+        jEPSettings.addHyperlinkListener(new HyperlinkListener() {
+            @Override
+            public void hyperlinkUpdate(HyperlinkEvent e) {
+
+                if (!e.getEventType().equals(HyperlinkEvent.EventType.ACTIVATED)) {
+                    return;
+                }
+                try {
+                    if ("company details".equals(e.getDescription())) {
+                        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                        JDialogCreateCompany dlg = new JDialogCreateCompany(MainFrame.this, true, Common.connection,
+                                Common.companyDetails);
+                        dlg.setCompanyNameEditable(!Common.isTestCompany());
+                        dlg.hideCancelButton();
+                        dlg.setVisible(true);
+                        if (dlg.getCreatedName() != null && !dlg.getCreatedName().isEmpty()) {
+                            Messages.showOkMessage(main, "You have successfully updated the company details for \"" + dlg.getCreatedName() + "\"!", "Information");
+                            setTitle("Sleek Bill 2016 " + VERSION.substring(VERSION.indexOf(".") + 1) + " - " + Common.companyDetails.getName());
+                        }
+                        setCursor(null);
+                    } else if ("taxes".equals(e.getDescription())) {
+                        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                        new JDialogTaxes(MainFrame.this, true).setVisible(true);
+                        setCursor(null);
+                    } else if ("email".equals(e.getDescription())) {
+                        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                        JDialogConfigEmail configEmail = new JDialogConfigEmail(MainFrame.this, true);
+                        configEmail.setVisible(true);
+                        setCursor(null);
+                    } else if ("preferences".equals(e.getDescription())) {
+                        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                        new JDialogFlags(main, true, null).setVisible(true);
+                        setCursor(null);
+                    }
+                } catch (Exception ex) {
+                    new JDialogError(Common.getMainFrame(), ex).setVisible(true);
+                    setCursor(null);
+                }
+            }
+        });
+
+        jEPTools.setText("<html>"
+                + "<style type=\"text/css\">"
+                + "." + STYLE_NAME + " {" + style + "} "
+                + "." + HIGHLIGHTEDHYPERLINK_STYLE_NAME + " {" + hover + "} "
+                + "</style>"
+                + "<div style='margin-bottom:7px;" + titleStyle + "'>TOOLS:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>"
+                //                + "<hr>"
+                + "<a href='backup data' class='style'>Backup Data</a><br>"
+                + "<a href='restore data' class='style'>Restore Data</a><br>"
+                + "</html>");
+        if (jEPTools.getHyperlinkListeners().length > 0) {
+            jEPTools.removeHyperlinkListener(jEPTools.getHyperlinkListeners()[0]);
+        }
+        jEPTools.addMouseListener(mouseExitedHyperlink);
+        jEPTools.addMouseMotionListener(mouseMotionHyperlink);
+
+        jEPTools.addHyperlinkListener(new HyperlinkListener() {
+            @Override
+            public void hyperlinkUpdate(HyperlinkEvent e) {
+
+                if (!e.getEventType().equals(HyperlinkEvent.EventType.ACTIVATED)) {
+                    return;
+                }
+                try {
+                    if ("backup data".equals(e.getDescription())) {
+                        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                        new BackupRestore(MainFrame.this, Dialog.ModalityType.APPLICATION_MODAL, true, false);
+                        setCursor(null);
+                    } else if ("restore data".equals(e.getDescription())) {
+                        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                        new BackupRestore(MainFrame.this, Dialog.ModalityType.APPLICATION_MODAL, false, false);
+                        setCursor(null);
+                    } else if ("add new company".equals(e.getDescription())) {
+                        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                        SBConnection userDataConn = new SBConnection(DBConnection.getConnection(Common.user, DBConnection.DEFAULT_DBKEY));
+                        JDialogCreateCompany dlg = new JDialogCreateCompany(MainFrame.this, true, userDataConn, null);
+                        dlg.hideCancelButton();
+                        dlg.setVisible(true);
+                        userDataConn.getConnection().close();
+                        Company createdCompany = dlg.getCreatedCompany();
+                        if (createdCompany != null) {
+
+                            for (Company company : Common.companies) {
+                                company.setActive(false);
+                            }
+                            createdCompany.setActive(true);
+                            Common.companies.add(createdCompany);
+                            initDashboard();
+                            jMenuItemSwitch.setVisible(Common.companies.size() > 1);
+                            Common.switchToCompany(createdCompany);
+                            if (dlg.getCreatedName() != null && !dlg.getCreatedName().isEmpty()) {
+                                Messages.showOkMessage(main, "You have successfully created the company profile \"" + dlg.getCreatedName() + "\"! This is now the active company.", "Information");
+                                Common.setTestCompany(false);
+                            }
+                        }
+                        setCursor(null);
+                        jMenuTest.setVisible(Common.isTestCompany());
+                        if (Common.IS_INDIA) {
+                            jMenuOrder.setVisible(!Common.isTestCompany());
+                        }
+                    } else if ("switch current company".equals(e.getDescription())) {
+                        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+                        try {
+                            JDialogSwitchCompany dlg = new JDialogSwitchCompany(main, true);
+                            dlg.setVisible(true);
+                            Company selectedCompany = dlg.getSelectedCompany();
+                            if (selectedCompany != null
+                                    && !selectedCompany.getName().equals(Common.getSelectedCompany().getName())) {
+                                Common.switchToCompany(selectedCompany);
+                            }
+                            if (selectedCompany != null) {
+                                Messages.showOkMessage(main, "\"" + (selectedCompany.getDbName() == null ? selectedCompany.getName() : selectedCompany.getDbName()) + "\" is now the active company.", "Information");
+                            }
+                            initDashboard();
+                        } catch (SQLException ex) {
+                            ex.printStackTrace();
+                            //TODO eroare conexiune
+                        }
+                        setCursor(null);
+                    }
+                } catch (Exception ex) {
+                    new JDialogError(Common.getMainFrame(), ex).setVisible(true);
+                    setCursor(null);
+                }
+            }
+        });
+
+        jEPReports.setText("<html>"
+                + "<style type=\"text/css\">"
+                + "." + STYLE_NAME + " {" + style + "} "
+                + "." + HIGHLIGHTEDHYPERLINK_STYLE_NAME + " {" + hover + "} "
+                + "</style>"
+                + "<div style='margin-bottom:7px;" + titleStyle + "'>REPORTS:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>"
+                //                + "<hr>"
+                + "<a href='Invoices' class='style'>Invoices</a><br>"
+                + "<a href='Quotations' class='style'>Quotations, Proformas & Challans</a><br>"
+                + "<a href='Clients' class='style'>Clients</a><br>"
+                + "<a href='Products/Services' class='style'>Products/Services</a><br>"
+                + "</html>");
+        if (jEPReports.getHyperlinkListeners().length > 0) {
+            jEPReports.removeHyperlinkListener(jEPReports.getHyperlinkListeners()[0]);
+        }
+        jEPReports.addMouseListener(mouseExitedHyperlink);
+        jEPReports.addMouseMotionListener(mouseMotionHyperlink);
+
+        jEPReports.addHyperlinkListener(new HyperlinkListener() {
+            @Override
+            public void hyperlinkUpdate(HyperlinkEvent e) {
+
+                if (!e.getEventType().equals(HyperlinkEvent.EventType.ACTIVATED)) {
+                    return;
+                }
+                try {
+                    if ("Invoices".equals(e.getDescription())) {
+                        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                        new JDialogInvoicesReport(MainFrame.this, true).setVisible(true);
+                        setCursor(null);
+                    } else if ("Quotations".equals(e.getDescription())) {
+                        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                        new JDialogEstimatesReport(MainFrame.this, true).setVisible(true);
+                        setCursor(null);
+                    } else if ("Clients".equals(e.getDescription())) {
+                        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                        new JDialogClientsReport(MainFrame.this, true).setVisible(true);
+                        setCursor(null);
+                    } else if ("Products/Services".equals(e.getDescription())) {
+                        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                        new JDialogProductsReport(MainFrame.this, true).setVisible(true);
+                        setCursor(null);
+                    }
+                } catch (Exception ex) {
+                    new JDialogError(Common.getMainFrame(), ex).setVisible(true);
+                    setCursor(null);
+                }
+            }
+        });
+
+        jPDashBoard.setVisible(true);
+
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
+
+        jPDashBoard = new javax.swing.JPanel();
+        jPanel1 = new javax.swing.JPanel();
+        jPanel3 = new javax.swing.JPanel();
+        jLNewInvoice = new javax.swing.JLabel();
+        jLNewEstimate = new javax.swing.JLabel();
+        jLNewProforma = new javax.swing.JLabel();
+        jLNewTaxInvoice = new javax.swing.JLabel();
+        jLRetailInvoice = new javax.swing.JLabel();
+        jLNewExciseInvoice = new javax.swing.JLabel();
+        jLNewChallan = new javax.swing.JLabel();
+        jPanel2 = new javax.swing.JPanel();
+        filler1 = new javax.swing.Box.Filler(new java.awt.Dimension(200, 1), new java.awt.Dimension(200, 1), new java.awt.Dimension(1000, 1));
+        jPReports = new javax.swing.JPanel();
+        jLIconReports = new javax.swing.JLabel();
+        jEPReports = new javax.swing.JEditorPane();
+        jPTools = new javax.swing.JPanel();
+        jLIconTools = new javax.swing.JLabel();
+        jEPTools = new javax.swing.JEditorPane();
+        jPSettings = new javax.swing.JPanel();
+        jLIconSettings = new javax.swing.JLabel();
+        jEPSettings = new javax.swing.JEditorPane();
+        jMenuBar1 = new javax.swing.JMenuBar();
+        jMenuNew = new javax.swing.JMenu();
+        jMenuItemInvoice = new javax.swing.JMenuItem();
+        jMenuItemTaxInvoice = new javax.swing.JMenuItem();
+        jMenuItemRetailInvoice = new javax.swing.JMenuItem();
+        jMenuItemExciseInvoice = new javax.swing.JMenuItem();
+        jMenuItemProformaInvoice = new javax.swing.JMenuItem();
+        jMenuItemEstimate = new javax.swing.JMenuItem();
+        jMenuItemChallan = new javax.swing.JMenuItem();
+        jMenuSettings = new javax.swing.JMenu();
+        jMenuItemCompanyDetails = new javax.swing.JMenuItem();
+        jMenuItemTaxes = new javax.swing.JMenuItem();
+        jMenuItem11 = new javax.swing.JMenuItem();
+        jMenuItemPreferences = new javax.swing.JMenuItem();
+        jMenuItemLogo = new javax.swing.JMenuItem();
+        jMenuTools = new javax.swing.JMenu();
+        jMenuItemBackup = new javax.swing.JMenuItem();
+        jMenuItemRestore = new javax.swing.JMenuItem();
+        jSeparator1 = new javax.swing.JPopupMenu.Separator();
+        jMenuItemAddCompany = new javax.swing.JMenuItem();
+        jMenuItemSwitch = new javax.swing.JMenuItem();
+        jMenuReports = new javax.swing.JMenu();
+        jMenuItemInvoices = new javax.swing.JMenuItem();
+        jMenuItemEstimates = new javax.swing.JMenuItem();
+        jMenuItemClients = new javax.swing.JMenuItem();
+        jMenuItemProducts = new javax.swing.JMenuItem();
+        jMenuTest = new javax.swing.JMenu();
+        jMenu1 = new javax.swing.JMenu();
+        jMenuItem1 = new javax.swing.JMenuItem();
+        jMenuItem2 = new javax.swing.JMenuItem();
+        jMenuItem3 = new javax.swing.JMenuItem();
+        jMenuItem4 = new javax.swing.JMenuItem();
+        jMenuItem5 = new javax.swing.JMenuItem();
+        jMenuItem8 = new javax.swing.JMenuItem();
+        jMenuItem9 = new javax.swing.JMenuItem();
+        jMenuItem6 = new javax.swing.JMenuItem();
+        jMenuItem7 = new javax.swing.JMenuItem();
+        jMenuItem10 = new javax.swing.JMenuItem();
+        jMenuHelp = new javax.swing.JMenu();
+        jMenuItemAbout = new javax.swing.JMenuItem();
+        jMenuItemFeedback = new javax.swing.JMenuItem();
+        jMenuItem12 = new javax.swing.JMenuItem();
+        jMenuOrder = new javax.swing.JMenu();
+        jMenuFeedback = new javax.swing.JMenu();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Sleek Bill"+(Common.IS_INDIA?" for India":"")+" 2015 ");
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        setMinimumSize(new java.awt.Dimension(1024, 780));
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowDeactivated(java.awt.event.WindowEvent evt) {
+                formWindowDeactivated(evt);
+            }
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
+            }
+            public void windowOpened(java.awt.event.WindowEvent evt) {
+                formWindowOpened(evt);
+            }
+        });
+        getContentPane().setLayout(new javax.swing.BoxLayout(getContentPane(), javax.swing.BoxLayout.LINE_AXIS));
+
+        jPDashBoard.setLayout(new java.awt.GridBagLayout());
+
+        jPanel1.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        jPanel1.setLayout(new java.awt.GridBagLayout());
+
+        jPanel3.setLayout(new java.awt.GridBagLayout());
+
+        jLNewInvoice.setIcon(new ImageIcon("./images/buttons/i-normal.png"));
+        jLNewInvoice.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLNewInvoice.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jLNewInvoiceMouseClicked(evt);
+            }
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                jLNewInvoiceMouseEntered(evt);
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                jLNewInvoiceMouseExited(evt);
+            }
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                jLNewInvoiceMousePressed(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                jLNewInvoiceMouseReleased(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 7, 0);
+        jPanel3.add(jLNewInvoice, gridBagConstraints);
+
+        jLNewEstimate.setIcon(new ImageIcon("./images/buttons/q-normal.png"));
+        jLNewEstimate.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLNewEstimate.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jLNewEstimateMouseClicked(evt);
+            }
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                jLNewEstimateMouseEntered(evt);
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                jLNewEstimateMouseExited(evt);
+            }
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                jLNewEstimateMousePressed(evt);
+            }
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                jLNewEstimateMouseReleased(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(7, 0, 7, 0);
+        jPanel3.add(jLNewEstimate, gridBagConstraints);
+
+        jLNewProforma.setIcon(new ImageIcon("./images/buttons/p-normal.png"));
+        jLNewProforma.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLNewProforma.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                jLNewProformaMouseEntered(evt);
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                jLNewProformaMouseExited(evt);
+            }
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                jLNewProformaMousePressed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.insets = new java.awt.Insets(7, 0, 7, 0);
+        jPanel3.add(jLNewProforma, gridBagConstraints);
+
+        jLNewTaxInvoice.setIcon(new ImageIcon("./images/buttons/ti-normal.png"));
+        jLNewTaxInvoice.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLNewTaxInvoice.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                jLNewTaxInvoiceMouseEntered(evt);
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                jLNewTaxInvoiceMouseExited(evt);
+            }
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                jLNewTaxInvoiceMousePressed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(7, 0, 7, 0);
+        jPanel3.add(jLNewTaxInvoice, gridBagConstraints);
+
+        jLRetailInvoice.setIcon(new ImageIcon("./images/buttons/ri-normal.png"));
+        jLRetailInvoice.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLRetailInvoice.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                jLRetailInvoiceMouseEntered(evt);
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                jLRetailInvoiceMouseExited(evt);
+            }
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                jLRetailInvoiceMousePressed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.insets = new java.awt.Insets(7, 0, 7, 0);
+        jPanel3.add(jLRetailInvoice, gridBagConstraints);
+
+        jLNewExciseInvoice.setIcon(new ImageIcon("./images/buttons/ei-normal.png"));
+        jLNewExciseInvoice.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLNewExciseInvoice.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                jLNewExciseInvoiceMouseEntered(evt);
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                jLNewExciseInvoiceMouseExited(evt);
+            }
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                jLNewExciseInvoiceMousePressed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(7, 0, 0, 0);
+        jPanel3.add(jLNewExciseInvoice, gridBagConstraints);
+
+        jLNewChallan.setIcon(new ImageIcon("./images/buttons/dn-normal.png"));
+        jLNewChallan.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLNewChallan.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                jLNewChallanMouseEntered(evt);
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                jLNewChallanMouseExited(evt);
+            }
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                jLNewChallanMousePressed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.insets = new java.awt.Insets(7, 0, 0, 0);
+        jPanel3.add(jLNewChallan, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridheight = 3;
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 50);
+        jPanel1.add(jPanel3, gridBagConstraints);
+
+        jPanel2.setMinimumSize(new java.awt.Dimension(300, 308));
+        jPanel2.setLayout(new javax.swing.BoxLayout(jPanel2, javax.swing.BoxLayout.Y_AXIS));
+        jPanel2.add(filler1);
+
+        jPReports.setLayout(new java.awt.GridBagLayout());
+
+        jLIconReports.setIcon(new ImageIcon("./images/icons/dashboard_ico_reports.png"));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(2, 0, 0, 0);
+        jPReports.add(jLIconReports, gridBagConstraints);
+
+        jEPReports.setEditable(false);
+        jEPReports.setContentType("text/html"); // NOI18N
+        jEPReports.setFocusable(false);
+        jEPReports.setMinimumSize(new java.awt.Dimension(90, 100));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(0, 15, 0, 0);
+        jPReports.add(jEPReports, gridBagConstraints);
+
+        jPanel2.add(jPReports);
+
+        jPTools.setLayout(new java.awt.GridBagLayout());
+
+        jLIconTools.setIcon(new ImageIcon("./images/icons/dashboard_ico_tools.png"));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(4, 0, 0, 0);
+        jPTools.add(jLIconTools, gridBagConstraints);
+
+        jEPTools.setEditable(false);
+        jEPTools.setContentType("text/html"); // NOI18N
+        jEPTools.setFocusable(false);
+        jEPTools.setMinimumSize(new java.awt.Dimension(90, 100));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(0, 15, 0, 0);
+        jPTools.add(jEPTools, gridBagConstraints);
+
+        jPanel2.add(jPTools);
+
+        jPSettings.setLayout(new java.awt.GridBagLayout());
+
+        jLIconSettings.setIcon(new ImageIcon("./images/icons/dashboard_ico_settings.png"));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(4, 0, 0, 0);
+        jPSettings.add(jLIconSettings, gridBagConstraints);
+
+        jEPSettings.setEditable(false);
+        jEPSettings.setContentType("text/html"); // NOI18N
+        jEPSettings.setFocusable(false);
+        jEPSettings.setMinimumSize(new java.awt.Dimension(90, 100));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(0, 15, 0, 0);
+        jPSettings.add(jEPSettings, gridBagConstraints);
+
+        jPanel2.add(jPSettings);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridheight = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.weighty = 0.01;
+        jPanel1.add(jPanel2, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 50);
+        jPDashBoard.add(jPanel1, gridBagConstraints);
+
+        getContentPane().add(jPDashBoard);
+
+        jMenuBar1.setBorderPainted(false);
+        jMenuBar1.setFont(new java.awt.Font("Segoe UI", 0, 13)); // NOI18N
+        jMenuBar1.setPreferredSize(new java.awt.Dimension(700, 30));
+
+        jMenuNew.setIcon(new ImageIcon("./images/buttons/nav_ico_new.png"));
+        jMenuNew.setText("New  ");
+
+        jMenuItemInvoice.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_I, Common.IS_MAC ? java.awt.event.InputEvent.META_DOWN_MASK : java.awt.event.InputEvent.CTRL_MASK));
+        jMenuItemInvoice.setText("Standard Invoice");
+        jMenuItemInvoice.setName("mNewInvoice"); // NOI18N
+        jMenuItemInvoice.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemInvoiceActionPerformed(evt);
+            }
+        });
+        jMenuNew.add(jMenuItemInvoice);
+
+        jMenuItemTaxInvoice.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_T, Common.IS_MAC ? java.awt.event.InputEvent.META_DOWN_MASK : java.awt.event.InputEvent.CTRL_MASK));
+        jMenuItemTaxInvoice.setText("Tax Invoice");
+        jMenuItemTaxInvoice.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemTaxInvoiceActionPerformed(evt);
+            }
+        });
+        jMenuNew.add(jMenuItemTaxInvoice);
+
+        jMenuItemRetailInvoice.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_R, Common.IS_MAC ? java.awt.event.InputEvent.META_DOWN_MASK : java.awt.event.InputEvent.CTRL_MASK));
+        jMenuItemRetailInvoice.setText("Retail Invoice");
+        jMenuItemRetailInvoice.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemRetailInvoiceActionPerformed(evt);
+            }
+        });
+        jMenuNew.add(jMenuItemRetailInvoice);
+
+        jMenuItemExciseInvoice.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_X, Common.IS_MAC ? java.awt.event.InputEvent.META_DOWN_MASK : java.awt.event.InputEvent.CTRL_MASK));
+        jMenuItemExciseInvoice.setText("Excise Invoice");
+        jMenuItemExciseInvoice.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemExciseInvoiceActionPerformed(evt);
+            }
+        });
+        jMenuNew.add(jMenuItemExciseInvoice);
+
+        jMenuItemProformaInvoice.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_P, Common.IS_MAC ? java.awt.event.InputEvent.META_DOWN_MASK : java.awt.event.InputEvent.CTRL_MASK));
+        jMenuItemProformaInvoice.setText("Proforma Invoice");
+        jMenuItemProformaInvoice.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemProformaInvoiceActionPerformed(evt);
+            }
+        });
+        jMenuNew.add(jMenuItemProformaInvoice);
+
+        jMenuItemEstimate.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_E, Common.IS_MAC ? java.awt.event.InputEvent.META_DOWN_MASK : java.awt.event.InputEvent.CTRL_MASK));
+        jMenuItemEstimate.setText("Quotation");
+        jMenuItemEstimate.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemEstimateActionPerformed(evt);
+            }
+        });
+        jMenuNew.add(jMenuItemEstimate);
+
+        jMenuItemChallan.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_D, Common.IS_MAC ? java.awt.event.InputEvent.META_DOWN_MASK : java.awt.event.InputEvent.CTRL_MASK));
+        jMenuItemChallan.setText("Delivery Note / Challan");
+        jMenuItemChallan.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemChallanActionPerformed(evt);
+            }
+        });
+        jMenuNew.add(jMenuItemChallan);
+
+        jMenuBar1.add(jMenuNew);
+
+        jMenuSettings.setIcon(new ImageIcon("./images/buttons/nav_ico_settings.png"));
+        jMenuSettings.setText("Settings  ");
+
+        jMenuItemCompanyDetails.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_B, Common.IS_MAC ? java.awt.event.InputEvent.META_DOWN_MASK : java.awt.event.InputEvent.CTRL_MASK));
+        jMenuItemCompanyDetails.setText("Company Details");
+        jMenuItemCompanyDetails.setName("mCompanyDetails"); // NOI18N
+        jMenuItemCompanyDetails.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCompanyDetailsActionPerformed(evt);
+            }
+        });
+        jMenuSettings.add(jMenuItemCompanyDetails);
+
+        jMenuItemTaxes.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_T, Common.IS_MAC ? java.awt.event.InputEvent.META_DOWN_MASK : java.awt.event.InputEvent.CTRL_MASK));
+        jMenuItemTaxes.setText("Taxes");
+        jMenuItemTaxes.setName("mTaxes"); // NOI18N
+        jMenuItemTaxes.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemTaxesActionPerformed(evt);
+            }
+        });
+        jMenuSettings.add(jMenuItemTaxes);
+
+        jMenuItem11.setText("Email");
+        jMenuItem11.setName("mEmail"); // NOI18N
+        jMenuItem11.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem11ActionPerformed(evt);
+            }
+        });
+        jMenuSettings.add(jMenuItem11);
+
+        jMenuItemPreferences.setText("Preferences");
+        jMenuItemPreferences.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemPreferencesActionPerformed(evt);
+            }
+        });
+        jMenuSettings.add(jMenuItemPreferences);
+
+        jMenuItemLogo.setText("Logo Setup");
+        jMenuItemLogo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemLogoActionPerformed(evt);
+            }
+        });
+        jMenuSettings.add(jMenuItemLogo);
+
+        jMenuBar1.add(jMenuSettings);
+
+        jMenuTools.setIcon(new ImageIcon("./images/buttons/save.png"));
+        jMenuTools.setIcon(new ImageIcon("./images/buttons/nav_ico_tools.png"));
+        jMenuTools.setText("Tools  ");
+        jMenuTools.setMargin(new java.awt.Insets(0, 3, 0, 0));
+        jMenuTools.setName("jMenuTools"); // NOI18N
+
+        jMenuItemBackup.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, Common.IS_MAC ? java.awt.event.InputEvent.META_DOWN_MASK : java.awt.event.InputEvent.CTRL_MASK));
+        jMenuItemBackup.setText("Backup Data");
+        jMenuItemBackup.setName("mBackupData"); // NOI18N
+        jMenuItemBackup.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemBackupActionPerformed(evt);
+            }
+        });
+        jMenuTools.add(jMenuItemBackup);
+
+        jMenuItemRestore.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_R, Common.IS_MAC ? java.awt.event.InputEvent.META_DOWN_MASK : java.awt.event.InputEvent.CTRL_MASK));
+        jMenuItemRestore.setText("Restore Data");
+        jMenuItemRestore.setName("mRestoreData"); // NOI18N
+        jMenuItemRestore.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemRestoreActionPerformed(evt);
+            }
+        });
+        jMenuTools.add(jMenuItemRestore);
+        jMenuTools.add(jSeparator1);
+
+        jMenuItemAddCompany.setText("Add New Company");
+        jMenuItemAddCompany.setName("mAddNewCompany"); // NOI18N
+        jMenuItemAddCompany.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemAddCompanyActionPerformed(evt);
+            }
+        });
+        jMenuTools.add(jMenuItemAddCompany);
+
+        jMenuItemSwitch.setText("Switch Current Company");
+        jMenuItemSwitch.setName("mSwitchCompany"); // NOI18N
+        jMenuItemSwitch.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemSwitchActionPerformed(evt);
+            }
+        });
+        jMenuTools.add(jMenuItemSwitch);
+
+        jMenuBar1.add(jMenuTools);
+
+        jMenuReports.setIcon(new ImageIcon("./images/buttons/nav_ico_reports.png"));
+        jMenuReports.setText("Reports  ");
+
+        jMenuItemInvoices.setText("Invoices");
+        jMenuItemInvoices.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemInvoicesActionPerformed(evt);
+            }
+        });
+        jMenuReports.add(jMenuItemInvoices);
+
+        jMenuItemEstimates.setText("Quotations");
+        jMenuItemEstimates.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemEstimatesActionPerformed(evt);
+            }
+        });
+        jMenuReports.add(jMenuItemEstimates);
+
+        jMenuItemClients.setText("Clients");
+        jMenuItemClients.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemClientsActionPerformed(evt);
+            }
+        });
+        jMenuReports.add(jMenuItemClients);
+
+        jMenuItemProducts.setText("Products/Services");
+        jMenuItemProducts.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemProductsActionPerformed(evt);
+            }
+        });
+        jMenuReports.add(jMenuItemProducts);
+
+        jMenuBar1.add(jMenuReports);
+
+        jMenuTest.setIcon(new ImageIcon("./images/buttons/finish.png"));
+        jMenuTest.setForeground(new java.awt.Color(35, 130, 165));
+        jMenuTest.setIcon(new ImageIcon("./images/buttons/nav_ico_star.png"));
+        jMenuTest.setMnemonic('d');
+        jMenuTest.setText("I'm done testing!");
+        jMenuTest.setToolTipText("<html>Press to start issuing your own documents with real data.<br>The program will expire within <b>30 days.</b></html>");
+        jMenuTest.setFont(new java.awt.Font("Verdana", 1, 13)); // NOI18N
+        jMenuTest.setName(""); // NOI18N
+        jMenuTest.getPopupMenu().setPopupSize(0,0);
+        jMenuTest.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jMenuTestMouseClicked(evt);
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                jMenuTestMouseExited(evt);
+            }
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                jMenuTestMouseEntered(evt);
+            }
+        });
+        jMenuTest.addMenuListener(new javax.swing.event.MenuListener() {
+            public void menuCanceled(javax.swing.event.MenuEvent evt) {
+            }
+            public void menuDeselected(javax.swing.event.MenuEvent evt) {
+            }
+            public void menuSelected(javax.swing.event.MenuEvent evt) {
+                jMenuTestMenuSelected(evt);
+            }
+        });
+        jMenuTest.addMenuKeyListener(new javax.swing.event.MenuKeyListener() {
+            public void menuKeyPressed(javax.swing.event.MenuKeyEvent evt) {
+                jMenuTestMenuKeyPressed(evt);
+            }
+            public void menuKeyReleased(javax.swing.event.MenuKeyEvent evt) {
+            }
+            public void menuKeyTyped(javax.swing.event.MenuKeyEvent evt) {
+            }
+        });
+        jMenuBar1.add(jMenuTest);
+
+        jMenu1.setText("              ");
+        jMenu1.setMargin(new java.awt.Insets(0, 3, 0, 0));
+
+        jMenuItem1.setText("save taxes server");
+        jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem1ActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItem1);
+
+        jMenuItem2.setText("save taxes client");
+        jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem2ActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItem2);
+
+        jMenuItem3.setText("bundles test");
+        jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem3ActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItem3);
+
+        jMenuItem4.setText("test JDialog");
+        jMenuItem4.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem4ActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItem4);
+
+        jMenuItem5.setText("test jasper");
+        jMenuItem5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem5ActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItem5);
+
+        jMenuItem8.setText("Test export/import");
+        jMenuItem8.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem8ActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItem8);
+
+        jMenuItem9.setText("Test nomenclator");
+        jMenuItem9.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem9ActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItem9);
+
+        jMenuItem6.setText("Add new product");
+        jMenuItem6.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem6ActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItem6);
+
+        jMenuItem7.setText("Test Nomenclator 2");
+        jMenuItem7.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem7ActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItem7);
+
+        jMenuItem10.setText("add new city");
+        jMenuItem10.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem10ActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItem10);
+
+        jMenuBar1.add(jMenu1);
+
+        jMenuHelp.setIcon(new ImageIcon("./images/buttons/colac.png"));
+        jMenuHelp.setIcon(new ImageIcon("./images/buttons/nav_ico_help.png"));
+        jMenuHelp.setText("Help  ");
+        jMenuHelp.setMargin(new java.awt.Insets(0, 3, 0, 0));
+
+        jMenuItemAbout.setText("About  ");
+        jMenuItemAbout.setName("mAbout"); // NOI18N
+        jMenuItemAbout.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemAboutActionPerformed(evt);
+            }
+        });
+        jMenuHelp.add(jMenuItemAbout);
+
+        jMenuItemFeedback.setText("Feedback");
+        jMenuItemFeedback.setName("mFeedback"); // NOI18N
+        jMenuItemFeedback.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemFeedbackActionPerformed(evt);
+            }
+        });
+        jMenuHelp.add(jMenuItemFeedback);
+
+        jMenuItem12.setText("jMenuItem12");
+        jMenuItem12.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem12ActionPerformed(evt);
+            }
+        });
+        jMenuHelp.add(jMenuItem12);
+
+        jMenuBar1.add(Box.createHorizontalGlue());
+
+        jMenuBar1.add(jMenuHelp);
+
+        jMenuOrder.setIcon(new ImageIcon("./images/buttons/lock.png"));
+        jMenuOrder.setText("Order license");
+        jMenuOrder.getPopupMenu().setPopupSize(0,0);
+        jMenuOrder.setText(Common.IS_INDIA ? "Get Premium Features" : "Order license");
+        jMenuOrder.addMenuListener(new javax.swing.event.MenuListener() {
+            public void menuCanceled(javax.swing.event.MenuEvent evt) {
+            }
+            public void menuDeselected(javax.swing.event.MenuEvent evt) {
+            }
+            public void menuSelected(javax.swing.event.MenuEvent evt) {
+                jMenuOrderMenuSelected(evt);
+            }
+        });
+        jMenuOrder.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jMenuOrderMouseClicked(evt);
+            }
+        });
+        jMenuBar1.add(jMenuOrder);
+
+        jMenuFeedback.setIcon(new ImageIcon("./images/buttons/email.png"));
+        jMenuFeedback.setText("Contact");
+        jMenuFeedback.setName("mFeedback2"); // NOI18N
+        jMenuFeedback.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jMenuFeedbackMouseClicked(evt);
+            }
+        });
+        jMenuFeedback.addMenuListener(new javax.swing.event.MenuListener() {
+            public void menuCanceled(javax.swing.event.MenuEvent evt) {
+            }
+            public void menuDeselected(javax.swing.event.MenuEvent evt) {
+            }
+            public void menuSelected(javax.swing.event.MenuEvent evt) {
+                jMenuFeedbackMenuSelected(evt);
+            }
+        });
+        jMenuFeedback.addMenuKeyListener(new javax.swing.event.MenuKeyListener() {
+            public void menuKeyPressed(javax.swing.event.MenuKeyEvent evt) {
+                jMenuFeedbackMenuKeyPressed(evt);
+            }
+            public void menuKeyReleased(javax.swing.event.MenuKeyEvent evt) {
+            }
+            public void menuKeyTyped(javax.swing.event.MenuKeyEvent evt) {
+            }
+        });
+        jMenuBar1.add(jMenuFeedback);
+
+        setJMenuBar(jMenuBar1);
+
+        getAccessibleContext().setAccessibleName("slick");
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void jMenuItemSwitchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemSwitchActionPerformed
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+        try {
+            JDialogSwitchCompany dlg = new JDialogSwitchCompany(this, true);
+            dlg.setVisible(true);
+            Company selectedCompany = dlg.getSelectedCompany();
+            if (selectedCompany != null
+                    && !selectedCompany.getName().equals(Common.getSelectedCompany().getName())) {
+                Common.switchToCompany(selectedCompany);
+            }
+            if (selectedCompany != null) {
+                Messages.showOkMessage(main, "\"" + (selectedCompany.getDbName() == null ? selectedCompany.getName() : selectedCompany.getDbName()) + "\" is now the active company.", "Information");
+            }
+            initDashboard();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            //TODO eroare conexiune
+        }
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItemSwitchActionPerformed
+
+    private void jMenuItemBackupActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemBackupActionPerformed
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new BackupRestore(this, Dialog.ModalityType.APPLICATION_MODAL, true, false);
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItemBackupActionPerformed
+
+    private void jMenuItemRestoreActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemRestoreActionPerformed
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new BackupRestore(this, Dialog.ModalityType.APPLICATION_MODAL, false, false);
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItemRestoreActionPerformed
+
+    private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        try {
+            //update app
+            if (!Common.updateCheckResponse.isEmpty() && !Common.isClient()) {
+                if (Common.IS_LINUX_OR_MAC) {
+                    if (Messages.showQuestionMessage(MainFrame.this, "There is a new version of Sleek Bill available."
+                            + "\nWould you like to download it now?"
+                            + "\nPlease replace the existing file with the new one", "Information") == Messages.YES_OPTION) {
+                        if (java.awt.Desktop.isDesktopSupported()) {
+                            SBDesktop.browse(new java.net.URI(Common.updateCheckResponse));
+                            System.exit(0);
+                        }
+                    }
+                } else {
+                    new JDialogUpdate(MainFrame.this, true).setVisible(true);
+                }
+            }
+
+            initialPage();
+
+            KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new KeyEventDispatcher() {
+
+                @Override
+                public boolean dispatchKeyEvent(KeyEvent e) {
+                    if (e.getKeyCode() == KeyEvent.VK_M && e.getModifiers() == KeyEvent.CTRL_MASK) {
+                        MainFrame.this.setExtendedState(JFrame.ICONIFIED | MainFrame.this.getExtendedState());
+                        return true;
+                    }
+                    return false;
+                }
+            });
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        setCursor(null);
+
+        String tooltip = "<html><font size=3><center>What do you think about Sleek Bill?<br>Please use the Feedback button to tell us your opinion.<br>As often as you wish!</font></html>";
+
+        if (Common.selectedCompanyConfig.get(Config.SENT_FEEDBACK).equals("false")) {
+            int numberOfDaysSinceCreation = Common.getNumberOfDaysSinceCreation();
+            switch (numberOfDaysSinceCreation) {
+                case 2:
+                case 4:
+                case 8:
+                case 15:
+                case 30:
+                    new SBSpecialBalloonTip(jMenuFeedback, new JLabel(tooltip));
+                    break;
+                default:
+                    int days = 32;
+                    while (numberOfDaysSinceCreation > days) {
+                        days *= 2;
+                        if (days == numberOfDaysSinceCreation) {
+                            new SBSpecialBalloonTip(jMenuFeedback, new JLabel(tooltip));
+                        }
+                    }
+            }
+        }
+    }//GEN-LAST:event_formWindowOpened
+
+    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
+        try {
+            TransactionManager.callInTransaction(Common.connection.getConnection(), new Callable() {
+                @Override
+                public Void call() throws Exception {
+
+                    try {
+
+                        TransactionManager.callInTransaction(Common.connection.getConnection(), new Callable() {
+                            @Override
+                            public Void call() throws Exception {
+
+                                //         			TestORMLite.saveT(new Taxes("t1", 1, true));
+                                //         			TestORMLite.saveT(new Object[]{"t1", 1, true});
+                                //         			TestORMLite.saveTest(Common.connectionSource);
+                                Client c = new Client();
+                                c.setName("client1");
+                                c.setCode("code");
+                                c.setEmail("email@email.ro");
+                                c.setTelephone("123");
+                                c.setContact("contact");
+                                c.setBillingAddress("billing_address");
+                                c.setBillingZip("billing_zip");
+                                c.setBillingCity("billing_city");
+                                c.setShippingAddress("shipping_address");
+                                c.setShippingZip("shipping_zip");
+                                c.setShippingCity("shipping_city");
+                                c.setBillingState(new StateEntity(10, "state1", "couttry1", "x", "y"));
+                                c.setShippingState(new StateEntity(0, "state2", "couttry2", "y", "y"));
+
+                                Client.add(Common.connection.getConnection(), c);
+                                return null;
+
+                            }
+                        });
+
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+
+                    Client c = new Client();
+                    c.setName("client2");
+                    c.setCode("code");
+                    c.setEmail("email@email.ro");
+                    c.setTelephone("123");
+                    c.setContact("contact");
+                    c.setBillingAddress("billing_address");
+                    c.setBillingZip("billing_zip");
+                    c.setBillingCity("billing_city");
+                    c.setShippingAddress("shipping_address");
+                    c.setShippingZip("shipping_zip");
+                    c.setShippingCity("shipping_city");
+                    c.setBillingState(new StateEntity(10, "state1", "couttry1", "x", "y"));
+                    c.setShippingState(new StateEntity(0, "state2", "couttry2", "y", "y"));
+
+                    Client.add(Common.connection.getConnection(), c);
+
+                    throw new SBDaoException("buba");
+
+                }
+            });
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+    }//GEN-LAST:event_jMenuItem1ActionPerformed
+
+    private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
+//    	try {
+//	    	ClientFactory factory = sleekbill.xmlrpc.Client.getFactory();
+//	    	sleekbill.xmlrpc.Handlers hs = (sleekbill.xmlrpc.Handlers) factory.newInstance(sleekbill.xmlrpc.Handlers.class);
+////	        hs.addTax(new Taxes("t1", 1, true));
+//	        hs.addTax(new Object[]{"t1", 1, true});
+////	    	ClientFactory factory = sleekbill.xmlrpc.Client.getFactory();
+////	    	sleekbill.xmlrpc.Handlers hs = (sleekbill.xmlrpc.Handlers) factory.newInstance(sleekbill.xmlrpc.Handlers.class);
+////	        System.out.println(hs.getServerDate());
+//		} catch (SQLException ex) {
+//			Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
+//		}
+
+        try {
+            TestORMLite.saveTest1(Common.connection.getConnection());
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+//		try {
+//			sleekbill.wsClient.sleekBillService service = new sleekbill.wsClient.sleekBillService();
+//			sleekbill.wsClient.sleekBillImpl port = service.getsleekBillImplPort();
+//			BindingProvider bp = (BindingProvider)port;
+//			Map<String,Object> map = bp.getRequestContext();
+//			map.put(BindingProvider.USERNAME_PROPERTY, "yyang");
+//			map.put(BindingProvider.PASSWORD_PROPERTY,"#$$1x5Y7z");
+//			sleekbill.wsClient.Taxes t = new sleekbill.wsClient.Taxes();
+//			t.setTaxName("t2");
+//			t.setTaxPercentage(22);
+//			t.setIsDefaultTax(true);
+//			port.addTax(t);
+//		} catch (Exception ex) {
+//			Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
+//		}
+    }//GEN-LAST:event_jMenuItem2ActionPerformed
+
+    private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
+        new BundleTest(this, true).setVisible(true);
+    }//GEN-LAST:event_jMenuItem3ActionPerformed
+
+    private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
+        new TestJDialog(this, true).setVisible(true);
+    }//GEN-LAST:event_jMenuItem4ActionPerformed
+
+    private void jMenuItemAboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemAboutActionPerformed
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new JDialogAbout(this, true, Common.selectedCompany, Common.connection).setVisible(true);
+        if (Common.vKCheckAll(Common.connection) < 0 && !Common.isTestCompany()) {
+            if (!Common.IS_INDIA) {
+                jMenuOrder.setVisible(false);
+            } else {
+                jMenuOrder.setVisible(Common.selectedCompanyConfig.get(Config.INDIA).equals("free"));
+                jMenuOrder.setText("Upgrade License");
+            }
+        }
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItemAboutActionPerformed
+
+    private void jMenuItemAddCompanyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemAddCompanyActionPerformed
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        try {
+            SBConnection userDataConn = new SBConnection(DBConnection.getConnection(Common.user, DBConnection.DEFAULT_DBKEY));
+            JDialogCreateCompany dlg = new JDialogCreateCompany(this, true, userDataConn, null);
+            dlg.hideCancelButton();
+            dlg.setVisible(true);
+            userDataConn.getConnection().close();
+            Company createdCompany = dlg.getCreatedCompany();
+            if (createdCompany != null) {
+
+                for (Company company : Common.companies) {
+                    company.setActive(false);
+                }
+                createdCompany.setActive(true);
+                Common.companies.add(createdCompany);
+                initDashboard();
+                jMenuItemSwitch.setVisible(Common.companies.size() > 1);
+                Common.switchToCompany(createdCompany);
+                if (dlg.getCreatedName() != null && !dlg.getCreatedName().isEmpty()) {
+
+                    Messages.showOkMessage(main, "You have successfully created the company profile \"" + dlg.getCreatedName() + "\"! This is now the active company.", "Information");
+                    Common.setTestCompany(false);
+                }
+            }
+        } catch (Exception ex) {
+            Messages.showErrorMessage(main, "The company couldn't be created : " + ex.getMessage(), "Error");
+        }
+        setCursor(null);
+        jMenuTest.setVisible(Common.isTestCompany());
+        if (Common.IS_INDIA) {
+            jMenuOrder.setVisible(!Common.isTestCompany());
+        }
+
+    }//GEN-LAST:event_jMenuItemAddCompanyActionPerformed
+
+    private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem5ActionPerformed
+
+//    	Invoices ii = new Invoices(10);
+        Invoice i;
+        JdbcConnectionSource connectionSource = Common.connection.getConnection();
+        try {
+            i = Invoice.get(connectionSource, 1);
+            if (i == null) {
+//				CompanyDetails cd = CompanyDetails.getLast(connectionSource);
+                return;
+            }
+
+            i.setDocumentPrintId(Invoice.FORMAT_1INVOICE);
+            i.setLayout(Invoice.LAYOUT1_1INVOICE);
+
+            ReportGenerator r = new ReportGenerator(i);
+            r.showDocument();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }//GEN-LAST:event_jMenuItem5ActionPerformed
+
+    private void jMenuItem8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem8ActionPerformed
+        new JDialogImportExcelEx(this, JDialogImportExcelEx.FOR_CLIENTS).setVisible(true);
+    }//GEN-LAST:event_jMenuItem8ActionPerformed
+
+    private void jMenuItem9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem9ActionPerformed
+        new JDialogProductsReport(this, true).setVisible(true);
+    }//GEN-LAST:event_jMenuItem9ActionPerformed
+
+    private void jMenuItemFeedbackActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemFeedbackActionPerformed
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new JDialogFeedback(this, true).setVisible(true);
+        setCursor(null);
+
+    }//GEN-LAST:event_jMenuItemFeedbackActionPerformed
+
+    private void jMenuItemInvoiceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemInvoiceActionPerformed
+//       new Thread(new Runnable() {
+//
+//           @Override
+//           public void run() {
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new JDialogIssueInvoice(main, true).setVisible(true);
+        setCursor(null);
+//           }
+//       }).start();
+
+
+    }//GEN-LAST:event_jMenuItemInvoiceActionPerformed
+
+    private void jMenuItemCompanyDetailsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCompanyDetailsActionPerformed
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        try {
+            JDialogCreateCompany dlg = new JDialogCreateCompany(this, true, Common.connection,
+                    Common.companyDetails);
+            dlg.setCompanyNameEditable(!Common.isTestCompany());
+            dlg.hideCancelButton();
+            dlg.setVisible(true);
+            if (dlg.getCreatedName() != null && !dlg.getCreatedName().isEmpty()) {
+                Messages.showOkMessage(main, "You have successfully updated the company details for \"" + dlg.getCreatedName() + "\"!", "Information");
+                setTitle("Sleek Bill 2016 " + VERSION.substring(VERSION.indexOf(".") + 1) + " - " + Common.companyDetails.getName());
+            }
+        } catch (Exception ex) {
+            Messages.showErrorMessage(main, "The company details couldn't be updated : " + ex.getMessage(), "Error");
+        }
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItemCompanyDetailsActionPerformed
+
+    private void jMenuItemTaxesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemTaxesActionPerformed
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new JDialogTaxes(this, true).setVisible(true);
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItemTaxesActionPerformed
+
+    private void jMenuItem11ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem11ActionPerformed
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        JDialogConfigEmail configEmail = new JDialogConfigEmail(MainFrame.this, true);
+        configEmail.setVisible(true);
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItem11ActionPerformed
+
+    private void jMenuItemClientsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemClientsActionPerformed
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new JDialogClientsReport(this, true).setVisible(true);
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItemClientsActionPerformed
+
+    private void jMenuItemInvoicesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemInvoicesActionPerformed
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new JDialogInvoicesReport(this, true).setVisible(true);
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItemInvoicesActionPerformed
+
+    private void jMenuItemProductsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemProductsActionPerformed
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new JDialogProductsReport(this, true).setVisible(true);
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItemProductsActionPerformed
+
+    private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
+        //new JDialogProductData(this,true).setVisible(true);
+    }//GEN-LAST:event_jMenuItem6ActionPerformed
+
+    private void jMenuItem7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem7ActionPerformed
+        new JDialogProductsReport(this, true).setVisible(true);
+    }//GEN-LAST:event_jMenuItem7ActionPerformed
+
+    private void jLNewInvoiceMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewInvoiceMouseClicked
+
+    }//GEN-LAST:event_jLNewInvoiceMouseClicked
+
+    private void jMenuItem10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem10ActionPerformed
+        new JDialogCityData(main, true, Common.connection).setVisible(true);
+    }//GEN-LAST:event_jMenuItem10ActionPerformed
+
+    private void jMenuFeedbackMenuKeyPressed(javax.swing.event.MenuKeyEvent evt) {//GEN-FIRST:event_jMenuFeedbackMenuKeyPressed
+        if (evt.getKeyChar() != 'g') {
+            return;
+        }
+        jMenuFeedback.setSelected(false);
+        jMenuBar1.transferFocus();
+        JDialogFeedback feedback = new JDialogFeedback(MainFrame.this, true);
+        feedback.setVisible(true);
+    }//GEN-LAST:event_jMenuFeedbackMenuKeyPressed
+
+    private void jMenuFeedbackMenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenuFeedbackMenuSelected
+        if (!Common.IS_LINUX_OR_MAC) {
+            return;
+        }
+        jMenuFeedback.setSelected(false);
+        jMenuBar1.transferFocus();
+        JDialogFeedback feedback = new JDialogFeedback(MainFrame.this, true);
+        feedback.setVisible(true);
+    }//GEN-LAST:event_jMenuFeedbackMenuSelected
+
+    private void jMenuFeedbackMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jMenuFeedbackMouseClicked
+        try {
+            Robot robot = new Robot();
+            Rectangle rct = this.getBounds();
+            robot.mouseMove(rct.x + 100, rct.y + 100);
+            robot.mousePress(InputEvent.BUTTON1_MASK);
+            robot.mouseRelease(InputEvent.BUTTON1_MASK);
+            robot.mouseMove(evt.getXOnScreen(), evt.getYOnScreen());
+            Timer t = new Timer(500, new ActionListener() {
+
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    JDialogFeedback feedback = new JDialogFeedback(MainFrame.this, true);
+                    feedback.setVisible(true);
+                }
+            });
+            t.setRepeats(false);
+            t.start();
+        } catch (AWTException ex) {
+            ex.printStackTrace();
+        }
+    }//GEN-LAST:event_jMenuFeedbackMouseClicked
+
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+
+        if (Common.selectedCompanyConfig.get(Config.SENT_FEEDBACK).equals("false")) {
+            if (Common.selectedCompanyConfig.get(Config.FIRST_CLOSE).equals("false")) {
+                JDialogFeedback feedback = new JDialogFeedback(MainFrame.this, true);
+                feedback.setVisible(true);
+                Common.selectedCompanyConfig.set(Config.FIRST_CLOSE, "true");
+            }
+        }
+
+        if (Common.IS_LINUX_OR_MAC && Common.sbProperties.containsKey("typ") && Common.sbProperties.get("typ").equals("false")) {
+            if (java.awt.Desktop.isDesktopSupported()) {
+                try {
+                    SBDesktop.browse(new java.net.URI((Common.IS_INDIA ? "http://www.billingsoftware.in/installation-complete.html" : "http://www.sleekbill.com/installation-complete/") + "?version=1&ref=" + Common.sbProperties.getProperty("rf") + "&ic=0"));
+                    Common.sbProperties.setProperty("typ", "true");
+                    File f = new File("sb.properties");
+                    OutputStream out = new FileOutputStream(f);
+                    Common.sbProperties.store(out, "");
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+
+        if (Common.isTestCompany()) {
+            return;
+        }
+
+        if (Common.selectedCompanyConfig.get(Config.ACTIVATED).equals("true")) {
+            if (java.awt.Desktop.isDesktopSupported()) {
+                try {
+                    SBDesktop.browse(new java.net.URI((Common.IS_INDIA ? "http://www.billingsoftware.in/activation-complete.html" : "http://www.sleekbill.com/activation-complete/") + "?pi=" + Common.nrZilePrimaInstalare() + "&ci=" + Common.nrZilePrimaCfg() + "&ref=" + Common.sbProperties.getProperty("rf") + (Common.IS_INDIA ? ("&license=" + Common.selectedCompanyConfig.get(Config.INDIA)) : "")));
+                    Common.selectedCompanyConfig.set(Config.ACTIVATED, "false");
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+
+        int save = Common.getNumberOfDaysSinceLastSave();
+        int nr_zile = save < 0 ? Common.getNumberOfDaysSinceCreation() : save;
+
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        if (nr_zile >= 7) {
+            int option = Messages.showQuestionYesNoCancelMessage(MainFrame.this,
+                    "Warning! You haven't performed a data backup for " + nr_zile + " days. We highly recommend that you back up your data."
+                    + "\nWould you like to do that now?"
+                    + "\n(Select Cancel in order not to close the program.)",
+                    "Warning ");
+            if (option == JOptionPane.YES_OPTION) {
+                new BackupRestore(this, Dialog.ModalityType.APPLICATION_MODAL, true, false);
+
+            } else if (option == JOptionPane.CANCEL_OPTION) {
+                setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+            }
+        }
+    }//GEN-LAST:event_formWindowClosing
+
+    private void jMenuItemEstimateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemEstimateActionPerformed
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new JDialogIssueEstimate(main, true).setVisible(true);
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItemEstimateActionPerformed
+
+    private void jMenuItemEstimatesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemEstimatesActionPerformed
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new JDialogEstimatesReport(this, true).setVisible(true);
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItemEstimatesActionPerformed
+
+    private void jLNewInvoiceMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewInvoiceMouseEntered
+        jLNewInvoice.setIcon(new ImageIcon("./images/buttons/i-hover.png"));
+    }//GEN-LAST:event_jLNewInvoiceMouseEntered
+
+    private void jLNewInvoiceMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewInvoiceMouseExited
+        jLNewInvoice.setIcon(new ImageIcon("./images/buttons/i-normal.png"));
+    }//GEN-LAST:event_jLNewInvoiceMouseExited
+
+    private void jLNewInvoiceMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewInvoiceMousePressed
+        jMenuItemInvoiceActionPerformed(null);
+    }//GEN-LAST:event_jLNewInvoiceMousePressed
+
+    private void jLNewInvoiceMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewInvoiceMouseReleased
+//        jLNewInvoice.setBorder(new SBBevelBorder(javax.swing.border.BevelBorder.RAISED)); 
+    }//GEN-LAST:event_jLNewInvoiceMouseReleased
+
+    private void jLNewEstimateMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewEstimateMouseClicked
+
+    }//GEN-LAST:event_jLNewEstimateMouseClicked
+
+    private void jLNewEstimateMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewEstimateMouseEntered
+        jLNewEstimate.setIcon(new ImageIcon("./images/buttons/q-hover.png"));
+    }//GEN-LAST:event_jLNewEstimateMouseEntered
+
+    private void jLNewEstimateMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewEstimateMouseExited
+        jLNewEstimate.setIcon(new ImageIcon("./images/buttons/q-normal.png"));
+    }//GEN-LAST:event_jLNewEstimateMouseExited
+
+    private void jLNewEstimateMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewEstimateMousePressed
+        jMenuItemEstimateActionPerformed(null);
+    }//GEN-LAST:event_jLNewEstimateMousePressed
+
+    private void jLNewEstimateMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewEstimateMouseReleased
+//        jLNewEstimate.setBorder(new SBBevelBorder(javax.swing.border.BevelBorder.RAISED)); 
+    }//GEN-LAST:event_jLNewEstimateMouseReleased
+
+    private void jMenuTestMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jMenuTestMouseClicked
+        if (!Common.IS_LINUX_OR_MAC) {
+            jMenuTest.setSelected(false);
+            jMenuTest.getPopupMenu().setVisible(false);
+        }
+
+        try {
+            Robot robot = new Robot();
+            Rectangle rct = this.getBounds();
+            robot.mouseMove(rct.x + 100, rct.y + 100);
+            robot.mousePress(InputEvent.BUTTON1_MASK);
+            robot.mouseRelease(InputEvent.BUTTON1_MASK);
+            robot.mouseMove(evt.getXOnScreen(), evt.getYOnScreen());
+            Timer t = new Timer(500, new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    doneTesting();
+                }
+            });
+            t.setRepeats(false);
+            t.start();
+        } catch (AWTException ex) {
+            ex.printStackTrace();
+        }
+
+    }//GEN-LAST:event_jMenuTestMouseClicked
+
+    private void jMenuTestMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jMenuTestMouseExited
+        //ToolTipManager.sharedInstance().setInitialDelay(toolTipDelay);
+    }//GEN-LAST:event_jMenuTestMouseExited
+
+    private void jMenuTestMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jMenuTestMouseEntered
+        //toolTipDelay = ToolTipManager.sharedInstance().getInitialDelay() > 0 ? ToolTipManager.sharedInstance().getInitialDelay() : toolTipDelay;
+        //ToolTipManager.sharedInstance().setInitialDelay(0);
+    }//GEN-LAST:event_jMenuTestMouseEntered
+
+    private void jMenuTestMenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenuTestMenuSelected
+        if (!Common.IS_LINUX_OR_MAC) {
+            return;
+        }
+        jMenuTest.setSelected(false);
+        jMenuTest.getPopupMenu().setVisible(false);
+        doneTesting();
+    }//GEN-LAST:event_jMenuTestMenuSelected
+
+    private void jMenuTestMenuKeyPressed(javax.swing.event.MenuKeyEvent evt) {//GEN-FIRST:event_jMenuTestMenuKeyPressed
+        if (evt.getKeyChar() != 'd') {
+            return;
+        }
+        jMenuTest.setSelected(false);
+        doneTesting();
+    }//GEN-LAST:event_jMenuTestMenuKeyPressed
+
+    private void jMenuOrderMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jMenuOrderMouseClicked
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        if (!Common.IS_INDIA) {
+            Common.comandaCod(Common.selectedCompany, Common.connection);
+        } else {
+            //if (Common.selectedCompanyConfig.get(Config.INDIA).equals("")) {
+            new JDialogChoosePlan(main, true).setVisible(true);
+            //} else {
+            //	new JDialogRegister(main, true, true).setVisible(true);
+            //}
+        }
+        setCursor(null);
+    }//GEN-LAST:event_jMenuOrderMouseClicked
+
+    private void jMenuOrderMenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenuOrderMenuSelected
+        if (!Common.IS_LINUX_OR_MAC) {
+            return;
+        }
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        if (!Common.IS_INDIA) {
+            Common.comandaCod(Common.selectedCompany, Common.connection);
+        } else if (Common.selectedCompanyConfig.get(Config.INDIA).equals("")) {
+            new JDialogChoosePlan(main, true).setVisible(true);
+        } else {
+            new JDialogRegister(main, true, true).setVisible(true);
+        }
+        setCursor(null);
+    }//GEN-LAST:event_jMenuOrderMenuSelected
+
+    private void jMenuItemPreferencesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemPreferencesActionPerformed
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new JDialogFlags(main, true, null).setVisible(true);
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItemPreferencesActionPerformed
+
+    private void jMenuItemLogoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemLogoActionPerformed
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        int w = 260;
+        int h = 83;
+        try {
+            if (3 == Invoice.getLastUsedLayout(Common.connection.getConnection())) {
+                w = 170;
+                h = 100;
+            }
+        } catch (Exception e) {
+        }
+        new JDialogLogoGenerator(main, true, true, Common.companyDetails.getLogo(), w, h).setVisible(true);
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItemLogoActionPerformed
+
+    private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
+        javax.swing.MenuSelectionManager.defaultManager().clearSelectedPath();
+    }//GEN-LAST:event_formWindowDeactivated
+
+    private void jMenuItemTaxInvoiceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemTaxInvoiceActionPerformed
+        final boolean bPaid = !Common.selectedCompanyConfig.get(Config.INDIA).equals("free");
+        if (!bPaid) {
+            if (1 == Messages.showWarningMessage(null, "<html><center>This is a Premium only feature.</center></html>", "Information", new String[]{"Cancel", "Go Premium"}, "Go Premium")) {
+                new JDialogRegister(new JDialog(), true, true).setVisible(true);
+            }
+            return;
+        }
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        JDialogIssueInvoice jDialogIssueInvoice = new JDialogIssueInvoice(main, true);
+        jDialogIssueInvoice.reconfigureType(Invoice.TYPE_TAX);
+        jDialogIssueInvoice.setVisible(true);
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItemTaxInvoiceActionPerformed
+
+    private void jMenuItemRetailInvoiceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemRetailInvoiceActionPerformed
+        final boolean bPaid = !Common.selectedCompanyConfig.get(Config.INDIA).equals("free");
+        if (!bPaid) {
+            if (1 == Messages.showWarningMessage(null, "<html><center>This is a Premium only feature.</center></html>", "Information", new String[]{"Cancel", "Go Premium"}, "Go Premium")) {
+                new JDialogRegister(new JDialog(), true, true).setVisible(true);
+            }
+            return;
+        }
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        JDialogIssueInvoice jDialogIssueInvoice = new JDialogIssueInvoice(main, true);
+        jDialogIssueInvoice.reconfigureType(Invoice.TYPE_RETAIL);
+        jDialogIssueInvoice.setVisible(true);
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItemRetailInvoiceActionPerformed
+
+    private void jMenuItemExciseInvoiceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemExciseInvoiceActionPerformed
+        final boolean bPaid = !Common.selectedCompanyConfig.get(Config.INDIA).equals("free");
+        if (!bPaid) {
+            if (1 == Messages.showWarningMessage(null, "<html><center>This is a Premium only feature.</center></html>", "Information", new String[]{"Cancel", "Go Premium"}, "Go Premium")) {
+                new JDialogRegister(new JDialog(), true, true).setVisible(true);
+            }
+            return;
+        }
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        JDialogIssueInvoice jDialogIssueInvoice = new JDialogIssueInvoice(main, true);
+        jDialogIssueInvoice.reconfigureType(Invoice.TYPE_EXCISE);
+        jDialogIssueInvoice.setVisible(true);
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItemExciseInvoiceActionPerformed
+
+    private void jMenuItemProformaInvoiceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemProformaInvoiceActionPerformed
+        final boolean bPaid = !Common.selectedCompanyConfig.get(Config.INDIA).equals("free");
+        if (!bPaid) {
+            if (1 == Messages.showWarningMessage(null, "<html><center>This is a Premium only feature.</center></html>", "Information", new String[]{"Cancel", "Go Premium"}, "Go Premium")) {
+                new JDialogRegister(new JDialog(), true, true).setVisible(true);
+            }
+            return;
+        }
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        JDialogIssueEstimate jDialogIssueEstimate = new JDialogIssueEstimate(main, true);
+        jDialogIssueEstimate.reconfigureType(Estimate.TYPE_PROFORMA);
+        jDialogIssueEstimate.setVisible(true);
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItemProformaInvoiceActionPerformed
+
+    private void jLNewProformaMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewProformaMouseEntered
+        jLNewProforma.setIcon(new ImageIcon("./images/buttons/p-hover.png"));
+    }//GEN-LAST:event_jLNewProformaMouseEntered
+
+    private void jLNewProformaMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewProformaMouseExited
+        jLNewProforma.setIcon(new ImageIcon("./images/buttons/p-normal.png"));
+    }//GEN-LAST:event_jLNewProformaMouseExited
+
+    private void jLNewProformaMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewProformaMousePressed
+        jMenuItemProformaInvoiceActionPerformed(null);
+    }//GEN-LAST:event_jLNewProformaMousePressed
+
+    private void jLNewTaxInvoiceMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewTaxInvoiceMouseEntered
+        jLNewTaxInvoice.setIcon(new ImageIcon("./images/buttons/ti-hover.png"));
+    }//GEN-LAST:event_jLNewTaxInvoiceMouseEntered
+
+    private void jLNewTaxInvoiceMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewTaxInvoiceMouseExited
+        jLNewTaxInvoice.setIcon(new ImageIcon("./images/buttons/ti-normal.png"));
+    }//GEN-LAST:event_jLNewTaxInvoiceMouseExited
+
+    private void jLNewTaxInvoiceMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewTaxInvoiceMousePressed
+        jMenuItemTaxInvoiceActionPerformed(null);
+    }//GEN-LAST:event_jLNewTaxInvoiceMousePressed
+
+    private void jLRetailInvoiceMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLRetailInvoiceMouseEntered
+        jLRetailInvoice.setIcon(new ImageIcon("./images/buttons/ri-hover.png"));
+    }//GEN-LAST:event_jLRetailInvoiceMouseEntered
+
+    private void jLRetailInvoiceMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLRetailInvoiceMouseExited
+        jLRetailInvoice.setIcon(new ImageIcon("./images/buttons/ri-normal.png"));
+    }//GEN-LAST:event_jLRetailInvoiceMouseExited
+
+    private void jLRetailInvoiceMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLRetailInvoiceMousePressed
+        jMenuItemRetailInvoiceActionPerformed(null);
+    }//GEN-LAST:event_jLRetailInvoiceMousePressed
+
+    private void jLNewExciseInvoiceMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewExciseInvoiceMouseEntered
+        jLNewExciseInvoice.setIcon(new ImageIcon("./images/buttons/ei-hover.png"));
+    }//GEN-LAST:event_jLNewExciseInvoiceMouseEntered
+
+    private void jLNewExciseInvoiceMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewExciseInvoiceMouseExited
+        jLNewExciseInvoice.setIcon(new ImageIcon("./images/buttons/ei-normal.png"));
+    }//GEN-LAST:event_jLNewExciseInvoiceMouseExited
+
+    private void jLNewExciseInvoiceMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewExciseInvoiceMousePressed
+        jMenuItemExciseInvoiceActionPerformed(null);
+    }//GEN-LAST:event_jLNewExciseInvoiceMousePressed
+
+    private void jLNewChallanMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewChallanMouseEntered
+        jLNewChallan.setIcon(new ImageIcon("./images/buttons/dn-hover.png"));
+    }//GEN-LAST:event_jLNewChallanMouseEntered
+
+    private void jLNewChallanMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewChallanMouseExited
+        jLNewChallan.setIcon(new ImageIcon("./images/buttons/dn-normal.png"));
+    }//GEN-LAST:event_jLNewChallanMouseExited
+
+    private void jLNewChallanMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLNewChallanMousePressed
+        jMenuItemChallanActionPerformed(null);
+    }//GEN-LAST:event_jLNewChallanMousePressed
+
+    private void jMenuItemChallanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemChallanActionPerformed
+        final boolean bPaid = !Common.selectedCompanyConfig.get(Config.INDIA).equals("free");
+        if (!bPaid) {
+            if (1 == Messages.showWarningMessage(null, "<html><center>This is a Premium only feature.</center></html>", "Information", new String[]{"Cancel", "Go Premium"}, "Go Premium")) {
+                new JDialogRegister(new JDialog(), true, true).setVisible(true);
+            }
+            return;
+        }
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        JDialogIssueEstimate jDialogIssueEstimate = new JDialogIssueEstimate(main, true);
+        jDialogIssueEstimate.reconfigureType(Estimate.TYPE_DELIVERY);
+        jDialogIssueEstimate.setVisible(true);
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItemChallanActionPerformed
+
+    private void jMenuItem12ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem12ActionPerformed
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+//        new JDialogReleaseNote(this, true, Common.connection).setVisible(true);
+        setCursor(null);
+    }//GEN-LAST:event_jMenuItem12ActionPerformed
+
+    private void initialPage() {
+        Common.setTestCompany(false);
+        jMenuTest.setVisible(!Common.isTestCompany());
+        if (Common.IS_INDIA) {
+            jMenuOrder.setVisible(!Common.isTestCompany());
+        }
+        try {
+            if (Common.companies.size() == 0) {
+//            	jMenuItemAddCompanyActionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "cmd"));
+                JDialogInitial jdi = new JDialogInitial(main, true);
+                jdi.setVisible(true);
+
+                Company createdCompany = null;
+                while (createdCompany == null) {
+                    if (jdi.isFolosit()) {
+                        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+                        try {
+                            SBConnection userDataConn = new SBConnection(DBConnection.getConnection(Common.user, DBConnection.DEFAULT_DBKEY));
+                            JDialogCreateCompany dlg = new JDialogCreateCompany(main, true, userDataConn, null);
+                            dlg.renameCancelButton();
+                            dlg.setVisible(true);
+                            userDataConn.getConnection().close();
+                            createdCompany = dlg.getCreatedCompany();
+                            if (createdCompany != null) {
+
+                                for (Company company : Common.companies) {
+                                    company.setActive(false);
+                                }
+                                createdCompany.setActive(true);
+                                Common.companies.add(createdCompany);
+                                Common.switchToCompany(createdCompany);
+                                if (dlg.getCreatedName() != null && !dlg.getCreatedName().isEmpty()) {
+                                    Messages.showOkMessage(main, "You have successfully created the company profile \"" + dlg.getCreatedName() + "\"! This is now the active company.", "Information");
+                                    Common.setTestCompany(false);
+                                }
+                            }
+                        } catch (Exception ex) {
+                            Messages.showErrorMessage(main, "The company couldn't be created : " + ex.getMessage(), "Error");
+                        }
+                        setCursor(null);
+                    }
+
+                    if (jdi.isTest()) {
+                        Company selectedCompany = Company.getTestCompany();
+
+                        if (selectedCompany != null) {
+                            Messages.showInformationMessage(main, "<html>You opted to use Sleek Bill with the set of predefined mock data.<br>The documents issued in this mode are sample documents.</html>", "Information");
+                        }
+                        if (selectedCompany != null
+                                && !selectedCompany.getName().equals(Common.getSelectedCompany().getName())) {
+                            //TODO de facut 
+                            //        	Common.switchToFirma(f.getDenumire());
+                            Common.switchToCompany(selectedCompany, true, true);
+                        }
+                        UpdateTestDatabase();
+                        Common.setTestCompany(true);
+                        break;
+                    }
+
+                    if (jdi.isRestaurat()) {
+                        //Company company = Common.companies.get(0);
+                        //Common.switchToCompany(company);
+                        break;
+                    }
+
+                    if (createdCompany == null && !jdi.isTest() && !jdi.isRestaurat()) {
+                        jdi = new JDialogInitial(main, true);
+                        jdi.setVisible(true);
+                    }
+                }
+            } else if (Common.companies.size() == 1) {
+                //TODO deactivat
+                //    		Common.switchToFirma(f.getDenumire());
+                Company company = Common.companies.get(0);
+                Common.switchToCompany(company);
+            } else if (Common.companies.size() > 1) {
+                JDialogSwitchCompany dlg = new JDialogSwitchCompany(main, true);
+                dlg.setVisible(true);
+                Company selectedCompany = dlg.getSelectedCompany();
+                if (selectedCompany != null
+                        && !selectedCompany.getName().equals(Common.getSelectedCompany().getName())) {
+                    //TODO de facut 
+                    //        	Common.switchToFirma(f.getDenumire());
+                    Common.switchToCompany(selectedCompany);
+                    Common.companies = dlg.getCompanies();
+                }
+                if (selectedCompany != null) {
+                    Messages.showOkMessage(main, "\"" + (selectedCompany.getDbName() == null ? selectedCompany.getName() : selectedCompany.getDbName()) + "\" is now the active company.", "Information");
+                }
+            }
+
+            initDashboard();
+        } catch (Exception ex) {
+            Messages.showErrorMessage(main, ex.getMessage(), "Error");
+        }
+
+        if (Common.selectedCompanyConfig.get(Config.TIPS).equals("true")) {
+            new JDialogTips(main, true).setVisible(true);
+        }
+    }
+
+    private void doneTesting() {
+
+        if (Messages.showQuestionMessage(main, "<html>You are currently using a test database.<br>Do you wish to start using the the program with your own data?</html>", "Confirmation") != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        try {
+
+            if (Common.companies.size() == 0) {
+
+                Company createdCompany = null;
+                while (createdCompany == null) {
+                    try {
+                        SBConnection userDataConn = new SBConnection(DBConnection.getConnection(Common.user, DBConnection.DEFAULT_DBKEY));
+                        JDialogCreateCompany dlg = new JDialogCreateCompany(this, true, userDataConn, null);
+                        dlg.renameCancelButton();
+                        dlg.setVisible(true);
+                        userDataConn.getConnection().close();
+                        createdCompany = dlg.getCreatedCompany();
+                        if (createdCompany != null) {
+
+                            for (Company company : Common.companies) {
+                                company.setActive(false);
+                            }
+                            createdCompany.setActive(true);
+                            Common.companies.add(createdCompany);
+                            Common.switchToCompany(createdCompany);
+                            if (dlg.getCreatedName() != null && !dlg.getCreatedName().isEmpty()) {
+                                Messages.showOkMessage(main, "You have successfully created the company profile \"" + dlg.getCreatedName() + "\"! This is now the active company.", "Information");
+                                Common.setTestCompany(false);
+                                if (Common.selectedCompanyConfig.get(Config.TIPS).equals("true")) {
+                                    new JDialogTips(main, true).setVisible(true);
+                                }
+                            }
+                        } else {
+                            initialPage();
+                            setCursor(null);
+                            return;
+                        }
+                    } catch (Exception ex) {
+                        Messages.showErrorMessage(main, "The company couldn't be created : " + ex.getMessage(), "Error");
+                    }
+                }
+                setCursor(null);
+            } else if (Common.companies.size() == 1) {
+                //TODO deactivat
+                //    		Common.switchToFirma(f.getDenumire());
+                Company company = Common.companies.get(0);
+                Common.switchToCompany(company);
+            } else if (Common.companies.size() > 1) {
+                JDialogSwitchCompany dlg = new JDialogSwitchCompany(this, true);
+                dlg.setVisible(true);
+                Company selectedCompany = dlg.getSelectedCompany();
+                if (selectedCompany != null) {
+                    Messages.showOkMessage(main, "\"" + (selectedCompany.getDbName() == null ? selectedCompany.getName() : selectedCompany.getDbName()) + "\" is now the active company.", "Information");
+                }
+                if (selectedCompany != null
+                        && !selectedCompany.getName().equals(Common.getSelectedCompany().getName())) {
+                    //TODO de facut 
+                    //        	Common.switchToFirma(f.getDenumire());
+                    Common.switchToCompany(selectedCompany);
+                    Common.companies = dlg.getCompanies();
+                }
+            }
+
+            initDashboard();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            //TODO eroare conexiune
+        }
+        setCursor(null);
+
+    }
+
+    private void UpdateTestDatabase() {
+
+        if (Common.selectedCompanyConfig.get(Config.UPDATE_TEST).equals("false")) {
+//            Calendar c = Calendar.getInstance();
+//            c.setTimeInMillis(System.currentTimeMillis());
+//            c.add(Calendar.DAY_OF_YEAR, 100);
+//            Common.vKInsert(Common.connection, null, Common.getVersion(),
+//                    String.valueOf(Common.getYear()), Common.getOsType(), new Date(c.getTimeInMillis()),
+//                    Integer.toString(new Modules().getModules()), "0", "3");
+
+            try {
+
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis(System.currentTimeMillis());
+                Dao<InvoiceEntity, Integer> invoiceDao = DaoManager.createDao(Common.connection.getConnection(), InvoiceEntity.class);
+
+                PreparedQuery<InvoiceEntity> pq = invoiceDao.queryBuilder().orderByRaw(" CAST(number as INTEGER) DESC ").where().eq(InvoiceEntity.DELETED, "n").prepare();
+                List<InvoiceEntity> invoices = invoiceDao.query(pq);
+
+                int ct = 0;
+                for (InvoiceEntity i : invoices) {
+
+                    Date due = i.getDueDate();
+                    Date issue = i.getIssueDate();
+
+                    Calendar cal = Calendar.getInstance();
+                    cal.setTime(calendar.getTime());
+
+                    if (due != null && issue != null) {
+                        int diff = (int) ((due.getTime() - issue.getTime()) / 1000 / 60 / 60 / 24);
+                        cal.add(Calendar.DATE, diff);
+                        i.setDueDate(cal.getTime());
+                    } else {
+                        i.setDueDate(null);
+                    }
+                    i.setIssueDate(calendar.getTime());
+                    ct++;
+
+                    if (ct == 3) {
+                        calendar.add(Calendar.DATE, -1);
+                        ct = 0;
+                    }
+
+                    invoiceDao.update(i);
+                }
+
+                invoiceDao.executeRawNoArgs("update flags set total_in_words = 1;");
+                invoiceDao.executeRawNoArgs("update flags set estimate_label = 'Quotation';");
+                invoiceDao.executeRawNoArgs("update company_details set tin = '14123456789';");
+                invoiceDao.executeRawNoArgs("update company_details set pan = 'AAAAA9999A';");
+                invoiceDao.executeRawNoArgs("update company_details set stn = 'AAAAA9999AST001';");
+                invoiceDao.executeRawNoArgs("update clients set tin = '141234567' || id;");
+                Common.companyDetails = CompanyDetails.getLast(connection.getConnection());
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+
+            try {
+
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis(System.currentTimeMillis());
+                Dao<EstimateEntity, Integer> estimateDao = DaoManager.createDao(Common.connection.getConnection(), EstimateEntity.class);
+
+                PreparedQuery<EstimateEntity> pq = estimateDao.queryBuilder().orderByRaw(" CAST(number as INTEGER) DESC ").where().eq(EstimateEntity.DELETED, "n").prepare();
+                List<EstimateEntity> estimates = estimateDao.query(pq);
+
+                int ct = 0;
+                for (EstimateEntity e : estimates) {
+
+                    Date due = e.getValidUntil();
+                    Date issue = e.getIssueDate();
+
+                    Calendar cal = Calendar.getInstance();
+                    cal.setTime(calendar.getTime());
+
+                    if (due != null && issue != null) {
+                        int diff = (int) ((due.getTime() - issue.getTime()) / 1000 / 60 / 60 / 24);
+                        cal.add(Calendar.DATE, diff);
+                        e.setValidUntil(cal.getTime());
+                    } else {
+                        e.setValidUntil(null);
+                    }
+                    e.setIssueDate(calendar.getTime());
+                    ct++;
+
+                    if (ct == 3) {
+                        calendar.add(Calendar.DATE, -1);
+                        ct = 0;
+                    }
+
+                    estimateDao.update(e);
+                }
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+
+            Common.selectedCompanyConfig.set(Config.UPDATE_TEST, "true");
+        }
+    }
+
+    class MouseExitedHyperlink extends MouseAdapter {
+
+        @Override
+        public void mouseExited(MouseEvent e) {
+            removeHyperlinkHighlight();
+            jPDashBoard.repaint();
+        }
+    };
+
+    class MouseMotionHyperlink implements MouseMotionListener {
+
+        @Override
+        public void mouseDragged(MouseEvent e) {
+        }
+
+        @Override
+        public void mouseMoved(MouseEvent e) {
+
+            if (e.getSource() instanceof JEditorPane) {
+                JEditorPane editor = (JEditorPane) e.getSource();
+                Point pt = new Point(e.getX(), e.getY());
+                int pos = editor.viewToModel(pt);
+                if (pos >= 0) {
+                    HTMLDocument hdoc = (HTMLDocument) editor.getDocument();
+                    Element elem = hdoc.getCharacterElement(pos);
+                    if (elem != null) {
+                        AttributeSet a = elem.getAttributes();
+                        AttributeSet anchor = (AttributeSet) a
+                                .getAttribute(HTML.Tag.A);
+                        if (anchor != null) {
+                            highlightHyperlink(hdoc, elem, HIGHLIGHTEDHYPERLINK_STYLE_NAME);
+                        } else {
+                            removeHyperlinkHighlight();
+                        }
+                        jPDashBoard.repaint();
+                    }
+                }
+            }
+
+        }
+    };
+
+    private void removeHyperlinkHighlight() {
+        changeStyle(lastHyperlinkDocument, lastHyperlinkElement, null);
+        lastHyperlinkElement = null;
+        lastHyperlinkDocument = null;
+    }
+
+    private void highlightHyperlink(HTMLDocument doc, Element hyperlinkElement, String styleName) {
+        if (hyperlinkElement != lastHyperlinkElement) {
+            removeHyperlinkHighlight();
+            lastHyperlinkElement = hyperlinkElement;
+            lastHyperlinkDocument = doc;
+            changeStyle(doc, hyperlinkElement, styleName);
+        }
+    }
+
+    private void changeStyle(HTMLDocument doc, Element el, String styleName) {
+        if (lastHyperlinkElement != null) {
+            AttributeSet a = el.getAttributes();
+            AttributeSet anchor = (AttributeSet) a.getAttribute(HTML.Tag.A);
+            if (anchor != null) {
+                if (anchor instanceof MutableAttributeSet) {
+                    MutableAttributeSet aTag = (MutableAttributeSet) anchor;
+                    if (styleName != null) {//highlight
+                        aTag.addAttribute("oldClass", anchor.getAttribute(HTML.Attribute.CLASS).toString());
+                        aTag.addAttribute(HTML.Attribute.CLASS, "HighlightedHyperlink");
+                    } else {
+                        aTag.addAttribute(HTML.Attribute.CLASS, anchor.getAttribute("oldClass").toString());
+                    }
+                }
+            }
+            int start = el.getStartOffset();
+            int end = el.getEndOffset();
+            doc.setCharacterAttributes(start, end - start, a, false);
+
+        }
+    }
+
+    //se apeleaza la pornire si la schimbarea firmei
+    public void init() {
+
+        Company company = Common.selectedCompany;
+
+        OnlineStatus onlineStatus = company != null ? company.getOnlineStatus() : null;
+        boolean isThief = false;
+        String imageTief = "";
+//		Config config = new Config();
+
+        int nrZile = Common.vKCheckAll(Common.connection);
+//		boolean activat2011 = Common.vKCheck2011(DBAccess.getFirmakey(), Common.getCif()) == -1 ? true : false;
+
+        if (!Common.IS_INDIA) {
+            jMenuOrder.setVisible(nrZile != -1 || Common.isTestCompany());
+        } else {
+            jMenuOrder.setVisible(!Common.selectedCompanyConfig.get(Config.INDIA).equals("paid"));
+            //jMenuOrder.setText("Upgrade License");
+        }
+
+        if (company != null && onlineStatus != null) {
+//			new Config().set("last_resp_id", onlineStatus.getRespId() + "");
+//			Common.vKUpdateAccess(DBAccess.getFirmakey(), String.valueOf(onlineStatus.getRespId()));
+//			switch (onlineStatus.getRespId()) {
+//			case Firma.OnlineStatus.OK_RESPID:
+//			case Firma.OnlineStatus.FORCE_RESPID:
+//				// insert new key if set
+//				if (onlineStatus.getKey() != null && !onlineStatus.getKey().isEmpty()
+//						&& onlineStatus.getDataExp() != null) {
+//					// TODO de gasit SO-ul din cod. Se pune so-ul curent pentru
+//					// ca nu se foloseste cel din db
+//					Common.vKInsert(onlineStatus.getKey(), DBAccess.getFirmakey(), Common.getVersiune(),
+//							String.valueOf(Common.getAn()), Common.getOsType(), onlineStatus.getDataExp(),
+//							String.valueOf(onlineStatus.getModules().getModules()),
+//							String.valueOf(onlineStatus.getRespId()), String.valueOf(onlineStatus.getMaxClients()));
+//					Server.refreshMaxClients(firma.getDenumire());
+//					nr_zile = Common.vKCheck();
+//				}
+//				if (onlineStatus.getMessage() != null && !onlineStatus.getMessage().trim().isEmpty()) {
+//					new JDialogHTMLMessage(this, true, onlineStatus.getMessage()).setVisible(true);
+//				}
+//				break;
+//			case Firma.OnlineStatus.NOK_RESPID:
+//				// nr_zile e trimis catre scriptul de pe sv; daca >30 zile vine
+//				// de acolo mesaj + NOK
+//				if (onlineStatus.getMessage() != null) {
+//					new JDialogHTMLMessage(this, true, onlineStatus.getMessage()).setVisible(true);
+//					System.exit(0);
+//				}
+//			case Firma.OnlineStatus.THIEF_RESPID:
+//				isThief = true;
+//				imageTief = firma.getOnlineStatus().getImageThief();
+//				if (imageTief.isEmpty()) {
+//					imageTief = new Config().get(Config.LAST_IMAGE_THIEF);
+//				} else {
+//					new Config().set(Config.LAST_IMAGE_THIEF, imageTief);
+//				}
+//			}
+        }
+
+        // verificare online
+        if (nrZile == Common.HIGHER_YEAR_RESPONSE) {
+            new JDialogHTMLMessage(
+                    this,
+                    true,
+                    "<html><div style='font-family:Tahoma;font-size:12;margin:5px;'>You can not open in program version "
+                    + Common.getYear()
+                    + " a database that was saved on a superior version!</div></html>")
+                    .setVisible(true);
+            System.exit(0);
+        }
+        if (nrZile == Common.LOWER_YEAR_RESPONSE) {
+            new JDialogHTMLMessage(this, true,
+                    "<html><div style='font-family:Tahoma;font-size:12;margin:5px;'>Your license is not valid for version "
+                    + Common.getYear()).setVisible(true);
+            System.exit(0);
+        }
+
+        // este pus dupa eventuala modificare de mai sus
+//		Common.isAuthorizedClient();
+        // offline si ultimul raspuns=-1
+//		if (company != null
+//				&& onlineStatus == null
+//				&& (("" + Firma.OnlineStatus.NOK_RESPID).equals(new Config().get("last_resp_id")) || !Common
+//						.vKAccessCheck(DBAccess.getFirmakey()))) {
+//			Messages.showErrorMessage(this, "Nu aveti dreptul de a utiliza Smart Bill. "
+//					+ "\nPentru detalii luati legatura cu suportul tehnic suport@program-facturi.ro", "Atentie");
+//			System.exit(1);
+//		}
+        // offline si ultimul raspuns=3
+//		if (firma != null && onlineStatus == null
+//				&& (("" + Firma.OnlineStatus.THIEF_RESPID).equals(new Config().get("last_resp_id")))) {
+//			isThief = true;
+//			imageTief = new Config().get(Config.LAST_IMAGE_THIEF);
+//		}
+//		if (onlineStatus != null && onlineStatus.getSpecialRegCasa().equals("1")) {
+//			config.set(Config.SHOW_ANUNT_REGISTRU_CASA, "true");
+//		}
+//		if (nr_zile == -1 && !Common.isFirmaTest()) {// e activat
+//			jMenuComanda.setVisible(false);
+//			jPFooter.setVisible(false);
+//		} else {// nu e activat
+//			jMenuComanda.setVisible(true);
+//			if (!activat2011)
+//				jMIContPremium.setVisible(false);
+//		}
+        if (nrZile >= (Common.IS_INDIA ? 23 : 7)) {
+
+            JDialogTrial jdt = new JDialogTrial(MainFrame.this, true, company, Common.connection, nrZile);
+            jdt.setVisible(true);
+            if (Common.vKCheckAll(Common.connection) < 0 && !Common.isTestCompany()) {
+                if (!Common.IS_INDIA) {
+                    jMenuOrder.setVisible(false);
+                } else {
+                    jMenuOrder.setVisible(Common.selectedCompanyConfig.get(Config.INDIA).equals("free"));
+                    jMenuOrder.setText("Upgrade License");
+                }
+            }
+        }
+        if (company != null && onlineStatus == null && nrZile == -1) {
+            int nrZileExp;
+            if ((nrZileExp = (int) ((Common.getDataExDb(Common.connection).getTime() - System.currentTimeMillis()) / (1000 * 60 * 60 * 24))) < 14) {
+                // daca nrZileExp <0 ar fi trebuit sa intre mai sus
+                JDialogTrial jdt = new JDialogTrial(MainFrame.this, true, company, Common.connection, nrZile, nrZileExp);
+                jdt.setVisible(true);
+                if ((nrZile = Common.vKCheckAll(Common.connection)) < 0 && !Common.isTestCompany()) {
+                    if (!Common.IS_INDIA) {
+                        jMenuOrder.setVisible(false);
+                    } else {
+                        jMenuOrder.setVisible(Common.selectedCompanyConfig.get(Config.INDIA).equals("free"));
+                        jMenuOrder.setText("Upgrade License");
+                    }
+                }
+            }
+        }
+
+//		initDashBoard(nr_zile);
+//		final MainJFrame mf = this;
+//		if (!Common.isFirmaTest()) {
+//			Thread th = new Thread(new Runnable() {
+//				@Override
+//				public void run() {
+//					setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+//					try {
+//						Common.askAboutTVAIncasare(mf);
+//						Common.enableExtraLabelTvaLaIncasare(mf);
+//					} catch (Exception e) {
+//						new JDialogError(mf, e).setVisible(true);
+//					} finally {
+//						setCursor(null);
+//					}
+//				}
+//			});
+//			try {
+//				th.start();
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
+//		}
+    }
+
+    public void setOrderText(String text) {
+        jMenuOrder.setText(text);
+    }
+
+    public void setOrderVisible(boolean visible) {
+        jMenuOrder.setVisible(visible);
+    }
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new MainFrame().setVisible(true);
+            }
+        });
+    }
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.Box.Filler filler1;
+    private javax.swing.JEditorPane jEPReports;
+    private javax.swing.JEditorPane jEPSettings;
+    private javax.swing.JEditorPane jEPTools;
+    private javax.swing.JLabel jLIconReports;
+    private javax.swing.JLabel jLIconSettings;
+    private javax.swing.JLabel jLIconTools;
+    private javax.swing.JLabel jLNewChallan;
+    private javax.swing.JLabel jLNewEstimate;
+    private javax.swing.JLabel jLNewExciseInvoice;
+    private javax.swing.JLabel jLNewInvoice;
+    private javax.swing.JLabel jLNewProforma;
+    private javax.swing.JLabel jLNewTaxInvoice;
+    private javax.swing.JLabel jLRetailInvoice;
+    private javax.swing.JMenu jMenu1;
+    private javax.swing.JMenuBar jMenuBar1;
+    private javax.swing.JMenu jMenuFeedback;
+    private javax.swing.JMenu jMenuHelp;
+    private javax.swing.JMenuItem jMenuItem1;
+    private javax.swing.JMenuItem jMenuItem10;
+    private javax.swing.JMenuItem jMenuItem11;
+    private javax.swing.JMenuItem jMenuItem12;
+    private javax.swing.JMenuItem jMenuItem2;
+    private javax.swing.JMenuItem jMenuItem3;
+    private javax.swing.JMenuItem jMenuItem4;
+    private javax.swing.JMenuItem jMenuItem5;
+    private javax.swing.JMenuItem jMenuItem6;
+    private javax.swing.JMenuItem jMenuItem7;
+    private javax.swing.JMenuItem jMenuItem8;
+    private javax.swing.JMenuItem jMenuItem9;
+    private javax.swing.JMenuItem jMenuItemAbout;
+    private javax.swing.JMenuItem jMenuItemAddCompany;
+    private javax.swing.JMenuItem jMenuItemBackup;
+    private javax.swing.JMenuItem jMenuItemChallan;
+    private javax.swing.JMenuItem jMenuItemClients;
+    private javax.swing.JMenuItem jMenuItemCompanyDetails;
+    private javax.swing.JMenuItem jMenuItemEstimate;
+    private javax.swing.JMenuItem jMenuItemEstimates;
+    private javax.swing.JMenuItem jMenuItemExciseInvoice;
+    private javax.swing.JMenuItem jMenuItemFeedback;
+    private javax.swing.JMenuItem jMenuItemInvoice;
+    private javax.swing.JMenuItem jMenuItemInvoices;
+    private javax.swing.JMenuItem jMenuItemLogo;
+    private javax.swing.JMenuItem jMenuItemPreferences;
+    private javax.swing.JMenuItem jMenuItemProducts;
+    private javax.swing.JMenuItem jMenuItemProformaInvoice;
+    private javax.swing.JMenuItem jMenuItemRestore;
+    private javax.swing.JMenuItem jMenuItemRetailInvoice;
+    private javax.swing.JMenuItem jMenuItemSwitch;
+    private javax.swing.JMenuItem jMenuItemTaxInvoice;
+    private javax.swing.JMenuItem jMenuItemTaxes;
+    private javax.swing.JMenu jMenuNew;
+    private javax.swing.JMenu jMenuOrder;
+    private javax.swing.JMenu jMenuReports;
+    private javax.swing.JMenu jMenuSettings;
+    private javax.swing.JMenu jMenuTest;
+    private javax.swing.JMenu jMenuTools;
+    private javax.swing.JPanel jPDashBoard;
+    private javax.swing.JPanel jPReports;
+    private javax.swing.JPanel jPSettings;
+    private javax.swing.JPanel jPTools;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
+    private javax.swing.JPopupMenu.Separator jSeparator1;
+    // End of variables declaration//GEN-END:variables
+}

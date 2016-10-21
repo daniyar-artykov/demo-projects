@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE jasperTemplate PUBLIC "-//JasperReports//DTD Template//EN" "http://jasperreports.sourceforge.net/dtds/jaspertemplate.dtd">
+<jasperTemplate>
+	<style fontName="Roboto" fontSize="30" forecolor="#B82D2D" hAlign="Center" isBold="false" isPdfEmbedded="false" mode="Transparent" name="document_name" pdfFontName="Roboto" vAlign="Middle"/>
+	<style fontName="Roboto" fontSize="22" forecolor="#B82D2D" hAlign="Center" isItalic="false" mode="Transparent" name="document_number" pdfFontName="Roboto" vAlign="Middle">
+		<paragraph lineSpacing="Single"/>
+	</style>
+	<style fontName="Segoe UI" fontSize="11" hAlign="Center" mode="Transparent" name="due_date" vAlign="Middle">
+		<paragraph lineSpacing="Single"/>
+	</style>
+	<style backcolor="#B82D2D" fontName="Segoe UI" fontSize="14" forecolor="#FFFFFF" hAlign="Center" isBold="false" isItalic="false" mode="Transparent" name="company_name" vAlign="Middle">
+		<paragraph lineSpacing="Single" spacingAfter="2" spacingBefore="2"/>
+	</style>
+	<style fontName="Roboto" fontSize="13" forecolor="#B82D2D" hAlign="Left" isItalic="false" mode="Transparent" name="bill_to" vAlign="Middle">
+		<paragraph lineSpacing="Single"/>
+	</style>
+	<style fontName="Roboto" fontSize="13" forecolor="#B82D2D" hAlign="Left" isItalic="false" mode="Transparent" name="ship_to" vAlign="Middle">
+		<paragraph lineSpacing="Single"/>
+	</style>
+	<style fontName="Segoe UI" fontSize="9" hAlign="Left" isItalic="false" mode="Transparent" name="company_data_text" vAlign="Middle">
+		<paragraph lineSpacing="Single"/>
+	</style>
+	<style fontName="Roboto" fontSize="11" hAlign="Left" isItalic="false" mode="Transparent" name="link" vAlign="Middle">
+		<paragraph lineSpacing="Single"/>
+	</style>
+	<style fontName="Roboto" fontSize="14" forecolor="#B82D2D" hAlign="Left" isItalic="false" mode="Transparent" name="note" vAlign="Middle">
+		<paragraph lineSpacing="Single"/>
+	</style>
+	<style fontName="Roboto" fontSize="10" hAlign="Left" isItalic="false" mode="Transparent" name="note_text" vAlign="Middle">
+		<paragraph lineSpacing="Single"/>
+	</style>
+	<style fontName="Roboto" fontSize="10" hAlign="Left" isItalic="false" mode="Transparent" name="payment_conditions" vAlign="Middle">
+		<paragraph lineSpacing="Single"/>
+	</style>
+	<style fontName="Roboto" fontSize="14" forecolor="#B82D2D" hAlign="Left" isBold="false" isItalic="false" mode="Transparent" name="subtotal" vAlign="Middle">
+		<paragraph lineSpacing="Proportional" lineSpacingSize="1.2" rightIndent="2"/>
+	</style>
+	<style fontName="Roboto" fontSize="14" forecolor="#B82D2D" hAlign="Left" isBold="false" isItalic="false" mode="Transparent" name="total" vAlign="Middle">
+		<paragraph lineSpacing="Proportional" lineSpacingSize="1.2" rightIndent="2"/>
+	</style>
+	<style fontName="Roboto" fontSize="14" forecolor="#B82D2D" hAlign="Center" isItalic="false" mode="Opaque" name="title_column_header" pdfFontName="Courier" vAlign="Middle">
+		<paragraph lineSpacing="Single"/>
+	</style>
+	<style fontName="Roboto" fontSize="13" forecolor="#B82D2D" hAlign="Center" isBold="true" isItalic="false" mode="Transparent" name="detail_number" vAlign="Middle">
+		<paragraph lineSpacing="Single"/>
+	</style>
+	<style fontName="Roboto" fontSize="13" hAlign="Left" isBold="false" isItalic="false" mode="Transparent" name="detail_product" vAlign="Middle">
+		<paragraph leftIndent="5" lineSpacing="Single" rightIndent="1"/>
+	</style>
+	<style fontName="Roboto" fontSize="13" hAlign="Center" isBold="true" isItalic="false" mode="Transparent" name="detail_text" vAlign="Middle">
+		<paragraph lineSpacing="Single"/>
+	</style>
+	<style backcolor="#B82D2D" fill="Solid" fontName="Roboto" fontSize="11" forecolor="#B82D2D" hAlign="Left" isItalic="true" mode="Opaque" name="normal_color" vAlign="Middle">
+		<pen lineColor="#B82D2D" lineStyle="Dotted" lineWidth="3.0"/>
+	</style>
+	<style backcolor="#EAEAEA" fontName="Segoe UI" fontSize="25" forecolor="#B82D2D" hAlign="Center" isBold="true" mode="Transparent" name="back_color" pdfFontName="Segoe UI" vAlign="Middle">
+		<pen lineColor="#B82D2D" lineStyle="Dotted" lineWidth="0.75"/>
+	</style>
+	<style backcolor="#B82D2D" fontName="Roboto" name="special_color">
+		<pen lineColor="#B82D2D"/>
+	</style>
+	<style backcolor="#B82D2D" fontName="Roboto" fontSize="12" forecolor="#FFFFFF" isBold="false" mode="Opaque" name="page_number" vAlign="Middle">
+		<paragraph spacingAfter="2" spacingBefore="2"/>
+	</style>
+</jasperTemplate>

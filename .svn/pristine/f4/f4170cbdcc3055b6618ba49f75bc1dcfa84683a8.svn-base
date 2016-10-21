@@ -1,0 +1,20 @@
+package sleekbill.swingutils;
+
+import java.awt.event.ActionListener;
+
+/**
+ *
+ * @author  flaviu m
+ */
+public abstract class DoubleClickActionListener implements ActionListener{
+    int column=0;
+    public DoubleClickActionListener(int col){
+        this.column=col;
+    }
+
+    public int getColumn() {
+        return column;
+    }
+    
+}
+    

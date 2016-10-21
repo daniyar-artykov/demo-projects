@@ -1,0 +1,92 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames.autosuggesterdata;
+
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import sleekbill.db.SBConnection;
+import sleekbill.entities.StateEntity;
+import sleekbill.swingutils.autosuggesters.AutosuggesterDataBuilder;
+import sleekbill.swingutils.autosuggesters.AutosuggesterItem;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.dao.GenericRawResults;
+import com.j256.ormlite.dao.RawRowMapper;
+import sleekbill.Common;
+
+/**
+ *
+ * @author Andrei
+ */
+public class SBACCitiesInvoicesReport implements AutosuggesterDataBuilder {
+
+    SBConnection sbConnection;
+
+    public SBACCitiesInvoicesReport(SBConnection sbConnection) {
+        super();
+        this.sbConnection = sbConnection;
+    }
+
+    @Override
+    public ArrayList<AutosuggesterItem> getData(String input, Integer rowNumber) {
+        ArrayList<AutosuggesterItem> l = new ArrayList<AutosuggesterItem>();
+        try {
+            Dao<StateEntity, Integer> stateDao = DaoManager.createDao(
+                    sbConnection.getConnection(), StateEntity.class);
+
+            //long x = System.currentTimeMillis();
+            GenericRawResults<AutosuggesterItem> rawResults
+                    = stateDao.queryRaw("SELECT "
+                            + "'<html>' || substr(ifnull(nullif(s.city, ''), 'n/a'),0,CHARINDEX(lower(?), lower(ifnull(nullif(s.city, ''), 'n/a')))) || '<b>' || substr(ifnull(nullif(s.city, ''), 'n/a'),CHARINDEX(lower(?), lower(ifnull(nullif(s.city, ''), 'n/a'))), length(lower(?))) || '</b>' || substr(ifnull(nullif(s.city, ''), 'n/a'),CHARINDEX(lower(?), lower(ifnull(nullif(s.city, ''), 'n/a'))) + length(lower(?))) || ', ' || ifnull(nullif(s.county, ''), 'n/a') ||', ' || ifnull(nullif(s.state, ''), 'n/a') ||'</html>' AS den, "
+                            + "s.id, s.city, s.state, s.county, s.country "
+                            + "FROM states s "
+                            + "INNER JOIN clients c ON s.city=c.billing_city "
+                            + "INNER JOIN invoices i ON i.client_id=c.id "
+                            + "WHERE s.city LIKE ? AND s.country like \'" + (Common.country.equals("") ? "%" : Common.country) + "\' ORDER BY lower(s.city) ASC LIMIT " + rowNumber,
+                                                      
+                            new RawRowMapper<AutosuggesterItem>() {
+                        @Override
+                        public AutosuggesterItem mapRow(String[] columnNames, String[] resultColumns) {
+                            int id = 0;
+                            try {
+                                id = Integer.parseInt(resultColumns[1]);
+                            } catch (NumberFormatException e) {
+                            }
+
+                            StateEntity aux = new StateEntity();
+                            aux.setId(id);
+                            aux.setCity(resultColumns[2]);
+                            aux.setState(resultColumns[3]);
+                            aux.setCounty(resultColumns[4]);
+                            aux.setCountry(resultColumns[5]);
+
+                            return new AutosuggesterItem(id, resultColumns[2], resultColumns[0].replace(", n/a", ""),
+                                    aux, true);
+                        }
+                    },
+                            input, input, input, input, input, "%" + input + "%");
+            l.addAll(rawResults.getResults());
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return l;
+    }
+
+    @Override
+    public long getCount() {
+        try {
+            Dao<StateEntity, Integer> stateDao = DaoManager.createDao(
+                    sbConnection.getConnection(), StateEntity.class);
+            return stateDao.countOf();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return 0;
+    }
+}

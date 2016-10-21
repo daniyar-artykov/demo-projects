@@ -1,0 +1,563 @@
+package sleekbill.swingutils;
+
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.event.TableModelEvent;
+
+import sleekbill.Common;
+import sleekbill.swingutils.pm.SBPagingModel;
+
+/**
+ *
+ * @author sun
+ */
+public class PMJPanel extends JPanel {
+
+    protected javax.swing.JLabel jLabel1;
+    protected javax.swing.JLabel jLabel16;
+    protected javax.swing.JLabel jLabel4;
+    protected javax.swing.JLabel jLabel9;
+    protected javax.swing.JPanel jPanel6;
+    protected javax.swing.JPanel jPanelUpper;
+    protected javax.swing.JButton jbuttonNext;
+    protected javax.swing.JButton jbuttonPrev;
+    protected javax.swing.JLabel jlabelFrom;
+    protected javax.swing.JPanel jpanelTabelRezultateGeneral;
+    protected javax.swing.JPanel jpanelTableControl;
+    protected javax.swing.JTextField pageTotal;
+    protected javax.swing.JTextField total;
+    protected JPanelNoResults jPanelNoResults;
+    protected JTextField jTFPageNumber = new JTextField(3);
+    protected JButton jBAlege = new JButton("Apply");
+    public SBPagingModel sPm;
+    protected SBJTable jt;
+    private JPanel jPControlsDown;
+    protected javax.swing.JButton jbuttonFirst;
+    protected javax.swing.JButton jbuttonLast;
+    protected javax.swing.JTextField jTFNrPaginaCurenta;
+    protected javax.swing.JTextField jTFNrTotalPagini;
+    private JPanel jPanelLower;
+
+    /**
+     * Creates a new instance of PMJPanel
+     */
+    public PMJPanel() {
+        initComponents();
+    }
+    boolean bExtra = false;
+    String DOCUMENT_TYPE = "";
+
+    public PMJPanel(SBAbstractTableModel sbtm, SBJTable jt, JPanelNoResults jpnr, boolean bExtra, String dt) {
+        this();
+        this.sPm = new SBPagingModel(sbtm, bExtra, dt);
+        this.jt = jt;
+        this.jPanelNoResults = jpnr;
+        this.bExtra = bExtra;
+        this.DOCUMENT_TYPE = dt;
+
+        GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.weighty = 1;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.NONE;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.CENTER;
+        gridBagConstraints.insets = new Insets(0, 0, 0, 0);
+        add(jPanelNoResults, gridBagConstraints);
+
+        jt.setModel((SBPagingModel) sPm);
+        init();
+        creareTabelRezultate();
+
+    }
+
+    private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
+
+        jLabel1 = new javax.swing.JLabel();
+        jpanelTabelRezultateGeneral = new javax.swing.JPanel();
+        jpanelTableControl = new javax.swing.JPanel();
+        jPanelUpper = new javax.swing.JPanel();
+        jbuttonPrev = new javax.swing.JButton();
+        jbuttonPrev.setName("bPrev");
+        jLabel16 = new javax.swing.JLabel();
+        jlabelFrom = new javax.swing.JLabel();
+        jbuttonNext = new javax.swing.JButton();
+        jbuttonNext.setName("bNext");
+        jPanel6 = new javax.swing.JPanel();
+        jLabel4 = new javax.swing.JLabel();
+        pageTotal = new javax.swing.JTextField();
+        pageTotal.setName("tfPageTotal");
+        jLabel9 = new javax.swing.JLabel();
+        total = new javax.swing.JTextField();
+        total.setName("tfTotal");
+        jbuttonFirst = new javax.swing.JButton();
+        jbuttonFirst.setName("bFirst");
+        jbuttonLast = new javax.swing.JButton();
+        jbuttonLast.setName("bLast");
+        jTFNrPaginaCurenta = new javax.swing.JTextField();
+        jTFNrPaginaCurenta.setName("tfNrPagCurenta");
+        jTFNrTotalPagini = new javax.swing.JTextField();
+        jTFNrTotalPagini.setName("nrTotalPagini");
+        jTFPageNumber.setName("tfPageNumber");
+        jBAlege.setName("bAlege");
+
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+
+        jPanelLower = new JPanel(new FlowLayout(FlowLayout.LEADING, 10, 0));
+
+        jPControlsDown = new JPanel();
+        jPControlsDown.setLayout(new FlowLayout(FlowLayout.LEADING, 10, 0));
+
+        setLayout(new java.awt.GridBagLayout());
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.01;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        add(jpanelTabelRezultateGeneral, gridBagConstraints);
+
+        jpanelTableControl.setLayout(new GridBagLayout());
+        jpanelTableControl.setBorder(null);
+
+
+        jPanelLower.add(new JLabel("Results Per Page : "));
+        jPanelLower.add(jTFPageNumber);
+        jPanelLower.add(jBAlege);
+
+        GridBagConstraints gcs = new GridBagConstraints();
+//        gcs.anchor = GridBagConstraints.NORTHWEST;
+//        gcs.weightx = 0.1;
+//
+//        jpanelTableControl.add(p, gcs);
+
+        jPanelUpper.setLayout(new FlowLayout(FlowLayout.LEADING, 5, 0));
+
+        jbuttonFirst.setText("");
+        jbuttonFirst.setPreferredSize(new Dimension(18, 18));
+        jbuttonFirst.setIcon(new ImageIcon("./images/buttons/Left_last.png"));
+        jPanelUpper.add(jbuttonFirst);
+
+        jbuttonPrev.setText("");
+        jbuttonPrev.setPreferredSize(new Dimension(18, 18));
+        jbuttonPrev.setIcon(new ImageIcon("./images/buttons/Left.png"));
+        jPanelUpper.add(jbuttonPrev);
+
+        jTFNrPaginaCurenta.setText(" ");
+        jPanelUpper.add(jTFNrPaginaCurenta);
+
+        jlabelFrom.setText("/");
+        jPanelUpper.add(jlabelFrom);
+
+        jTFNrTotalPagini.setText(" ");
+        jTFNrTotalPagini.setEnabled(false);
+        jPanelUpper.add(jTFNrTotalPagini);
+
+        jbuttonNext.setText("");
+        jbuttonNext.setPreferredSize(new Dimension(18, 18));
+        jbuttonNext.setIcon(new ImageIcon("./images/buttons/Right.png"));
+        jPanelUpper.add(jbuttonNext);
+
+        jbuttonLast.setText("");
+        jbuttonLast.setPreferredSize(new Dimension(18, 18));
+        jbuttonLast.setIcon(new ImageIcon("./images/buttons/Right_last.png"));
+        jPanelUpper.add(jbuttonLast);
+
+        gcs.anchor = GridBagConstraints.WEST;
+        gcs.weightx = 1;
+        gcs.insets = new Insets(0, 0, 0, 0);
+        jpanelTableControl.add(jPanelUpper, gcs);
+
+        jPanel6.setLayout(new java.awt.GridBagLayout());
+
+        jLabel4.setText("");
+        jPanel6.add(jLabel4, new java.awt.GridBagConstraints());
+
+        pageTotal.setEditable(false);
+        pageTotal.setBorder(null);
+        pageTotal.setPreferredSize(new java.awt.Dimension(55, 20));
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(6, 6, 5, 6);
+        jPanel6.add(pageTotal, gridBagConstraints);
+
+        jLabel9.setText("");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        jPanel6.add(jLabel9, gridBagConstraints);
+
+        total.setEditable(false);
+        total.setBorder(null);
+        total.setPreferredSize(new java.awt.Dimension(55, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(6, 6, 5, 6);
+        jPanel6.add(total, gridBagConstraints);
+
+        //jpanelTableControl.add(jPanel6);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weighty = 0.0;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new Insets(0, 0, 5, 0);
+
+        add(jpanelTableControl, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.weighty = 1;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.NONE;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new Insets(10, 0, 5, 0);
+        add(jPanelLower, gridBagConstraints);
+
+        setVisible(false);
+    }
+
+    public void init() {
+        ActionListener pageNumberListener = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+                if (Integer.parseInt(jTFPageNumber.getText()) != 0) {
+                    if (jt.getCellEditor() != null) {
+                        jt.getCellEditor().stopCellEditing();
+                    }
+                    int ps;
+                    try {
+                        ps = Integer.parseInt(jTFPageNumber.getText());
+                        ps = ps <= 0 ? 1 : ps;
+                        jTFPageNumber.setText(""+ps);
+                        Common.setRezPePagina(ps);
+                    } catch (NumberFormatException ex) {
+                        return;
+                    }
+                    sPm.setPageSize(ps);
+                    int nrPagini = sPm.getPageCount();
+                    if (sPm.getPageCount() <= 1) {
+                        jbuttonNext.setEnabled(false);  // One page...can't scroll down
+                        jbuttonPrev.setEnabled(false);
+                    } else {
+                        jbuttonNext.setEnabled(true);
+                        jbuttonPrev.setEnabled(true);
+                    }
+                    if (sPm.getPageCount() > 1) {
+                        jbuttonNext.setEnabled(true);
+                    } else {
+                        jbuttonNext.setEnabled(false);
+                    }
+                    afiseazaRezultate();
+                }
+            }
+        };
+
+
+        jTFPageNumber.addActionListener(pageNumberListener);
+        jBAlege.addActionListener(pageNumberListener);
+
+    }
+
+    private void creareTabelRezultate() {
+        jpanelTabelRezultateGeneral.setLayout(new BoxLayout(jpanelTabelRezultateGeneral, BoxLayout.Y_AXIS));
+
+        sPm.setPageSize(50);
+        jTFNrPaginaCurenta.setMinimumSize(new Dimension(40, 20));
+        jTFNrTotalPagini.setMinimumSize(new Dimension(40, 20));
+        jTFNrPaginaCurenta.setPreferredSize(new Dimension(40, 20));
+        jTFNrTotalPagini.setPreferredSize(new Dimension(40, 20));
+
+        int rpp = Common.getRezPerPagina();
+        if (rpp > 0) {
+            sPm.setPageSize(rpp);
+        }
+        jTFPageNumber.setText(rpp + "");
+
+        jt.getTableHeader().setMinimumSize(new Dimension(10, 30));
+        jt.getTableHeader().setPreferredSize(new Dimension(10, 25));
+        jt.getTableHeader().setMaximumSize(new Dimension(10000, 30));
+        if (!jt.getTableHeader().isShowing()) {
+            jpanelTabelRezultateGeneral.add(jt.getTableHeader());
+        }
+
+        jpanelTabelRezultateGeneral.add(jt);
+
+        //initializare
+        int nrPagini = sPm.getPageCount();
+        jTFNrTotalPagini.setText(nrPagini + "");
+
+        jbuttonFirst.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                if (jt.getCellEditor() != null) {
+                    jt.getCellEditor().stopCellEditing();
+                }
+                sPm.pageFirst();
+                int nrPaginaCurenta = sPm.getPageOffset() + 1;
+                jTFNrPaginaCurenta.setText(nrPaginaCurenta + "");
+                // If we hit the top of the data, disable the Page Up button.
+                if (sPm.getPageOffset() == 0) {
+                    jbuttonPrev.setEnabled(false);
+                    jbuttonFirst.setEnabled(false);
+                }
+                jbuttonNext.setEnabled(true);
+                jbuttonLast.setEnabled(true);
+            }
+        });
+
+        jbuttonLast.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                if (jt.getCellEditor() != null) {
+                    jt.getCellEditor().stopCellEditing();
+                }
+                sPm.pageLast();
+                int nrPaginaCurenta = sPm.getPageOffset() + 1;
+                jTFNrPaginaCurenta.setText(nrPaginaCurenta + "");
+                // If we hit the top of the data, disable the Page Up button.
+                if (sPm.getPageOffset() == (sPm.getPageCount() - 1)) {
+                    jbuttonNext.setEnabled(false);
+                    jbuttonLast.setEnabled(false);
+                }
+                jbuttonPrev.setEnabled(true);
+                jbuttonFirst.setEnabled(true);
+            }
+        });
+
+        jbuttonNext.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent ae) {
+                if (jt.getCellEditor() != null) {
+                    jt.getCellEditor().stopCellEditing();
+                }
+                sPm.pageDown();
+                int nrPaginaCurenta = sPm.getPageOffset() + 1;
+                jTFNrPaginaCurenta.setText(nrPaginaCurenta + "");
+                // If we hit the bottom of the data, disable the Page Down button.
+                if (sPm.getPageOffset() == (sPm.getPageCount() - 1)) {
+                    jbuttonNext.setEnabled(false);
+                    jbuttonLast.setEnabled(false);
+                }
+                jbuttonPrev.setEnabled(true);
+                jbuttonFirst.setEnabled(true);
+            }
+        });
+
+        jbuttonPrev.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent ae) {
+                if (jt.getCellEditor() != null) {
+                    jt.getCellEditor().stopCellEditing();
+                }
+                sPm.pageUp();
+                int nrPaginaCurenta = sPm.getPageOffset() + 1;
+                jTFNrPaginaCurenta.setText(nrPaginaCurenta + "");
+                // If we hit the top of the data, disable the Page Up button.
+                if (sPm.getPageOffset() == 0) {
+                    jbuttonPrev.setEnabled(false);
+                    jbuttonFirst.setEnabled(false);
+                }
+                jbuttonNext.setEnabled(true);
+                jbuttonLast.setEnabled(true);
+            }
+        });
+
+        jTFNrPaginaCurenta.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                typePageNumber();
+            }
+        });
+    }
+
+    private void typePageNumber() {
+        if (Integer.parseInt(jTFNrPaginaCurenta.getText()) != 0) {
+            if (jt.getCellEditor() != null) {
+                jt.getCellEditor().stopCellEditing();
+            }
+            int ps;
+            try {
+                ps = Integer.parseInt(jTFNrPaginaCurenta.getText());
+                ps = ps <= 0 ? 1 : ps;
+                jTFNrPaginaCurenta.setText(""+ps);
+            } catch (NumberFormatException ex) {
+                return;
+            }
+            if (ps > sPm.getPageCount()) {
+                jTFNrPaginaCurenta.setText(sPm.getPageCount() + "");
+                typePageNumber();
+                return;
+            }
+            sPm.setPageOffset(ps - 1);
+            if (ps == sPm.getPageCount()) {
+                jbuttonNext.setEnabled(false);
+                jbuttonLast.setEnabled(false);
+                jbuttonFirst.setEnabled(true);
+                jbuttonPrev.setEnabled(true);
+            } else if (ps == 1) {
+                jbuttonNext.setEnabled(true);
+                jbuttonLast.setEnabled(true);
+                jbuttonFirst.setEnabled(false);
+                jbuttonPrev.setEnabled(false);
+            } else if (ps > 1 && ps < sPm.getPageCount()) {
+                jbuttonNext.setEnabled(true);
+                jbuttonLast.setEnabled(true);
+                jbuttonFirst.setEnabled(true);
+                jbuttonPrev.setEnabled(true);
+            }
+            ((SBPagingModel) sPm).fireTableDataChanged();
+        }
+    }
+
+    private void afiseazaRezultate() {
+        if (sPm.getPageOffset() + 1 > sPm.getPageCount()) {
+            sPm.setPageOffset(sPm.getPageOffset() - 1 < 0 ? 0 : sPm.getPageOffset() - 1);
+            ((SBPagingModel) sPm).fireTableDataChanged();
+        }
+        int nrPagini = sPm.getPageCount();
+        jTFNrTotalPagini.setText(nrPagini + "");
+        int nrPaginaCurenta = sPm.getPageOffset() + 1;
+        jTFNrPaginaCurenta.setText(nrPaginaCurenta + "");
+
+        if (nrPaginaCurenta <= 1) {
+            jbuttonPrev.setEnabled(false);
+            jbuttonFirst.setEnabled(false);
+        } else {
+            jbuttonPrev.setEnabled(true);
+            jbuttonFirst.setEnabled(true);
+        }
+        if (sPm.getPageCount() <= 1 || nrPaginaCurenta >= sPm.getPageCount()) {
+            jbuttonNext.setEnabled(false);
+            jbuttonLast.setEnabled(false);
+        } else {
+            jbuttonNext.setEnabled(true);
+            jbuttonLast.setEnabled(true);
+        }
+
+        if (nrPagini <= 1) {
+            jPanelUpper.setVisible(false);
+            jPControlsDown.setVisible(false);
+        } else {
+            jPanelUpper.setVisible(true);
+            jPControlsDown.setVisible(true);
+            if (nrPagini > 5) {
+                jbuttonFirst.setVisible(true);
+                jbuttonLast.setVisible(true);
+            } else {
+                jbuttonFirst.setVisible(false);
+                jbuttonLast.setVisible(false);
+            }
+        }
+        jPControlsDown.setVisible(sPm.getPageRowCount() >= 25);
+
+    }
+
+    public void hideFields() {
+        if (sPm.getRowCount() == 0 || (bExtra && sPm.getRowCount() == 2)) {
+
+//            jPanelUpper.setVisible(false);
+            jPanelLower.setVisible(false);
+//            jPControlsDown.setVisible(false);
+//            jt.setVisible(false);
+        } else {
+//            jPanelUpper.setVisible(true);
+            jPanelLower.setVisible(true);
+//            jPControlsDown.setVisible(true);
+            jt.setVisible(true);
+        }
+    }
+
+    public void fireTableChanged(TableModelEvent e) {
+        afiseazaRezultate();
+        TableModelEvent ne = new TableModelEvent((SBPagingModel) sPm, e.getFirstRow(), e.getLastRow(), e.getColumn(), e.getType());
+        ((SBPagingModel) sPm).fireTableChanged(ne);
+    }
+
+    public void fireTableStructuredChanged() {
+        ((SBPagingModel) sPm).fireTableStructureChanged();
+    }
+
+    public int getRealRow(int row) {
+        return sPm.getRealRow(row);
+    }
+
+    public void hardreset() {
+        sPm.setPageOffset(0);
+        ((SBPagingModel) sPm).fireTableStructureChanged();
+        afiseazaRezultate();
+    }
+
+    public void reset() {
+        sPm.setPageOffset(0);
+        ((SBPagingModel) sPm).fireTableDataChanged();
+        afiseazaRezultate();
+    }
+
+    public void setPreferredColumnWidths(int[] pcws) {
+        sPm.preferredColumnWidths = pcws;
+    }
+
+    public void addComponentToControl(JComponent b) {
+        jpanelTableControl.add(b);
+    }
+
+    public void addComponentToControl(JComponent b, java.awt.GridBagConstraints gridBagConstraints) {
+        jpanelTableControl.add(b, gridBagConstraints);
+    }
+
+    private static void createAndShowGUI() {
+        // create and show a window containing the combo box
+        final JFrame frame = new JFrame();
+        frame.setDefaultCloseOperation(3);
+        frame.getContentPane().add(new PMJPanel());
+
+        JPanel main = (JPanel) frame.getContentPane();
+        JScrollPane mainJsp = new JScrollPane(main);
+        mainJsp.getVerticalScrollBar().setUnitIncrement(30);
+        mainJsp.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        frame.setContentPane(mainJsp);
+
+        frame.pack();
+        frame.setVisible(true);
+    }
+
+    public static void main(String[] args) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (UnsupportedLookAndFeelException ex) {
+            ex.printStackTrace();
+        } catch (IllegalAccessException ex) {
+            ex.printStackTrace();
+        } catch (InstantiationException ex) {
+            ex.printStackTrace();
+        } catch (ClassNotFoundException ex) {
+            ex.printStackTrace();
+        }
+        createAndShowGUI();
+    }
+}

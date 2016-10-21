@@ -1,0 +1,77 @@
+package sleekbill.swingutils.autosuggesters;
+
+public class AutosuggesterItem {
+
+    public final static int ITEM_SELECTED = 1;
+    public final static int ITEM_DESELECTED = 2;
+
+	int id;
+	String itemName = "";
+	String formattedItemName = "";
+	Object obj;
+	boolean isDeletable = false;
+	
+	public AutosuggesterItem(int id, String itemName, String formattedItemName, Object obj) {
+		super();
+		this.id = id;
+		this.itemName = itemName;
+		this.formattedItemName = formattedItemName;
+		this.obj = obj;
+	}
+
+	public AutosuggesterItem(int id, String itemName, String formattedItemName, Object obj, boolean isDeletable) {
+		super();
+		this.id = id;
+		this.itemName = itemName;
+		this.formattedItemName = formattedItemName;
+		this.isDeletable = isDeletable;
+		this.obj = obj;
+	}
+
+	public String getItemName() {
+		return itemName;
+	}
+
+	public void setItemName(String itemName) {
+		this.itemName = itemName;
+	}
+
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public Object getObj() {
+		return obj;
+	}
+
+	public void setObj(Object obj) {
+		this.obj = obj;
+	}
+
+	public String getFormattedItemName() {
+		return formattedItemName;
+	}
+
+	public void setFormattedItemName(String formattedItemName) {
+		this.formattedItemName = formattedItemName;
+	}
+
+	public boolean isDeletable() {
+		return isDeletable;
+	}
+
+	public void setDeletable(boolean isDeletable) {
+		this.isDeletable = isDeletable;
+	}
+
+	@Override
+	public String toString() {
+		return formattedItemName;
+	}
+
+
+}

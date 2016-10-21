@@ -1,0 +1,68 @@
+package sleekbill.utils;
+
+import java.awt.Dimension;
+
+import javax.swing.JComboBox;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
+import javax.swing.plaf.basic.BasicComboPopup;
+
+public class SBComboBoxUtils {
+
+	public static void setListWidth(JComboBox comboBox, int width) {
+		Object child = comboBox.getUI().getAccessibleChild(comboBox, 0);
+//		Object child = comboBox.getAccessibleContext().getAccessibleChild(0);
+		if ((child instanceof javax.swing.plaf.basic.BasicComboPopup)) {
+			BasicComboPopup popup = (BasicComboPopup)child;
+			popup.addPopupMenuListener(new SBPopupMenuListener(width));
+		}
+	}
+	
+	public static class SBPopupMenuListener implements PopupMenuListener {
+
+		int width = 100;
+		
+		public SBPopupMenuListener(int width) {
+			super();
+			this.width = width;
+		}
+
+		@Override
+		public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+			
+//			javax.swing.plaf.basic.BasicComboPopup popup = (javax.swing.plaf.basic.BasicComboPopup) e.getSource();
+//			JList list = popup.getList();
+//			JScrollPane scrollPane = (JScrollPane) SwingUtilities.getAncestorOfClass(JScrollPane.class, list);
+			
+			JPopupMenu popup = (JPopupMenu)e.getSource();
+			JScrollPane scrollPane = (JScrollPane) popup.getComponent(0);
+//			Object value = cmb.getItemAt(0);
+		// 	Component rendererComp = cmb.getRenderer().getListCellRendererComponent(null, value, 0, false, false);
+			//if (rendererComp instanceof JXTable) {
+			// scrollPane.setColumnHeaderView(((JTable) rendererComp).getTableHeader());
+			//}
+			Dimension size = scrollPane.getPreferredSize();
+			size.width = this.width;
+			scrollPane.setMinimumSize(size);
+			scrollPane.setPreferredSize(size);
+		 	scrollPane.setMaximumSize(size);
+
+		}
+
+		@Override
+		public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void popupMenuCanceled(PopupMenuEvent e) {
+			// TODO Auto-generated method stub
+			
+		}
+		
+	}
+	
+}

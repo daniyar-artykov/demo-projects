@@ -1,0 +1,319 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+/*
+ * JSelImagePanelEx.java
+ *
+ * Created on Sep 29, 2011, 12:50:51 PM
+ */
+
+package sleekbill.swingutils;
+
+import java.awt.AlphaComposite;
+import java.awt.Color;
+import java.awt.Composite;
+import java.awt.GradientPaint;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Paint;
+import java.awt.RenderingHints;
+import java.awt.geom.RoundRectangle2D;
+
+import javax.swing.ImageIcon;
+
+/**
+ *
+ * @author dani
+ */
+public class JSelImagePanelEx extends javax.swing.JPanel {
+
+	public static Color background = new Color(252, 252, 252);
+	public static Color selectionBackground = new Color(237, 237, 237);//liviu
+//	public static Color selectionBackground = new Color(137, 137, 137);
+
+//	public static Color borderColor = new Color(240, 240, 240);
+	public static Color borderColor = new Color(80, 80, 80);
+    public static Color borderColorDisabled = new Color(180, 180, 180);
+//	public static LineBorder border = new LineBorder(new Color(240, 240, 240));//liviu
+//	public static LineBorder border = new LineBorder(new Color(80, 80, 80));
+	public static Color selectionBorderColor = new Color(10, 10, 10);
+//	public static LineBorder selectionBorder = new LineBorder(new Color(138, 138, 138));//liviu
+//	public static LineBorder selectionBorder = new LineBorder(new Color(10, 10, 10));
+	public static Color imageBorder = new Color(134, 134, 134);
+//	public static LineBorder imageBorder = new LineBorder(new Color(134, 134, 134));//liviu
+//	public static LineBorder imageBorder = new LineBorder(new Color(80, 80, 80));
+	public static Color selectionImageBorder = new Color(80, 80, 80);
+//	public static LineBorder selectionImageBorder = new LineBorder(new Color(80, 80, 80));//liviu
+//	public static LineBorder selectionImageBorder = new LineBorder(new Color(10, 10, 10));
+
+
+//	JImagePanelEx jImagePanelEx = new JImagePanelEx();
+	private Image image;
+	private Image imageSelection;
+	private boolean selected = false;
+    private boolean enabled = true;
+//	private Color startGradient = new Color(199, 254, 216);
+//	private Color endGradient = new Color(5, 209, 67);
+	private Color startGradient = new Color(246, 250, 247);
+	private Color endGradient = new Color(225, 242, 204);
+
+    private Color startGradientDisabled = new Color(229, 229, 229);
+	private Color endGradientDisabled = new Color(245, 245, 245);
+
+	private float alpha = 0.6f;
+
+	int borderWidth = 3;
+
+    /** Creates new form JSelImagePanelEx */
+    public JSelImagePanelEx() {
+        initComponents();
+    }
+
+	public JSelImagePanelEx(String imagePath, String imageSelectionPath,
+			int width, int height) {
+		initComponents();
+		if(!imagePath.isEmpty()){
+			image = new ImageIcon(imagePath).getImage().getScaledInstance(
+					width, height, Image.SCALE_SMOOTH);
+		}
+		if(!imageSelectionPath.isEmpty()){
+			imageSelection = new ImageIcon(imageSelectionPath).getImage()
+					.getScaledInstance((int) (width / 1.2), (int) (width / 1.2), Image.SCALE_SMOOTH);
+		}
+		setSelected(false);
+	}
+    
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+
+        Graphics2D g2d = (Graphics2D) g;
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+        int width = getWidth();
+        int height = getHeight();
+        int imgX = 0;
+        int imgY = 0;
+        int imgWidth = 0;
+        int imgHeight = 0;
+        if (!selected && image != null) {
+            //center image
+            imgHeight = height - borderWidth * 2;
+            imgWidth = imgHeight * image.getWidth(null) / image.getHeight(null);
+
+            imgX = width / 2 - imgWidth / 2;
+            imgY = borderWidth;
+            if (imgWidth + borderWidth * 2 > width) {
+                imgWidth = width - borderWidth * 2;
+                //recalc height
+                imgHeight = imgWidth * image.getHeight(null) / image.getWidth(null);
+                imgX = width / 2 - imgWidth / 2;
+                imgY = height / 2 - imgHeight / 2;
+            }
+
+            g2d.drawImage(image, imgX, imgY, imgWidth, imgHeight, null);
+        }
+        if (selected && imageSelection != null) {
+            width = getWidth();
+            height = getHeight();
+            imgX = 0;
+            imgY = 0;
+            imgWidth = 0;
+            imgHeight = 0;
+            //center image
+            imgHeight = height - borderWidth * 2;
+            imgWidth = imgHeight * imageSelection.getWidth(null) / imageSelection.getHeight(null);
+
+            imgX = width / 2 - imgWidth / 2;
+            imgY = borderWidth;
+            if (imgWidth + borderWidth * 2 > width) {
+                imgWidth = width - borderWidth * 2;
+                //recalc height
+                imgHeight = imgWidth * imageSelection.getHeight(null) / imageSelection.getWidth(null);
+                imgX = width / 2 - imgWidth / 2;
+                imgY = height / 2 - imgHeight / 2;
+            }
+
+            g2d.drawImage(imageSelection, imgX, imgY, imgWidth, imgHeight, null);
+        } else if (!enabled) {
+            Paint oldPaint = g2d.getPaint();
+            Composite oldComposite = g2d.getComposite();
+
+            GradientPaint paint = new GradientPaint(imgX, imgY, startGradientDisabled, imgWidth, imgHeight, endGradientDisabled);
+            AlphaComposite newComposite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha);
+            g2d.setComposite(newComposite);
+            g2d.setPaint(paint);
+            g2d.fill(new RoundRectangle2D.Double(imgX, imgY, imgWidth, imgHeight, 0, 0));
+            g2d.setPaint(oldPaint);
+            g2d.setComposite(oldComposite);
+        }
+    }
+    
+/**
+ * Old Paint Method
+ * @param g 
+ *//*
+	@Override
+	protected void paintComponent(Graphics g) {
+		super.paintComponent(g);
+
+		Graphics2D g2d = (Graphics2D) g;
+		g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+		g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+		g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+
+		int width = getWidth();
+		int height = getHeight();
+		int imgX = 0;
+		int imgY = 0;
+		int imgWidth = 0;
+		int imgHeight = 0;
+		if(image != null){
+			//center image
+			imgHeight = height - borderWidth*2;
+			imgWidth = imgHeight * image.getWidth(null) / image.getHeight(null);
+
+			imgX = width/2 - imgWidth/2;
+			imgY = borderWidth;
+			if(imgWidth+borderWidth*2 > width) {
+				imgWidth = width - borderWidth*2;
+				//recalc height
+				imgHeight = imgWidth * image.getHeight(null) / image.getWidth(null);
+				imgX = width/2 - imgWidth/2;
+				imgY = height/2 - imgHeight/2;
+			}
+
+			g2d.drawImage(image, imgX, imgY, imgWidth, imgHeight, null);
+			Color oldColor = g2d.getColor();
+			//draw image border
+			if(selected){
+				g2d.setColor(selectionImageBorder);
+			} else {
+				g2d.setColor(imageBorder);
+			}
+			g2d.drawRect(imgX, imgY, imgWidth, imgHeight);
+            //draw border
+            if (selected) {
+                g2d.setColor(selectionBorderColor);
+            } else if (!enabled) {
+                g2d.setColor(borderColorDisabled);
+            } else {
+                g2d.setColor(borderColor);
+            }
+			g2d.drawRect(imgX-borderWidth, imgY-borderWidth,
+					imgWidth+borderWidth*2-1, imgHeight+borderWidth*2-1);
+			//restore color
+			g2d.setColor(oldColor);
+		}
+		if(selected && imageSelection != null) {
+
+			Paint oldPaint = g2d.getPaint();
+			Composite oldComposite = g2d.getComposite();
+
+			GradientPaint paint = new GradientPaint(imgX, imgY, startGradient, imgWidth, imgHeight, endGradient);
+			AlphaComposite newComposite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha);
+			g2d.setComposite(newComposite);
+			g2d.setPaint(paint);
+			g2d.fill(new RoundRectangle2D.Double(imgX, imgY, imgWidth, imgHeight, 0, 0));
+			g2d.setPaint(oldPaint);
+			g2d.setComposite(oldComposite);
+
+			double p = imgWidth/10;
+			g2d.drawImage(imageSelection, (int)(imgX + p),
+					(int)(height/2 - (imgWidth-p*2)/2),
+					(int)(imgWidth-p*2), (int)(imgWidth-p*2), null);
+
+//			g2d.drawImage(imageSelection, getWidth()/2 - imageSelection.getWidth(null)/2,
+//					getHeight()/2 - imageSelection.getHeight(null)/2, null);
+		} else if(!enabled){
+            Paint oldPaint = g2d.getPaint();
+            Composite oldComposite = g2d.getComposite();
+
+            GradientPaint paint = new GradientPaint(imgX, imgY, startGradientDisabled, imgWidth, imgHeight, endGradientDisabled);
+            AlphaComposite newComposite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha);
+            g2d.setComposite(newComposite);
+            g2d.setPaint(paint);
+            g2d.fill(new RoundRectangle2D.Double(imgX, imgY, imgWidth, imgHeight, 0, 0));
+            g2d.setPaint(oldPaint);
+            g2d.setComposite(oldComposite);
+
+//            double p = imgWidth / 10;
+//            g2d.drawImage(imageSelection, (int) (imgX + p),
+//                (int) (height / 2 - (imgWidth - p * 2) / 2),
+//                (int) (imgWidth - p * 2), (int) (imgWidth - p * 2), null);
+        }
+		
+	}
+*/
+	public void setImage(Image image) {
+		this.image = image;
+	}
+
+	public void setImage(String imagePath) {
+		image = new ImageIcon(imagePath).getImage();
+	}
+
+	public void setImageSelection(Image imageSelection) {
+		this.imageSelection = imageSelection;
+	}
+
+	public void setImageSelection(String imageSelectionPath) {
+		this.imageSelection = new ImageIcon(imageSelectionPath).getImage();
+	}
+
+	public void setSelected(boolean selected) {
+		this.selected = selected;
+		repaint();
+	}
+
+    public void setEnabled(boolean enabled){
+        this.enabled = enabled;        
+        repaint();
+    }
+
+    public boolean isEnabled(){
+        return enabled;
+    }
+
+	public void setGradientColors(Color start, Color end, float alpha) {
+		this.startGradient = start;
+		this.endGradient = end;
+		this.alpha = alpha;
+	}
+
+    /** This method is called from within the constructor to
+     * initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is
+     * always regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        setOpaque(false);
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
+        this.setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 400, Short.MAX_VALUE)
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 300, Short.MAX_VALUE)
+        );
+    }// </editor-fold>//GEN-END:initComponents
+
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    // End of variables declaration//GEN-END:variables
+
+}

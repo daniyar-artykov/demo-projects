@@ -1,0 +1,1170 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames;
+
+import ar.com.hjg.pngj.PngReader;
+import ar.com.hjg.pngj.PngWriter;
+import com.sun.imageio.plugins.png.PNGMetadata;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.GraphicsEnvironment;
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.metadata.IIOMetadata;
+import org.capaxit.imagegenerator.imageexporter.ImageWriter;
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import org.capaxit.imagegenerator.Alignment;
+import org.capaxit.imagegenerator.Margin;
+import org.capaxit.imagegenerator.TextImage;
+import org.capaxit.imagegenerator.imageexporter.ImageType;
+import org.capaxit.imagegenerator.imageexporter.ImageWriterFactory;
+import org.capaxit.imagegenerator.imageexporter.exporters.PngImageWriter;
+import org.capaxit.imagegenerator.impl.TextImageImpl;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import sleekbill.Common;
+import sleekbill.Config;
+import sleekbill.Messages;
+import sleekbill.beans.CompanyDetails;
+import sleekbill.swingutils.ExtensionFileFilter;
+import sleekbill.xmlrpc.Client;
+
+/**
+ *
+ * @author Andrei
+ */
+public class JDialogLogoGenerator extends javax.swing.JDialog implements DocumentListener {
+
+    /**
+     * Creates new form JDialogLogoGenerator
+     */
+    Dimension imageDimension = new Dimension(260, 83);
+    Color color = null;
+    boolean isSaved = false;
+    File lastFile = null;
+    boolean updateCompanyDetails = true;
+    private int marginH = 30;
+
+    public JDialogLogoGenerator(java.awt.Frame parent, boolean modal, boolean updateCompanyDetails, String fileName, Integer w, Integer h) {
+        super(parent, modal);
+        this.updateCompanyDetails = updateCompanyDetails;
+        initComponents();
+        setLocationRelativeTo(parent);
+        imageDimension = new Dimension(w, h);
+        jLabelLogo.setMaximumSize(new java.awt.Dimension(w+2, h+2));
+        jLabelLogo.setMinimumSize(new java.awt.Dimension(w+2, h+2));
+        jLabelLogo.setPreferredSize(new java.awt.Dimension(w+2, h+2));
+        jPanelImage.setMaximumSize(new java.awt.Dimension(w+5, h+5));
+        jPanelImage.setMinimumSize(new java.awt.Dimension(w+5, h+5));
+        jPanelImage.setPreferredSize(new java.awt.Dimension(w+5, h+5));
+        init();
+        verifyImage(fileName);
+        pack();
+    }
+
+//     public JDialogLogoGenerator(java.awt.Dialog parent, boolean modal, String fileName) {
+//        super(parent, modal);
+//        initComponents();
+//        setLocationRelativeTo(parent);
+//        init();
+//    }
+    public JDialogLogoGenerator(java.awt.Dialog parent, boolean modal, String fileName, Integer w, Integer h) {
+        super(parent, modal);
+        initComponents();
+        setLocationRelativeTo(parent);
+        imageDimension = new Dimension(w, h);
+        jLabelLogo.setMaximumSize(new java.awt.Dimension(w+2, h+2));
+        jLabelLogo.setMinimumSize(new java.awt.Dimension(w+2, h+2));
+        jLabelLogo.setPreferredSize(new java.awt.Dimension(w+2, h+2));
+        jPanelImage.setMaximumSize(new java.awt.Dimension(w+5, h+5));
+        jPanelImage.setMinimumSize(new java.awt.Dimension(w+5, h+5));
+        jPanelImage.setPreferredSize(new java.awt.Dimension(w+5, h+5));
+        init();
+        verifyImage(fileName);
+        pack();
+    }
+
+    private void init() {
+        setLabelIcon(jLabel21, "0xE58B00");
+		setLabelIcon(jLabel22, "0x000000");
+        setLabelIcon(jLabel14, "0x3D6B86");
+        setLabelIcon(jLabel15, "0x4B8B4A");
+        setLabelIcon(jLabel16, "0xA7127B");
+        setLabelIcon(jLabel17, "0xB82D2D");
+        setLabelIcon(jLabel18, "0x2CA70F");
+        setLabelIcon(jLabel19, "0x0091E5");
+        setLabelIcon(jLabel20, "0xA3A3A3");
+
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        for (String s : ge.getAvailableFontFamilyNames()) {
+            jComboBoxFont.addItem(s);
+        }
+
+        jTextFieldCompanyName.getDocument().addDocumentListener(this);
+        jTextFieldFontSize.getDocument().addDocumentListener(this);
+
+        refreshGeneratorFields();
+        refreshUploadFields();
+
+        //refreshImage();
+
+
+    }
+
+    private void refreshImage() {
+        try {
+            Font plain = new Font(jComboBoxFont.getSelectedItem().toString(), Font.PLAIN, Integer.parseInt(jTextFieldFontSize.getText()));
+            TextImage testImage = new TextImageImpl((int)imageDimension.getWidth(), (int)imageDimension.getHeight(), new Margin(0, marginH, 0, 0));
+
+            testImage.setTextAligment(Alignment.CENTER).withFont(plain).withColor(color).wrap(true).write(jTextFieldCompanyName.getText());
+
+            String hex = Integer.toHexString(color.getRGB());
+            hex = hex.substring(2, hex.length());
+
+            try {
+                ImageWriter imageWriter = ImageWriterFactory.getImageWriter(ImageType.PNG);
+                ((PngImageWriter) imageWriter).writeImageToFile(testImage,
+                        new File("./images/logo.png"),
+                        jTextFieldCompanyName.getText(),
+                        jComboBoxFont.getSelectedItem().toString(),
+                        jTextFieldFontSize.getText(),
+                        hex,
+                        "" + marginH);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+            loadImageOnLabel(jLabelLogo, new File("./images/logo.png"));
+        } catch (Exception ex) {
+        }
+    }
+
+    private void setLabelIcon(JLabel label, String color) {
+        BufferedImage bi = new BufferedImage(16, 16, BufferedImage.TYPE_INT_RGB);
+        Graphics g = bi.getGraphics();
+        Color oldColor = g.getColor();
+        g.setColor(Color.decode(color));
+        g.fillRect(0, 0, bi.getWidth(), bi.getHeight());
+        g.setColor(oldColor);
+        ImageIcon ic = new ImageIcon(bi);
+        label.setIcon(ic);
+        label.setDisabledIcon(ic);
+        label.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
+        //label.setText("");
+    }
+
+    private void setSelectedColor(JLabel selected) {
+        jLabel21.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
+		jLabel22.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
+        jLabel14.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
+        jLabel15.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
+        jLabel16.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
+        jLabel17.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
+        jLabel18.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
+        jLabel19.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
+        jLabel20.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
+
+        selected.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.decode("0x2382a5"), 2), BorderFactory.createEmptyBorder(1, 1, 1, 1)));
+    }
+
+    private void refreshGeneratorFields() {
+        boolean s = jCheckBox1.isSelected();
+        jTextFieldCompanyName.setEnabled(s);
+        jComboBoxFont.setEnabled(s);
+        jButtonMinus.setEnabled(s);
+        jButtonPlus.setEnabled(s);
+        jTextFieldFontSize.setEnabled(s);
+        jLabel14.setEnabled(s);
+        jLabel15.setEnabled(s);
+        jLabel16.setEnabled(s);
+        jLabel17.setEnabled(s);
+        jLabel18.setEnabled(s);
+        jLabel19.setEnabled(s);
+        jLabel20.setEnabled(s);
+        jLabel21.setEnabled(s);
+		jLabel22.setEnabled(s);
+        jButtonDown.setEnabled(s);
+        jButtonUp.setEnabled(s);
+    }
+
+    private void refreshUploadFields() {
+        boolean s = jCheckBox2.isSelected();
+        jTextFieldPath.setEnabled(s);
+        jButtonBrowser.setEnabled(s);
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
+
+        jPanelBackground = new javax.swing.JPanel();
+        jPanelUpperBorder = new javax.swing.JPanel();
+        jPanelLowerBorder = new javax.swing.JPanel();
+        jPanelCommands = new javax.swing.JPanel();
+        jCheckBox1 = new javax.swing.JCheckBox();
+        jLabel1 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        jLabel5 = new javax.swing.JLabel();
+        jTextFieldCompanyName = new javax.swing.JTextField();
+        jComboBoxFont = new javax.swing.JComboBox();
+        jButtonMinus = new javax.swing.JButton();
+        jTextFieldFontSize = new javax.swing.JTextField();
+        jButtonPlus = new javax.swing.JButton();
+        jPanelColors = new javax.swing.JPanel();
+        jLabel14 = new javax.swing.JLabel();
+        jLabel15 = new javax.swing.JLabel();
+        jLabel16 = new javax.swing.JLabel();
+        jLabel17 = new javax.swing.JLabel();
+        jLabel18 = new javax.swing.JLabel();
+        jLabel19 = new javax.swing.JLabel();
+        jLabel20 = new javax.swing.JLabel();
+        jLabel21 = new javax.swing.JLabel();
+        jLabel22 = new javax.swing.JLabel();
+        jCheckBox2 = new javax.swing.JCheckBox();
+        jTextFieldPath = new javax.swing.JTextField();
+        jButtonBrowser = new javax.swing.JButton();
+        jPanelImage = new javax.swing.JPanel();
+        jLabelLogo = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
+        jButtonDown = new javax.swing.JButton();
+        jButtonUp = new javax.swing.JButton();
+        jPanelButtons = new javax.swing.JPanel();
+        jButton4 = new javax.swing.JButton();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setTitle("Logo Setup");
+        setMinimumSize(new java.awt.Dimension(760, 420));
+        getContentPane().setLayout(new java.awt.GridBagLayout());
+
+        jPanelBackground.setBackground(new java.awt.Color(229, 235, 242));
+        jPanelBackground.setLayout(new java.awt.GridBagLayout());
+
+        jPanelUpperBorder.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(195, 210, 219)));
+        jPanelUpperBorder.setLayout(new java.awt.GridBagLayout());
+
+        jPanelLowerBorder.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(203, 209, 213)));
+        jPanelLowerBorder.setLayout(new java.awt.GridBagLayout());
+
+        jPanelCommands.setLayout(new java.awt.GridBagLayout());
+
+        jCheckBox1.setText("Generate My Logo");
+        jCheckBox1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCheckBox1ActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelCommands.add(jCheckBox1, gridBagConstraints);
+
+        jLabel1.setText("Company Name");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 5);
+        jPanelCommands.add(jLabel1, gridBagConstraints);
+
+        jLabel2.setText("Font");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 5);
+        jPanelCommands.add(jLabel2, gridBagConstraints);
+
+        jLabel3.setText("Size");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 5);
+        jPanelCommands.add(jLabel3, gridBagConstraints);
+
+        jLabel4.setText("Color");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 5);
+        jPanelCommands.add(jLabel4, gridBagConstraints);
+
+        jLabel5.setText("OR");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.gridwidth = 6;
+        gridBagConstraints.insets = new java.awt.Insets(10, 5, 10, 5);
+        jPanelCommands.add(jLabel5, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridwidth = 5;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelCommands.add(jTextFieldCompanyName, gridBagConstraints);
+
+        jComboBoxFont.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jComboBoxFontActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridwidth = 5;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelCommands.add(jComboBoxFont, gridBagConstraints);
+
+        jButtonMinus.setForeground(new java.awt.Color(35, 130, 165));
+        jButtonMinus.setIcon(new ImageIcon("./images/buttons/fontminus.png"));
+        jButtonMinus.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jButtonMinus.setMaximumSize(new java.awt.Dimension(20, 20));
+        jButtonMinus.setMinimumSize(new java.awt.Dimension(20, 20));
+        jButtonMinus.setPreferredSize(new java.awt.Dimension(20, 20));
+        jButtonMinus.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonMinusActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelCommands.add(jButtonMinus, gridBagConstraints);
+
+        jTextFieldFontSize.setMaximumSize(new java.awt.Dimension(30, 20));
+        jTextFieldFontSize.setMinimumSize(new java.awt.Dimension(30, 20));
+        jTextFieldFontSize.setPreferredSize(new java.awt.Dimension(30, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelCommands.add(jTextFieldFontSize, gridBagConstraints);
+
+        jButtonPlus.setForeground(new java.awt.Color(35, 130, 165));
+        jButtonPlus.setIcon(new ImageIcon("./images/buttons/fontplus.png"));
+        jButtonPlus.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jButtonPlus.setMaximumSize(new java.awt.Dimension(20, 20));
+        jButtonPlus.setMinimumSize(new java.awt.Dimension(20, 20));
+        jButtonPlus.setPreferredSize(new java.awt.Dimension(20, 20));
+        jButtonPlus.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonPlusActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelCommands.add(jButtonPlus, gridBagConstraints);
+
+        jPanelColors.setLayout(new java.awt.GridBagLayout());
+
+        jLabel14.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel14.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLabel14.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jLabel14MouseClicked(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelColors.add(jLabel14, gridBagConstraints);
+
+        jLabel15.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel15.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLabel15.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jLabel15MouseClicked(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelColors.add(jLabel15, gridBagConstraints);
+
+        jLabel16.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel16.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLabel16.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jLabel16MouseClicked(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelColors.add(jLabel16, gridBagConstraints);
+
+        jLabel17.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel17.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLabel17.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jLabel17MouseClicked(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 4;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelColors.add(jLabel17, gridBagConstraints);
+
+        jLabel18.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel18.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLabel18.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jLabel18MouseClicked(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 5;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelColors.add(jLabel18, gridBagConstraints);
+
+        jLabel19.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel19.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLabel19.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jLabel19MouseClicked(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 6;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelColors.add(jLabel19, gridBagConstraints);
+
+        jLabel20.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel20.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLabel20.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jLabel20MouseClicked(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 7;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 3);
+        jPanelColors.add(jLabel20, gridBagConstraints);
+
+        jLabel21.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel21.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLabel21.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jLabel21MouseClicked(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 3, 5, 5);
+        jPanelColors.add(jLabel21, gridBagConstraints);
+
+        jLabel22.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel22.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jLabel22.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jLabel22MouseClicked(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 8;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 3, 5, 5);
+        jPanelColors.add(jLabel22, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridwidth = 5;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 0, 5, 0);
+        jPanelCommands.add(jPanelColors, gridBagConstraints);
+
+        jCheckBox2.setText("Upload My Logo");
+        jCheckBox2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCheckBox2ActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 7;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelCommands.add(jCheckBox2, gridBagConstraints);
+
+        jTextFieldPath.setEditable(false);
+        jTextFieldPath.setMaximumSize(new java.awt.Dimension(300, 20));
+        jTextFieldPath.setMinimumSize(new java.awt.Dimension(300, 20));
+        jTextFieldPath.setPreferredSize(new java.awt.Dimension(300, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 8;
+        gridBagConstraints.gridwidth = 4;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 5);
+        jPanelCommands.add(jTextFieldPath, gridBagConstraints);
+
+        jButtonBrowser.setText("Browse");
+        jButtonBrowser.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonBrowserActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 4;
+        gridBagConstraints.gridy = 8;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelCommands.add(jButtonBrowser, gridBagConstraints);
+
+        jPanelImage.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(203, 209, 213)));
+        jPanelImage.setMaximumSize(new java.awt.Dimension(270, 93));
+        jPanelImage.setMinimumSize(new java.awt.Dimension(262, 85));
+        jPanelImage.setPreferredSize(new java.awt.Dimension(262, 85));
+        jPanelImage.setLayout(new java.awt.GridBagLayout());
+
+        jLabelLogo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabelLogo.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        jLabelLogo.setMaximumSize(new java.awt.Dimension(260, 83));
+        jLabelLogo.setMinimumSize(new java.awt.Dimension(260, 83));
+        jLabelLogo.setPreferredSize(new java.awt.Dimension(260, 83));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelImage.add(jLabelLogo, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 6;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridheight = 9;
+        gridBagConstraints.insets = new java.awt.Insets(5, 25, 5, 5);
+        jPanelCommands.add(jPanelImage, gridBagConstraints);
+
+        jLabel6.setText("Position");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 5;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 5);
+        jPanelCommands.add(jLabel6, gridBagConstraints);
+
+        jButtonDown.setIcon(new ImageIcon("./images/buttons/adown.png"));
+        jButtonDown.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jButtonDown.setMaximumSize(new java.awt.Dimension(20, 20));
+        jButtonDown.setMinimumSize(new java.awt.Dimension(20, 20));
+        jButtonDown.setPreferredSize(new java.awt.Dimension(20, 20));
+        jButtonDown.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonDownActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 5;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelCommands.add(jButtonDown, gridBagConstraints);
+
+        jButtonUp.setIcon(new ImageIcon("./images/buttons/aup.png"));
+        jButtonUp.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jButtonUp.setMaximumSize(new java.awt.Dimension(20, 20));
+        jButtonUp.setMinimumSize(new java.awt.Dimension(20, 20));
+        jButtonUp.setPreferredSize(new java.awt.Dimension(20, 20));
+        jButtonUp.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonUpActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 5;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelCommands.add(jButtonUp, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        jPanelLowerBorder.add(jPanelCommands, gridBagConstraints);
+
+        jPanelButtons.setBackground(new java.awt.Color(246, 246, 246));
+        jPanelButtons.setBorder(javax.swing.BorderFactory.createMatteBorder(1, 0, 0, 0, new java.awt.Color(203, 209, 213)));
+        jPanelButtons.setLayout(new java.awt.GridBagLayout());
+
+        jButton4.setIcon(new ImageIcon("./images/buttons/ico_check.png"));
+        jButton4.setText("Save");
+        jButton4.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton4ActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelButtons.add(jButton4, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.1;
+        jPanelLowerBorder.add(jPanelButtons, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        jPanelUpperBorder.add(jPanelLowerBorder, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(15, 15, 15, 15);
+        jPanelBackground.add(jPanelUpperBorder, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        getContentPane().add(jPanelBackground, gridBagConstraints);
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void jLabel21MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel21MouseClicked
+        if (!jCheckBox1.isSelected()) {
+            return;
+        }
+        setSelectedColor(jLabel21);
+        color = Color.decode("0xE58B00");
+        refreshImage();
+    }//GEN-LAST:event_jLabel21MouseClicked
+
+    private void jLabel14MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel14MouseClicked
+        if (!jCheckBox1.isSelected()) {
+            return;
+        }
+        setSelectedColor(jLabel14);
+        color = Color.decode("0x3D6B86");
+        refreshImage();
+    }//GEN-LAST:event_jLabel14MouseClicked
+
+    private void jLabel15MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel15MouseClicked
+        if (!jCheckBox1.isSelected()) {
+            return;
+        }
+        setSelectedColor(jLabel15);
+        color = Color.decode("0x4B8B4A");
+        refreshImage();
+    }//GEN-LAST:event_jLabel15MouseClicked
+
+    private void jLabel16MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel16MouseClicked
+        if (!jCheckBox1.isSelected()) {
+            return;
+        }
+        setSelectedColor(jLabel16);
+        color = Color.decode("0xA7127B");
+        refreshImage();
+    }//GEN-LAST:event_jLabel16MouseClicked
+
+    private void jLabel17MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel17MouseClicked
+        if (!jCheckBox1.isSelected()) {
+            return;
+        }
+        setSelectedColor(jLabel17);
+        color = Color.decode("0xB82D2D");
+        refreshImage();
+    }//GEN-LAST:event_jLabel17MouseClicked
+
+    private void jLabel18MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel18MouseClicked
+        if (!jCheckBox1.isSelected()) {
+            return;
+        }
+        setSelectedColor(jLabel18);
+        color = Color.decode("0x2CA70F");
+        refreshImage();
+    }//GEN-LAST:event_jLabel18MouseClicked
+
+    private void jLabel19MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel19MouseClicked
+        if (!jCheckBox1.isSelected()) {
+            return;
+        }
+        setSelectedColor(jLabel19);
+        color = Color.decode("0x0091E5");
+        refreshImage();
+    }//GEN-LAST:event_jLabel19MouseClicked
+
+    private void jLabel20MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel20MouseClicked
+        if (!jCheckBox1.isSelected()) {
+            return;
+        }
+        setSelectedColor(jLabel20);
+        color = Color.decode("0xA3A3A3");
+        refreshImage();
+    }//GEN-LAST:event_jLabel20MouseClicked
+
+    private void jButtonBrowserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonBrowserActionPerformed
+        JFileChooser fc = new JFileChooser();
+        fc.setFileFilter(new ExtensionFileFilter("Image Files", new String[]{"jpg", "bmp", "jpeg", "wbmp", "png", "gif"}));
+        if (fc.showDialog(this, "Select") == JFileChooser.APPROVE_OPTION) {
+            try {
+                jTextFieldPath.setText(fc.getSelectedFile().getCanonicalPath());
+            } catch (Exception ex) {
+                jTextFieldPath.setText(fc.getSelectedFile().getAbsolutePath());
+            }
+            loadImageOnLabel(jLabelLogo, fc.getSelectedFile());
+        }
+    }//GEN-LAST:event_jButtonBrowserActionPerformed
+
+    private void jCheckBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox2ActionPerformed
+        if (jCheckBox2.isSelected()) {
+            File file = new File(jTextFieldPath.getText());
+            if (file.exists()) {
+                loadImageOnLabel(jLabelLogo, file);
+            }
+        }
+        jCheckBox1.setSelected(false);
+        refreshGeneratorFields();
+        refreshUploadFields();
+    }//GEN-LAST:event_jCheckBox2ActionPerformed
+
+    private void jCheckBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox1ActionPerformed
+        if (jCheckBox1.isSelected()) {
+            refreshImage();
+        }
+        jCheckBox2.setSelected(false);
+        refreshGeneratorFields();
+        refreshUploadFields();
+    }//GEN-LAST:event_jCheckBox1ActionPerformed
+
+    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+        isSaved = true;
+        if (updateCompanyDetails && lastFile != null) {
+            try {
+                long currentTimeMillis = System.currentTimeMillis();
+                Common.companyDetails.setLogo("" + currentTimeMillis + "_" + lastFile.getName());
+                copyfile(lastFile, new File(Common.SAVED_LOGOS_PATH + "" + currentTimeMillis + "_" + lastFile.getName()));
+                CompanyDetails newCD = new CompanyDetails(Common.companyDetails);
+                newCD.setId(0);
+                newCD.create();
+                Common.companyDetails = newCD;
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+        dispose();
+    }//GEN-LAST:event_jButton4ActionPerformed
+
+    private void jButtonMinusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonMinusActionPerformed
+        int x = 25;
+        try {
+            x = Integer.parseInt(jTextFieldFontSize.getText());
+        } catch (Exception ex) {
+        }
+        x--;
+        jTextFieldFontSize.setText("" + x);
+        //refreshImage();
+    }//GEN-LAST:event_jButtonMinusActionPerformed
+
+    private static void copyfile(File srcFile, File dstFile) throws IOException {
+        try {
+
+            InputStream in = new FileInputStream(srcFile);
+
+            OutputStream out = new FileOutputStream(dstFile);
+            byte[] buf = new byte[1024];
+            int len;
+            while ((len = in.read(buf)) > 0) {
+                out.write(buf, 0, len);
+            }
+            in.close();
+            out.close();
+        } catch (FileNotFoundException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private void jButtonPlusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonPlusActionPerformed
+        int x = 25;
+        try {
+            x = Integer.parseInt(jTextFieldFontSize.getText());
+        } catch (Exception ex) {
+        }
+        x++;
+        jTextFieldFontSize.setText("" + x);
+        //refreshImage();
+    }//GEN-LAST:event_jButtonPlusActionPerformed
+
+    private void jComboBoxFontActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxFontActionPerformed
+        refreshImage();
+    }//GEN-LAST:event_jComboBoxFontActionPerformed
+
+    private void jButtonDownActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonDownActionPerformed
+        marginH += 3;
+        refreshImage();
+    }//GEN-LAST:event_jButtonDownActionPerformed
+
+    private void jButtonUpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonUpActionPerformed
+        marginH -= 3;
+        refreshImage();
+    }//GEN-LAST:event_jButtonUpActionPerformed
+
+    private void jLabel22MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel22MouseClicked
+        if (!jCheckBox1.isSelected()) {
+            return;
+        }
+        setSelectedColor(jLabel22);
+        color = Color.decode("0x000000");
+        refreshImage();
+    }//GEN-LAST:event_jLabel22MouseClicked
+
+    private BufferedImage loadImageOnLabel(JLabel label, File file) {
+        BufferedImage bufimg = null;
+        try {
+            if (Common.isClient() && !file.exists()) {
+                Client.fetch(file);
+            }
+            bufimg = ImageIO.read(file);
+        } catch (IOException ex) {
+            if (jLabelLogo.isShowing()) {
+                Messages.showErrorMessage(this, "The image could not be loaded!", "Image upload");
+            }
+            label.setIcon(null);
+            label.setPreferredSize(imageDimension);
+            jTextFieldPath.setText("");
+            lastFile = null;
+            return null;
+        } catch (OutOfMemoryError ome) {
+            if (jLabelLogo.isShowing()) {
+                Messages.showErrorMessage(this, "The image resolution is to big!", "Image upload");
+            }
+            label.setIcon(null);
+            label.setPreferredSize(imageDimension);
+            jTextFieldPath.setText("");
+            lastFile = null;
+            return null;
+        }
+        if (bufimg == null) {
+            if (file != null) {
+                Messages.showErrorMessageWithLink(this, "<b>" + file.getName() + "</b> is not a valid image! Please use a valid image format (JPG, BMP, PNG, GIF).<br>Please contact us at <a href=\"mailto:support@sleekbill.com\">support@sleekbill.com</a> if you need any assistance.", "Image upload");
+            }
+            label.setIcon(null);
+            label.setPreferredSize(imageDimension);
+            jTextFieldPath.setText("");
+            lastFile = null;
+            return null;
+        }
+        if (bufimg.getWidth() > 3000 && bufimg.getHeight() > 3000) {
+            if (jLabelLogo.isShowing()) {
+                Messages.showErrorMessage(this, "The image could not be loaded because the resolution is to big!!", "Image upload");
+            }
+            label.setIcon(null);
+            label.setPreferredSize(imageDimension);
+            jTextFieldPath.setText("");
+            lastFile = null;
+            return null;
+        }
+        int width, height;
+        if (bufimg.getWidth() * 6 / 10 > bufimg.getHeight()) {
+            width = (int) imageDimension.getWidth();
+            height = (int) (bufimg.getHeight() / (bufimg.getWidth() / imageDimension.getWidth()));
+        } else {
+            height = (int) imageDimension.getHeight();
+            width = (int) (bufimg.getWidth() / (bufimg.getHeight() / imageDimension.getHeight()));
+        }
+        lastFile = file;
+        ImageIcon scaledIcon = new ImageIcon(bufimg.getScaledInstance(width, height, Image.SCALE_SMOOTH));
+        label.setPreferredSize(new Dimension(width, height));
+        label.setIcon(scaledIcon);
+        return bufimg;
+    }
+
+    public String readCustomData(byte[] imageData, String key) throws IOException {
+        ImageReader imageReader = ImageIO.getImageReadersByFormatName("png").next();
+
+        imageReader.setInput(ImageIO.createImageInputStream(new ByteArrayInputStream(imageData)), true);
+
+        // read metadata of first image
+        IIOMetadata metadata = imageReader.getStreamMetadata();
+
+        //this cast helps getting the contents
+        PNGMetadata pngmeta = (PNGMetadata) metadata;
+        NodeList childNodes = pngmeta.getStandardTextNode().getChildNodes();
+
+        for (int i = 0; i < childNodes.getLength(); i++) {
+            Node node = childNodes.item(i);
+            String keyword = node.getAttributes().getNamedItem("keyword").getNodeValue();
+            String value = node.getAttributes().getNamedItem("value").getNodeValue();
+            if (key.equals(keyword)) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(JDialogLogoGenerator.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(JDialogLogoGenerator.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(JDialogLogoGenerator.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(JDialogLogoGenerator.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the dialog */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                JDialogLogoGenerator dialog = new JDialogLogoGenerator(new javax.swing.JFrame(), true, true, "",260,83);
+                dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+                    @Override
+                    public void windowClosing(java.awt.event.WindowEvent e) {
+                        System.exit(0);
+                    }
+                });
+                dialog.setVisible(true);
+            }
+        });
+    }
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButton4;
+    private javax.swing.JButton jButtonBrowser;
+    private javax.swing.JButton jButtonDown;
+    private javax.swing.JButton jButtonMinus;
+    private javax.swing.JButton jButtonPlus;
+    private javax.swing.JButton jButtonUp;
+    private javax.swing.JCheckBox jCheckBox1;
+    private javax.swing.JCheckBox jCheckBox2;
+    private javax.swing.JComboBox jComboBoxFont;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel14;
+    private javax.swing.JLabel jLabel15;
+    private javax.swing.JLabel jLabel16;
+    private javax.swing.JLabel jLabel17;
+    private javax.swing.JLabel jLabel18;
+    private javax.swing.JLabel jLabel19;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel20;
+    private javax.swing.JLabel jLabel21;
+    private javax.swing.JLabel jLabel22;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabelLogo;
+    private javax.swing.JPanel jPanelBackground;
+    private javax.swing.JPanel jPanelButtons;
+    private javax.swing.JPanel jPanelColors;
+    private javax.swing.JPanel jPanelCommands;
+    private javax.swing.JPanel jPanelImage;
+    private javax.swing.JPanel jPanelLowerBorder;
+    private javax.swing.JPanel jPanelUpperBorder;
+    private javax.swing.JTextField jTextFieldCompanyName;
+    private javax.swing.JTextField jTextFieldFontSize;
+    private javax.swing.JTextField jTextFieldPath;
+    // End of variables declaration//GEN-END:variables
+
+    public boolean isSaved() {
+        return isSaved;
+    }
+
+    public File getLogo() {
+        return lastFile;
+    }
+
+    @Override
+    public void insertUpdate(DocumentEvent e) {
+        refreshImage();
+    }
+
+    @Override
+    public void removeUpdate(DocumentEvent e) {
+        refreshImage();
+    }
+
+    @Override
+    public void changedUpdate(DocumentEvent e) {
+        refreshImage();
+    }
+
+    private void defaultSetup() {
+        jTextFieldCompanyName.setText(Common.selectedCompany.getName());
+        jTextFieldFontSize.setText("25");
+        String strColor = Common.selectedCompanyConfig.get(Config.LAST_COLOR);
+        color = Color.decode("0x" + strColor);
+
+        if (strColor.equals("E58B00")) {
+			setSelectedColor(jLabel21);
+		} else if (strColor.equals("000000")) {
+			setSelectedColor(jLabel22);
+		} else if (strColor.equals("3D6B86")) {
+			setSelectedColor(jLabel14);
+		} else if (strColor.equals("4B8B4A")) {
+			setSelectedColor(jLabel15);
+		} else if (strColor.equals("A7127B")) {
+			setSelectedColor(jLabel16);
+		} else if (strColor.equals("B82D2D")) {
+			setSelectedColor(jLabel17);
+		} else if (strColor.equals("2CA70F")) {
+			setSelectedColor(jLabel18);
+		} else if (strColor.equals("0091E5")) {
+			setSelectedColor(jLabel19);
+		} else if (strColor.equals("A3A3A3")) {
+			setSelectedColor(jLabel20);
+		}
+    }
+
+    private void verifyImage(String fileName) {
+        try {
+            if (fileName == null || fileName.isEmpty() || !new File(Common.SAVED_LOGOS_PATH + fileName).exists()) {
+                defaultSetup();
+                return;
+            }
+
+            PngReader pngr = new PngReader(new File(Common.SAVED_LOGOS_PATH + fileName));
+
+            String companyName = pngr.getMetadata().getTxtForKey("companyName");
+            String fontName = pngr.getMetadata().getTxtForKey("fontName");
+            String fontSize = pngr.getMetadata().getTxtForKey("fontSize");
+            String fontColor = pngr.getMetadata().getTxtForKey("fontColor");
+            String fontPosition = pngr.getMetadata().getTxtForKey("fontPosition");
+
+            if (companyName == null || companyName.isEmpty()
+                    || fontName == null || fontName.isEmpty()
+                    || fontSize == null || fontSize.isEmpty()
+                    || fontColor == null || fontColor.isEmpty()
+                    || fontPosition == null || fontPosition.isEmpty()) {
+
+
+                defaultSetup();
+                jCheckBox2.setSelected(true);
+                File f = new File(Common.SAVED_LOGOS_PATH + fileName);
+                try {
+                    jTextFieldPath.setText(f.getCanonicalPath());
+                } catch (Exception ex) {
+                    jTextFieldPath.setText(f.getAbsolutePath());
+                }
+                loadImageOnLabel(jLabelLogo, f);
+                refreshGeneratorFields();
+                refreshUploadFields();
+                return;
+            }
+
+            jTextFieldCompanyName.setText(companyName);
+            jTextFieldFontSize.setText(fontSize);
+            jComboBoxFont.setSelectedItem(fontName);
+            String strColor = fontColor;
+            this.color = Color.decode("0x" + fontColor);
+            this.marginH = Integer.parseInt(fontPosition);
+
+            if (strColor.toUpperCase().equals("E58B00")) {
+				setSelectedColor(jLabel21);
+			} else if (strColor.toUpperCase().equals("000000")) {
+				setSelectedColor(jLabel22);
+			} else if (strColor.toUpperCase().equals("3D6B86")) {
+				setSelectedColor(jLabel14);
+			} else if (strColor.toUpperCase().equals("4B8B4A")) {
+				setSelectedColor(jLabel15);
+			} else if (strColor.toUpperCase().equals("A7127B")) {
+				setSelectedColor(jLabel16);
+			} else if (strColor.toUpperCase().equals("B82D2D")) {
+				setSelectedColor(jLabel17);
+			} else if (strColor.toUpperCase().equals("2CA70F")) {
+				setSelectedColor(jLabel18);
+			} else if (strColor.toUpperCase().equals("0091E5")) {
+				setSelectedColor(jLabel19);
+			} else if (strColor.toUpperCase().equals("A3A3A3")) {
+				setSelectedColor(jLabel20);
+			}
+            jCheckBox1.setSelected(true);
+            refreshGeneratorFields();
+            refreshUploadFields();
+            refreshImage();
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            defaultSetup();
+            jCheckBox2.setSelected(true);
+            File f = new File(Common.SAVED_LOGOS_PATH + fileName);
+            try {
+                jTextFieldPath.setText(f.getCanonicalPath());
+            } catch (Exception e) {
+                jTextFieldPath.setText(f.getAbsolutePath());
+            }
+            refreshGeneratorFields();
+            refreshUploadFields();
+        }
+    }
+
+    public void setUpdateCompanyDetails(boolean updateCompanyDetails) {
+        this.updateCompanyDetails = updateCompanyDetails;
+    }
+    
+    
+}

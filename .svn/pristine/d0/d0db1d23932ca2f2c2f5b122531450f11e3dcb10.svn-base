@@ -1,0 +1,924 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames;
+
+import java.io.File;
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+
+import sleekbill.Common;
+import sleekbill.Messages;
+import sleekbill.beans.Product;
+import sleekbill.entities.ProductEntity;
+import sleekbill.excel.Export;
+import sleekbill.excel.NameType;
+import sleekbill.frames.autosuggesterdata.SBACProducts;
+import sleekbill.frames.records.ProductRecord;
+import sleekbill.frames.records.Record;
+import sleekbill.swingutils.ButtonsProducts;
+import sleekbill.util.SBSwingUtils;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.dao.GenericRawResults;
+import com.j256.ormlite.stmt.SelectArg;
+import com.j256.ormlite.stmt.UpdateBuilder;
+import java.awt.Color;
+import java.awt.Component;
+import java.math.RoundingMode;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JTable;
+import javax.swing.SwingConstants;
+import javax.swing.event.CellEditorListener;
+import javax.swing.event.ChangeEvent;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
+import sleekbill.Config;
+import sleekbill.beans.Flag;
+import sleekbill.beans.SBDaoException;
+import sleekbill.beans.Stock;
+import sleekbill.frames.records.ProductRecordQuantity;
+import sleekbill.swingutils.CellLabel;
+import sleekbill.swingutils.LeftCellLabel;
+import sleekbill.swingutils.MultiLineCellEditor;
+
+/**
+ *
+ * @author Andrei
+ */
+public class JDialogProductsReport extends JDialogBaseReport {
+
+    SBACProducts asData = new SBACProducts(" AND deleted = 'n' ");
+    private static String[] columnNames;
+    private static int[] preferredColumnWidths;
+    private boolean stocks = Common.keepStocks();
+    //global search fields
+    String name;
+    String low;
+    String high;
+    String lowq;
+    String highq;
+	int precision = Common.PRECISION;
+
+    public JDialogProductsReport(java.awt.Frame parent, boolean modal) {
+        super(parent, modal);
+        initComponents();
+		
+		try {
+			precision = Flag.getLast(Common.connection.getConnection()).getDecimals();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+        refreshParameters();
+        setLocationRelativeTo(parent);
+        jPTable = jPTableClients;
+        
+        if (!Common.selectedCompanyConfig.get(Config.INDIA).equals("free") && Common.selectedCompanyConfig.get(Config.ASK_STOCKS).equals("false") && !stocks) {
+            int result = Messages.showQuestionMessage(parent, "<html>Whould you like to keep track of your stocks?<br>You can change this option later from the <b>Preferences</b> window.</html>", "Confirmation");
+            if (result != JOptionPane.YES_OPTION) {
+                Common.selectedCompanyConfig.set(Config.KEEP_STOCKS, "false");
+                stocks = false;
+            } else {
+                Common.selectedCompanyConfig.set(Config.KEEP_STOCKS, "true");
+                stocks = true;
+            }            
+        }
+        Common.selectedCompanyConfig.set(Config.ASK_STOCKS, "true");
+        
+        if (!stocks) {
+            columnNames = new String[]{"No.", "Product/Service Name", "Description", "Unit Price", "UoM", "Tax", "Action"};
+            preferredColumnWidths = new int[]{5, 200, 200, 100, 30, 100, 50};
+
+        } else {
+            columnNames = new String[]{"No.", "Product/Service Name", "Description", "Quantity", "Unit Price", "UoM", "Tax", "Action"};
+            preferredColumnWidths = new int[]{5, 200, 200, 100, 100, 30,100, 50};
+        }
+        
+        
+        reportTableModel = new ProductsReportModel(columnNames, columnNames, preferredColumnWidths);
+        reportTable = new ProductsReportTable(jPTable);
+
+        init(jPTableClients, jPanelNoResults, false);
+
+        java.awt.GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        pmPanel.addComponentToControl(jPanelButtons, gridBagConstraints);
+        
+        jLabel4.setVisible(stocks);
+        jLabel6.setVisible(stocks);
+        jLabel7.setVisible(stocks);
+        jTextFieldLow1.setVisible(stocks);
+        jTextFieldHigh1.setVisible(stocks);
+        
+        SBSwingUtils.applyFocusBorder(this);
+        SBSwingUtils.addContextMenuToChildren(this);
+    }
+
+    public void actionEdit(int row) {
+
+        Integer id = getRow(pmPanel.getRealRow(row)).getId();
+        JDialogProductData jdpd = new JDialogProductData(this, true, true, new Product(id));
+        jdpd.setVisible(true);
+
+        if (jdpd.isDirty) {
+            Product product = new Product(id);
+            if (!stocks) {
+                getRow(pmPanel.getRealRow(row)).data = new ProductRecord(product.getId(), product.getName(), product.getDescription(), product.getPrice(), product.getTax().getTaxPercentage() + " %", product.getMeasuringUnit(), precision).data;
+            } else {
+                String quantity = "";
+                try {
+                    Stock stock = Stock.getByProductId(Common.connection.getConnection(), id);
+                    if(stock != null && stock.getQuantity() != null){
+                        quantity = stock.getQuantity().setScale(precision, RoundingMode.HALF_UP).toString();
+                    }
+                } catch (Exception ex) {
+                    quantity = "";
+                } 
+                getRow(pmPanel.getRealRow(row)).data = new ProductRecordQuantity(product.getId(), product.getName(), product.getDescription(), quantity, product.getPrice(), product.getTax().getTaxPercentage() + " %", product.getMeasuringUnit(), precision).data;
+            }
+            glassPane.showOK("You have successfully updated the product \""+getRow(pmPanel.getRealRow(row)).data[0]+"\"!");
+            reportTableModel.fireTableDataChanged();
+        }
+
+    }
+
+    public void actionDelete(int row) {
+        Integer id = getRow(pmPanel.getRealRow(row)).getId();
+        try {
+            if (Messages.showQuestionMessage(this, "Are you sure you want to delete product \"" + reportTableModel.getRow(pmPanel.getRealRow(row)).getValueAt(0) + "\" ?", "Confirmation") == JOptionPane.YES_OPTION) {
+
+//                Dao<ProductEntity, Integer> productsDao = DaoManager.createDao(Common.connection.getConnection(), ProductEntity.class);
+//                UpdateBuilder<ProductEntity, Integer> updateBuilder = productsDao.updateBuilder();
+//                updateBuilder.updateColumnValue(Product.DELETED, "y");
+//                updateBuilder.where().eq("id", id);
+//                updateBuilder.update();
+		    	try {
+		    		//try to delete
+		    		Product.delete(Common.connection.getConnection(), id);
+		    	} catch (Exception e1){
+		    		//update deleted
+		    		Product.updateDeleted(Common.connection.getConnection(), id, true);
+		    	}
+                glassPane.showOK("You have successfully deleted the product \""+getRow(pmPanel.getRealRow(row)).data[0]+"\"!");
+                reportTableModel.refreshDataFire();
+            }
+
+        } catch (Exception ex) {
+            glassPane.showError("This operation could not be completed!");
+        }
+    }
+
+    public void actionPreview(int row) {
+        Integer id = getRow(pmPanel.getRealRow(row)).getId();
+        JDialogProductData jdpd = new JDialogProductData(this, true, false, new Product(id));
+        jdpd.setVisible(true);
+
+        if (jdpd.isDirty) {
+            Product product = new Product(id);
+            if (!stocks) {
+                getRow(pmPanel.getRealRow(row)).data = new ProductRecord(product.getId(), product.getName(), product.getDescription(), product.getPrice(), product.getTax().getTaxPercentage() + " %", product.getMeasuringUnit(), precision).data;
+            } else {
+                String quantity = "";
+                try {
+                    Stock stock = Stock.getByProductId(Common.connection.getConnection(), id);
+                    if(stock != null && stock.getQuantity() != null){
+                        quantity = stock.getQuantity().setScale(precision, RoundingMode.HALF_UP).toString();
+                    }
+                } catch (Exception ex) {
+                    quantity = "";
+                } 
+                getRow(pmPanel.getRealRow(row)).data = new ProductRecordQuantity(product.getId(), product.getName(), product.getDescription(), quantity, product.getPrice(), product.getTax().getTaxPercentage() + " %", product.getMeasuringUnit(), precision).data;
+            }
+            glassPane.showOK("You have successfully updated the product \""+getRow(pmPanel.getRealRow(row)).data[0]+"\"!");
+            reportTableModel.fireTableDataChanged();
+        }
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
+
+        jPanelNoResults = new sleekbill.swingutils.JPanelNoResults();
+        jPanelBackground = new javax.swing.JPanel();
+        jPanelContent = new javax.swing.JPanel();
+        jPanelUpper = new javax.swing.JPanel();
+        jPanelSearch = new javax.swing.JPanel();
+        jPanelSearchButtons = new javax.swing.JPanel();
+        jButtonSearch = new javax.swing.JButton();
+        jButtonReset = new javax.swing.JButton();
+        jPanelSearchFields = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        jTextFieldLow = new javax.swing.JTextField();
+        jTextFieldHigh = new javax.swing.JTextField();
+        sBACPaneProductName = new sleekbill.swingutils.autosuggesters.SBACPanelTextField(asData, false, false);
+        jLabel6 = new javax.swing.JLabel();
+        jTextFieldLow1 = new javax.swing.JTextField();
+        jLabel7 = new javax.swing.JLabel();
+        jTextFieldHigh1 = new javax.swing.JTextField();
+        jPanelUpperTitle = new javax.swing.JPanel();
+        jLabel3 = new javax.swing.JLabel();
+        jPanelLowerBorder = new javax.swing.JPanel();
+        jPanelLowerTitle = new javax.swing.JPanel();
+        jLabel5 = new javax.swing.JLabel();
+        jPanelResults = new javax.swing.JPanel();
+        jPTableClients = new javax.swing.JPanel();
+        jPanelButtons = new javax.swing.JPanel();
+        jButtonAddNew = new javax.swing.JButton();
+        jButtonImport = new javax.swing.JButton();
+        jButtonExport = new javax.swing.JButton();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setTitle("Products/Services Report");
+        getContentPane().setLayout(new java.awt.GridBagLayout());
+
+        jPanelNoResults.setLabel("There are no results for your search criteria...");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        getContentPane().add(jPanelNoResults, gridBagConstraints);
+
+        jPanelBackground.setBackground(new java.awt.Color(229, 235, 242));
+        jPanelBackground.setLayout(new java.awt.GridBagLayout());
+
+        jPanelContent.setBackground(new java.awt.Color(229, 235, 242));
+        jPanelContent.setLayout(new java.awt.GridBagLayout());
+
+        jPanelUpper.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(195, 210, 219), 1, true));
+        jPanelUpper.setLayout(new java.awt.GridBagLayout());
+
+        jPanelSearch.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(203, 209, 213)));
+        jPanelSearch.setLayout(new java.awt.GridBagLayout());
+
+        jPanelSearchButtons.setLayout(new java.awt.GridBagLayout());
+
+        jButtonSearch.setIcon(new ImageIcon("./images/buttons/Search.png"));
+        jButtonSearch.setText("Search");
+        jButtonSearch.setName("bSearch"); // NOI18N
+        jButtonSearch.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonSearchActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchButtons.add(jButtonSearch, gridBagConstraints);
+
+        jButtonReset.setIcon(new ImageIcon("./images/buttons/refresh.png"));
+        jButtonReset.setText("Reset");
+        jButtonReset.setName("bReset"); // NOI18N
+        jButtonReset.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonResetActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchButtons.add(jButtonReset, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        jPanelSearch.add(jPanelSearchButtons, gridBagConstraints);
+
+        jPanelSearchFields.setLayout(new java.awt.GridBagLayout());
+
+        jLabel1.setText("Product/Service Name");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(jLabel1, gridBagConstraints);
+
+        jLabel2.setText("Unit Price Between");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(jLabel2, gridBagConstraints);
+
+        jLabel4.setText("and");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(jLabel4, gridBagConstraints);
+
+        jTextFieldLow.setName("tfLow"); // NOI18N
+        jTextFieldLow.setPreferredSize(new java.awt.Dimension(105, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(jTextFieldLow, gridBagConstraints);
+
+        jTextFieldHigh.setName("tfHigh"); // NOI18N
+        jTextFieldHigh.setPreferredSize(new java.awt.Dimension(105, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(jTextFieldHigh, gridBagConstraints);
+
+        sBACPaneProductName.setMinimumPopupSize(new java.awt.Dimension(250, 100));
+        sBACPaneProductName.setName("tfProductService"); // NOI18N
+        sBACPaneProductName.setPreferredSize(new java.awt.Dimension(250, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(sBACPaneProductName, gridBagConstraints);
+
+        jLabel6.setText("Quantity Between");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(jLabel6, gridBagConstraints);
+
+        jTextFieldLow1.setName("tfLow"); // NOI18N
+        jTextFieldLow1.setPreferredSize(new java.awt.Dimension(105, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(jTextFieldLow1, gridBagConstraints);
+
+        jLabel7.setText("and");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(jLabel7, gridBagConstraints);
+
+        jTextFieldHigh1.setName("tfHigh"); // NOI18N
+        jTextFieldHigh1.setPreferredSize(new java.awt.Dimension(105, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(jTextFieldHigh1, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        jPanelSearch.add(jPanelSearchFields, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        gridBagConstraints.weightx = 0.1;
+        jPanelUpper.add(jPanelSearch, gridBagConstraints);
+
+        jPanelUpperTitle.setBackground(new java.awt.Color(253, 253, 253));
+        jPanelUpperTitle.setBorder(javax.swing.BorderFactory.createMatteBorder(1, 1, 0, 1, new java.awt.Color(203, 209, 213)));
+        jPanelUpperTitle.setLayout(new java.awt.GridBagLayout());
+
+        jLabel3.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        jLabel3.setText("Search Products/Services");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelUpperTitle.add(jLabel3, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        jPanelUpper.add(jPanelUpperTitle, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 15, 0);
+        jPanelContent.add(jPanelUpper, gridBagConstraints);
+
+        jPanelLowerBorder.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(195, 210, 219), 1, true));
+        jPanelLowerBorder.setLayout(new java.awt.GridBagLayout());
+
+        jPanelLowerTitle.setBackground(new java.awt.Color(253, 253, 253));
+        jPanelLowerTitle.setBorder(javax.swing.BorderFactory.createMatteBorder(1, 1, 0, 1, new java.awt.Color(203, 209, 213)));
+        jPanelLowerTitle.setLayout(new java.awt.GridBagLayout());
+
+        jLabel5.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        jLabel5.setText("Results");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelLowerTitle.add(jLabel5, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        jPanelLowerBorder.add(jPanelLowerTitle, gridBagConstraints);
+
+        jPanelResults.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(203, 209, 213)));
+        jPanelResults.setLayout(new java.awt.GridBagLayout());
+
+        jPTableClients.setName("tableProducts"); // NOI18N
+        jPTableClients.setLayout(new javax.swing.BoxLayout(jPTableClients, javax.swing.BoxLayout.LINE_AXIS));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelResults.add(jPTableClients, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        jPanelLowerBorder.add(jPanelResults, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weighty = 0.1;
+        jPanelContent.add(jPanelLowerBorder, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(15, 15, 15, 15);
+        jPanelBackground.add(jPanelContent, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        getContentPane().add(jPanelBackground, gridBagConstraints);
+
+        jPanelButtons.setLayout(new java.awt.GridBagLayout());
+
+        jButtonAddNew.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        jButtonAddNew.setForeground(new java.awt.Color(35, 130, 165));
+        jButtonAddNew.setIcon(new ImageIcon("./images/buttons/Box_add.png"));
+        jButtonAddNew.setText("New Product/Service");
+        jButtonAddNew.setName("bNewProduct"); // NOI18N
+        jButtonAddNew.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonAddNewActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 5, 0, 5);
+        jPanelButtons.add(jButtonAddNew, gridBagConstraints);
+
+        jButtonImport.setIcon(new ImageIcon("./images/buttons/Page_import.png"));
+        jButtonImport.setText("Import");
+        jButtonImport.setName("bImport"); // NOI18N
+        jButtonImport.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonImportActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 5, 0, 5);
+        jPanelButtons.add(jButtonImport, gridBagConstraints);
+
+        jButtonExport.setIcon(new ImageIcon("./images/buttons/Page_export.png"));
+        jButtonExport.setText("Export");
+        jButtonExport.setName("bExport"); // NOI18N
+        jButtonExport.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonExportActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 5, 0, 5);
+        jPanelButtons.add(jButtonExport, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        getContentPane().add(jPanelButtons, gridBagConstraints);
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void jButtonAddNewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonAddNewActionPerformed
+        JDialogProductData jDialogProductData = new JDialogProductData(this, true);
+        jDialogProductData.setVisible(true);
+
+        if (jDialogProductData.isDirty) {
+            glassPane.showOK("You have successfully added the product \""+jDialogProductData.product.getName()+"\"!");
+            reportTableModel.refreshData();
+        }
+    }//GEN-LAST:event_jButtonAddNewActionPerformed
+
+    private void jButtonImportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonImportActionPerformed
+        new JDialogImportExcelEx(this, JDialogImportExcelEx.FOR_PRODUCTS).setVisible(true);
+        reportTableModel.refreshData();
+    }//GEN-LAST:event_jButtonImportActionPerformed
+
+    private void jButtonExportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonExportActionPerformed
+
+        String filename = "Products & Services.xls";
+
+        File file = new File(filename);
+        JFileChooser efc = new JFileChooser();
+        efc.setSelectedFile(file);
+        if (efc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            file = efc.getSelectedFile();
+            if (file.exists()) {
+                if (Messages.showQuestionMessage(this, "The file already exists. Would you like to overwrite?", "Save file") != JOptionPane.YES_OPTION) {
+                    return;
+                }
+            }
+            try {
+                ArrayList<Integer> idList = new ArrayList<Integer>();
+                for(int i = 0; i< reportTableModel.getData().size(); i++){
+                    idList.add(reportTableModel.getRow(i).getId());
+                }
+                if (!stocks) {
+                    Export.DownloadProducts(file, NameType.PRODUCT_COLUMNS, idList);
+                } else {
+                    Export.DownloadProducts(file, NameType.PRODUCT_COLUMNS_QUANTITY, idList);
+                }
+                glassPane.showOK("Export complete!");
+            } catch (Exception e) {
+                glassPane.showError("This operation could not be completed. If the file already exists, please check that it is closed.");
+            }
+        }
+    }//GEN-LAST:event_jButtonExportActionPerformed
+
+    private void jButtonSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSearchActionPerformed
+        refreshParameters();
+        reportTableModel.refreshData();
+    }//GEN-LAST:event_jButtonSearchActionPerformed
+
+    private void jButtonResetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonResetActionPerformed
+        sBACPaneProductName.getSbTextField().setText("");
+        jTextFieldHigh.setText("");
+        jTextFieldLow.setText("");
+		jTextFieldHigh1.setText("");
+        jTextFieldLow1.setText("");
+		
+    }//GEN-LAST:event_jButtonResetActionPerformed
+
+    private void refreshParameters() {
+        name = sBACPaneProductName.getSbTextField().getText();
+        low = jTextFieldLow.getText();
+        high = jTextFieldHigh.getText();
+        lowq = jTextFieldLow1.getText();
+        highq = jTextFieldHigh1.getText();
+
+
+        if (name == null) {
+            name = "";
+        }
+        if (low == null) {
+            low = "";
+        }
+        if (high == null) {
+            high = "";
+        }
+        
+        if (lowq == null) {
+            lowq = "";
+        }
+        if (highq == null) {
+            highq = "";
+        }
+
+        name = "%" + name + "%";
+    }
+
+    public class ProductsReportModel extends ReportTableModel {
+
+        public ProductsReportModel(String[] columnNames, String[] columns, int[] preferredColumnWidths) {
+            super(columnNames, columns, preferredColumnWidths, null, null);
+        }
+
+        @Override
+        public ArrayList<Record> getData() {
+
+            ArrayList<Record> results = new ArrayList<Record>();
+            try {
+                Dao<ProductEntity, Integer> productsDao = DaoManager.createDao(
+                        Common.connection.getConnection(), ProductEntity.class);
+                
+                GenericRawResults<String[]> queryRaw = productsDao.queryRaw("select max(price), min(price) from products");
+                String[] minmax = queryRaw.getResults().get(0);
+                
+                BigDecimal max = new BigDecimal(minmax[0] == null ? "0" : minmax[0]);
+                BigDecimal min = new BigDecimal(minmax[1] == null ? "0" : minmax[1]);              
+                
+                GenericRawResults<String[]> qr = productsDao.queryRaw("SELECT p.id, p.name, p.description, p.measuring_unit, p.price, "
+                        + "p.has_tax_included, t.id, t.tax_name, t.tax_percentage, t.is_default_tax FROM `products` p INNER JOIN taxes t ON p.tax_id=t.id  WHERE ((p.`name` LIKE ? AND p.`price` BETWEEN ? AND ? ) AND p.`deleted` = ? ) ORDER BY lower(p.name) ASC",
+                        name, low.isEmpty() ? min.toString() : new BigDecimal(low).toString(), high.isEmpty() ? max.toString() : new BigDecimal(high).toString(), "n");
+                
+                for (String rowData[] : qr) {
+                    if (!stocks) {
+                        results.add(new ProductRecord(Integer.parseInt(rowData[0]), rowData[1], rowData[2], new BigDecimal(rowData[4]), rowData[8] + " %", rowData[3], precision));
+                    } else {
+                        boolean add = true;
+						if (!highq.isEmpty() && !lowq.isEmpty()) {
+							add = false;
+						}
+                        String quantity = "";
+                        try {
+                            Stock stock = Stock.getByProductId(Common.connection.getConnection(), Integer.parseInt(rowData[0]));
+                            if (stock != null && stock.getQuantity() != null) {
+                                add = false;
+                                quantity = stock.getQuantity().setScale(precision, RoundingMode.HALF_UP).toString();
+                                BigDecimal compare = stock.getQuantity().setScale(precision, RoundingMode.HALF_UP);
+
+                                BigDecimal maxDouble = BigDecimal.valueOf(Double.MAX_VALUE);
+                                try {
+                                    maxDouble = new BigDecimal(highq);
+                                } catch (Exception ex) {
+                                    maxDouble = BigDecimal.valueOf(Double.MAX_VALUE);
+                                }
+
+                                BigDecimal minDouble = BigDecimal.valueOf(Double.MIN_VALUE);
+                                try {
+                                    minDouble = new BigDecimal(lowq);
+                                } catch (Exception ex) {
+                                    minDouble = BigDecimal.valueOf(Double.MIN_VALUE);
+                                }
+
+                                if (highq.isEmpty() && !lowq.isEmpty()) {
+                                    if (compare.compareTo(minDouble) == 0 || compare.compareTo(minDouble) > 0) {
+                                        add = true;
+                                    }
+                                } else if (!highq.isEmpty() && lowq.isEmpty()) {
+                                    if (compare.compareTo(maxDouble) == 0 || compare.compareTo(maxDouble) < 0) {
+                                        add = true;
+                                    }
+                                } else if (!highq.isEmpty() && !lowq.isEmpty()) {
+                                    //add=false;
+                                    if ((compare.compareTo(minDouble) == 0 || compare.compareTo(minDouble) > 0)
+                                            && (compare.compareTo(maxDouble) == 0 || compare.compareTo(maxDouble) < 0)) {
+                                        add = true;
+                                    }
+                                } else if (highq.isEmpty() && lowq.isEmpty()) {
+                                    add = true;
+                                }
+                            }
+                        } catch (Exception ex) {
+                            quantity = "";
+                            ex.printStackTrace();
+                        }
+
+                        if (add) {
+                            results.add(new ProductRecordQuantity(Integer.parseInt(rowData[0]), rowData[1], rowData[2], quantity, new BigDecimal(rowData[4]), rowData[8] + " %", rowData[3], precision));
+                        }
+                    }
+                }
+
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+
+            hiddenColumns.addAll(alwaysHideColumns);
+            fireTableStructureChanged();
+
+            if (pmPanel != null) {
+                pmPanel.hardreset();
+            }
+
+            if (reportTable != null && reportTable.getColumnCount() > 0) {
+
+                new ButtonsProducts(reportTable, reportTable.getColumnCount() - 1);
+
+            }
+
+            if (reportTable != null) {
+                for (int i = 0; i < reportTable.getColumnCount() - 1; i++) {
+                    reportTable.getColumnModel().getColumn(i).setHeaderRenderer(sortButtonRenderer);
+                }
+                reportTable.setPreferredColumnWidths();
+            }
+
+            return results;
+        }
+        
+                @Override
+        public boolean isCellEditable(int row, int col) {
+            if (Arrays.asList(columnNames).indexOf("Description") == col ||
+                    Arrays.asList(columnNames).indexOf("Action") == col) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+    }
+
+    public class ProductsReportTable extends ReportTable {
+
+        public ProductsReportTable(JPanel p) {
+            super(p);
+        }
+
+        @Override
+        public TableCellRenderer getCellRenderer(int row, int column) {
+
+            if (Arrays.asList(columnNames).indexOf("Description") == column) {
+                return new BasicMultiLineCellRenderer(reportTable);
+            }
+            
+             if (Arrays.asList(columnNames).indexOf("Product/Service Name") == column) {
+                return new LeftCellLabel();
+            }
+             
+             if (stocks && Arrays.asList(columnNames).indexOf("Quantity") == column) {
+                return new ColoredCellLabel();
+            }
+
+            return super.getCellRenderer(row, column);
+        }
+
+        @Override
+        public TableCellEditor getCellEditor(int row, int column) {
+                        MultiLineCellEditor mle = new MultiLineCellEditor(reportTable);
+            mle.addCellEditorListener(new CellEditorListener() {
+                @Override
+                public void editingStopped(ChangeEvent e) {
+                    try {
+                        MultiLineCellEditor mle = (MultiLineCellEditor) e.getSource();
+                        int id = ((JDialogProductsReport.ProductsReportModel) reportTableModel).getId(pmPanel.getRealRow(mle.getRow()));
+
+                        SelectArg selectDescription = new SelectArg();
+                        Dao<ProductEntity, Integer> productDao = DaoManager.createDao(Common.connection.getConnection(), ProductEntity.class);
+                        UpdateBuilder<ProductEntity, Integer> updateBuilder = productDao.updateBuilder();
+                        updateBuilder.updateColumnValue(Product.DESCRIPTION, selectDescription);
+                        updateBuilder.where().eq("id", id);
+                        selectDescription.setValue(mle.getCellEditorValue().toString());
+                        updateBuilder.update();
+
+                        reportTableModel.getRow(pmPanel.getRealRow(mle.getRow())).data[1] = mle.getCellEditorValue().toString();
+
+                        reportTableModel.fireTableRowsUpdated(pmPanel.getRealRow(mle.getRow()), pmPanel.getRealRow(mle.getRow()));
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+
+                @Override
+                public void editingCanceled(ChangeEvent e) {
+                    return;
+                }
+            });
+            if (column == Arrays.asList(columnNames).indexOf("Description")) {
+                return mle;
+            }
+            return super.getCellEditor(row, column);
+        }
+        
+        
+    }
+    
+    public class ColoredCellLabel extends CellLabel {
+
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int r, int c) {
+                CellLabel cl = (CellLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, r, c);
+                Object row = pmPanel.sPm.getValueAt(r, 3);
+                if(row == null || row.toString().isEmpty()){
+                    return cl;
+                }
+                BigDecimal bigDecimal = new BigDecimal(row.toString());
+                if(bigDecimal.compareTo(BigDecimal.ZERO)<=0){
+                    setForeground(Color.red);
+                }
+                return cl;
+            }
+        }
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(JDialogProductsReport.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(JDialogProductsReport.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(JDialogProductsReport.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(JDialogProductsReport.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the dialog */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                JDialogProductsReport dialog = new JDialogProductsReport(new javax.swing.JFrame(), true);
+                dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+                    @Override
+                    public void windowClosing(java.awt.event.WindowEvent e) {
+                        System.exit(0);
+                    }
+                });
+                dialog.setVisible(true);
+            }
+        });
+    }
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButtonAddNew;
+    private javax.swing.JButton jButtonExport;
+    private javax.swing.JButton jButtonImport;
+    private javax.swing.JButton jButtonReset;
+    private javax.swing.JButton jButtonSearch;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JPanel jPTableClients;
+    private javax.swing.JPanel jPanelBackground;
+    private javax.swing.JPanel jPanelButtons;
+    private javax.swing.JPanel jPanelContent;
+    private javax.swing.JPanel jPanelLowerBorder;
+    private javax.swing.JPanel jPanelLowerTitle;
+    private sleekbill.swingutils.JPanelNoResults jPanelNoResults;
+    private javax.swing.JPanel jPanelResults;
+    private javax.swing.JPanel jPanelSearch;
+    private javax.swing.JPanel jPanelSearchButtons;
+    private javax.swing.JPanel jPanelSearchFields;
+    private javax.swing.JPanel jPanelUpper;
+    private javax.swing.JPanel jPanelUpperTitle;
+    private javax.swing.JTextField jTextFieldHigh;
+    private javax.swing.JTextField jTextFieldHigh1;
+    private javax.swing.JTextField jTextFieldLow;
+    private javax.swing.JTextField jTextFieldLow1;
+    private sleekbill.swingutils.autosuggesters.SBACPanelTextField sBACPaneProductName;
+    // End of variables declaration//GEN-END:variables
+}

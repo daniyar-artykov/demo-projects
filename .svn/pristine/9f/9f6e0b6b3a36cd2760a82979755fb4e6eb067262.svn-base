@@ -1,0 +1,126 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames.autosuggesterdata;
+
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import sleekbill.Common;
+import sleekbill.beans.Product;
+import sleekbill.entities.ProductEntity;
+import sleekbill.swingutils.autosuggesters.AutosuggesterDataBuilder;
+import sleekbill.swingutils.autosuggesters.AutosuggesterItem;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.dao.GenericRawResults;
+import com.j256.ormlite.dao.RawRowMapper;
+import java.math.RoundingMode;
+import sleekbill.Config;
+
+/**
+ *
+ * @author Andrei
+ */
+public class SBACProducts implements AutosuggesterDataBuilder {
+
+	String extraWhere = "";
+        private boolean stocks = Common.keepStocks();
+
+    public SBACProducts() {
+		this("");
+	}
+	
+    public SBACProducts(String extraWhere) {
+		super();
+		this.extraWhere = extraWhere;
+	}
+
+	
+    @Override
+    public ArrayList<AutosuggesterItem> getData(String input, Integer rowNumber) {
+        ArrayList<AutosuggesterItem> l = new ArrayList<AutosuggesterItem>();
+        try {
+            Dao<ProductEntity, Integer> productsDao = DaoManager.createDao(
+                    Common.connection.getConnection(), ProductEntity.class);
+            String query = "";
+            
+            if (!stocks) {
+                query = "SELECT "
+                        + "'<html>' || substr(name,0,CHARINDEX(lower(?), lower(name))) || '<b>' || substr(name,CHARINDEX(lower(?), lower(name)), length(lower(?))) || '</b>' || substr(name,CHARINDEX(lower(?), lower(name)) + length(lower(?))) || '</html>' AS den, "
+                        + "id, name, price "
+                        + "FROM products "
+                        + "WHERE name LIKE ? "
+                        + " " + extraWhere + " "
+                        + "ORDER BY lower(name) ASC LIMIT " + rowNumber;
+            } else {
+                if (!extraWhere.contains("products.deleted")) {
+                    extraWhere = extraWhere.replace("deleted", "products.deleted");
+                }
+                query = "SELECT "
+                        + "'<html>' || substr(products.name,0,CHARINDEX(lower(?), lower(products.name))) || '<b>' || substr(products.name,CHARINDEX(lower(?), lower(products.name)), length(lower(?))) || '</b>' || substr(products.name,CHARINDEX(lower(?), lower(products.name)) + length(lower(?))) || '</html>' AS den, "
+                        + "products.id, products.name, products.price, stocks.quantity "
+                        + "FROM products "
+                        + "LEFT JOIN stocks ON products.id=stocks.product_id "
+                        + "WHERE products.name LIKE ? "
+                        + " " + extraWhere + " "
+                        + "ORDER BY lower(products.name) ASC LIMIT " + rowNumber;
+            }
+
+            GenericRawResults<AutosuggesterItem> rawResults =
+                    productsDao.queryRaw(query,
+                    new RawRowMapper<AutosuggesterItem>() {
+                public AutosuggesterItem mapRow(String[] columnNames, String[] resultColumns) {
+                    int id = 0;
+                    try {
+                        id = Integer.parseInt(resultColumns[1]);
+                    } catch (NumberFormatException e) {
+                    }
+
+                    Product aux = new Product();
+                    aux.setId(id);
+                    aux.setName(resultColumns[2]);
+                    aux.setPrice(new BigDecimal(resultColumns[3]));
+                    
+                    String html = resultColumns[0];
+                    if(stocks){
+                        String s = resultColumns[4];
+                        if(s != null && !s.isEmpty()){
+                            String color = "green";
+                            BigDecimal bd = new BigDecimal(s);
+                            if(bd.compareTo(BigDecimal.ZERO) <=0)
+                                color = "red";
+                            
+                            html = html.replace("</html>", " <span style=\"color:"+color+"\">"+bd.setScale(Common.PRECISION, RoundingMode.HALF_UP)+" pcs.</span></html>");
+                        }
+                    }
+ 
+                    return new AutosuggesterItem(id, resultColumns[2], html,
+                            aux, true);
+                }
+            },
+                    input, input, input, input, input, "%" + input + "%");
+            l.addAll(rawResults.getResults());
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return l;
+    }
+
+    @Override
+    public long getCount() {
+            try {
+                Dao<ProductEntity, Integer> productsDao = DaoManager.createDao(
+                            Common.connection.getConnection(), ProductEntity.class);
+                return productsDao.countOf();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            return 0;
+    }
+}

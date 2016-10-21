@@ -1,0 +1,278 @@
+package sleekbill.swingutils.autosuggesters;
+
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.Insets;
+import java.awt.LayoutManager;
+import java.awt.Rectangle;
+import java.awt.event.FocusListener;
+
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JPanel;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.UIManager;
+import javax.swing.text.Document;
+
+/**
+ *
+ * @author marcu flaviu
+ */
+public class SBACPanelTextArea extends javax.swing.JPanel {
+
+    private static final long serialVersionUID = 1L;
+    private SBAutoSuggesterJTextArea sbTextArea;
+
+    /**
+     * Creates new form SBACPanel
+     */
+    public SBACPanelTextArea() {
+        setSbTextArea(new SBAutoSuggesterJTextArea());
+        // initComponents();
+        init();
+    }
+
+    public SBACPanelTextArea(boolean showDeleteButton) {
+        setSbTextArea(new SBAutoSuggesterJTextArea(showDeleteButton));
+        // initComponents();
+        init();
+    }
+
+    public SBACPanelTextArea(AutosuggesterDataBuilder dataBuilder) {
+        setSbTextArea(new SBAutoSuggesterJTextArea(dataBuilder));
+        // initComponents();
+        init();
+    }
+
+    public SBACPanelTextArea(AutosuggesterDataBuilder dataBuilder, boolean showDeleteButton) {
+        setSbTextArea(new SBAutoSuggesterJTextArea(dataBuilder, showDeleteButton));
+        // initComponents();
+        init();
+    }
+
+    public SBACPanelTextArea(AutosuggesterDataBuilder dataBuilder, boolean showDeleteButton, boolean addNew) {
+        setSbTextArea(new SBAutoSuggesterJTextArea(dataBuilder, showDeleteButton, addNew));
+        // initComponents();
+        init();
+    }
+
+    public void setDataBuilder(AutosuggesterDataBuilder dataBuilder) {
+        getSbTexArea().setDataBuilder(dataBuilder);
+    }
+
+    public void setAddNew(boolean enabled) {
+        getSbTexArea().setAddNew(enabled);
+    }
+
+    public void setAddNewActionListener(AddNewActionListener listener) {
+        getSbTexArea().setAddNewActionListener(listener);
+    }
+
+    public void removeAddNewActionListener(AddNewActionListener listener) {
+        getSbTexArea().removeAddNewActionListener();
+    }
+
+    public DeleteActionListener getDeleteActionListener() {
+        return getSbTexArea().getDeleteActionListener();
+    }
+
+    public void setDeleteActionListener(DeleteActionListener listener) {
+        getSbTexArea().setDeleteActionListener(listener);
+    }
+
+    public void removeDeleteActionListener(DeleteActionListener listener) {
+        getSbTexArea().removeDeleteActionListener();
+    }
+
+    public AddNewActionListener getAddNewActionListener() {
+        return getSbTexArea().getAddNewActionListener();
+    }
+
+    public SBAutoSuggesterJTextArea getSbTexArea() {
+        return sbTextArea;
+    }
+
+    public void setSbTextArea(SBAutoSuggesterJTextArea sbTextField) {
+        this.sbTextArea = sbTextField;
+    }
+
+    public int getIdOfSelectedItem() {
+        return sbTextArea.getIdOfSelectedItem();
+    }
+
+    public boolean isDeleteButtonPressed() {
+        return sbTextArea.isDeleteButtonPressed();
+    }
+
+    public Dimension getMinimumPopupSize() {
+        return sbTextArea.getMinimumPopupSize();
+    }
+
+    public void setMinimumPopupSize(Dimension minimumPopupSize) {
+        sbTextArea.setMinimumPopupSize(minimumPopupSize);
+    }
+
+    public Dimension getMaximumPopupSize() {
+        return sbTextArea.getMaximumPopupSize();
+    }
+
+    public void setMaximumPopupSize(Dimension maximumPopupSize) {
+        sbTextArea.setMaximumPopupSize(maximumPopupSize);
+    }
+
+    public void addFocusListener(FocusListener l) {
+        sbTextArea.addFocusListener(l);
+    }
+
+    public void setText(String text) {
+        sbTextArea.setText(text);
+        sbTextArea.setCaretPosition(0);
+    }
+
+    public String getText() {
+        return sbTextArea.getText();
+    }
+
+    public void init() {
+        setPreferredSize(new Dimension(200, 100));
+
+
+
+        sbTextArea.setBorder(null);
+
+
+
+
+        add(getSbTexArea());
+        setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+
+        setBorder(UIManager.getBorder("TextField.border") != null ? UIManager.getBorder("TextField.border") : new JTextField()
+                .getBorder());
+        sbTextArea.setBorder(null);
+        setBackground(sbTextArea.getBackground());
+
+        setFocusable(false);
+        revalidate();
+    }
+
+    public Document getDocument() {
+        return sbTextArea.getDocument();
+    }
+
+    public void setDocument(Document document) {
+        sbTextArea.setDocument(document);
+    }
+
+    private class SBACComboBoxLayoutManager implements LayoutManager {
+
+        JPanel c;
+        JTextArea ta;
+        JButton ab;
+
+        public SBACComboBoxLayoutManager(SBACPanelTextArea container, JTextArea ta, JButton ab) {
+            this.c = container;
+            this.ta = ta;
+            this.ab = ab;
+        }
+
+        public void addLayoutComponent(String name, Component comp) {
+        }
+
+        public void removeLayoutComponent(Component comp) {
+        }
+
+        public Dimension preferredLayoutSize(Container parent) {
+            return SBACPanelTextArea.this.getPreferredSize();
+        }
+
+        public Dimension minimumLayoutSize(Container parent) {
+            return new Dimension(10, 10);
+        }
+
+        public void layoutContainer(Container parent) {
+            int width = getWidth();
+            int height = getHeight();
+
+            Insets insets = getInsets();
+            int buttonSize = height - (insets.top + insets.bottom);
+            Rectangle cvb;
+
+            if (ab != null) {
+                if (c.getComponentOrientation().isLeftToRight()) {
+                    ab.setBounds(width - (insets.right + buttonSize), insets.top, buttonSize, buttonSize);
+                } else {
+                    ab.setBounds(insets.left, insets.top, buttonSize, buttonSize);
+                }
+            }
+            if (ta != null) {
+                cvb = rectangleForCurrentValue();
+                ta.setBounds(cvb);
+            }
+
+        }
+
+        protected Rectangle rectangleForCurrentValue() {
+            int width = c.getWidth();
+            int height = c.getHeight();
+            Insets insets = getInsets();
+            int buttonSize = height - (insets.top + insets.bottom);
+            if (ab != null) {
+                buttonSize = ab.getWidth();
+            }
+            if (c.getComponentOrientation().isLeftToRight()) {
+                return new Rectangle(insets.left, insets.top, width
+                        - (insets.left + insets.right + buttonSize),
+                        height - (insets.top + insets.bottom));
+            } else {
+                return new Rectangle(insets.left + buttonSize, insets.top, width
+                        - (insets.left + insets.right + buttonSize),
+                        height - (insets.top + insets.bottom));
+            }
+        }
+    }
+
+    @Override
+    public void setEnabled(boolean e) {
+        sbTextArea.setEnabled(e);
+    }
+
+    @Override
+    public void requestFocus() {
+        sbTextArea.requestFocusInWindow();
+    }
+
+    @Override
+    public boolean requestFocusInWindow() {
+        return sbTextArea.requestFocusInWindow();
+    }
+
+    public void setAlertIfNoMatch(boolean alert) {
+        sbTextArea.setAlertIfNoMatch(alert);
+    }
+
+    @Override
+    public void setName(String name) {
+        super.setName(name);
+        if (sbTextArea != null) {
+            sbTextArea.setName("sbTf_" + this.getName());
+        }
+
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    // <editor-fold defaultstate="collapsed"
+    // desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        setPreferredSize(new java.awt.Dimension(200, 100));
+        setLayout(new java.awt.GridBagLayout());
+    }// </editor-fold>//GEN-END:initComponents
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    // End of variables declaration//GEN-END:variables
+}

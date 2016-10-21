@@ -1,0 +1,37 @@
+package sleekbill.xmlrpc;
+
+import java.io.File;
+import java.sql.SQLException;
+
+import sleekbill.xmlrpc.Server.RequestInitializableRequestProcessor;
+
+/**
+ *
+ * @author  flaviu marcu
+ */
+
+/*functii folosite pentru client-server*/
+public interface Handlers extends RequestInitializableRequestProcessor {
+//    public CachedRowSetImpl getRows(String query,String firma,String user) throws SQLException;
+//    public CachedRowSetImpl getRows(String query,Object[] params,String firma,String user) throws SQLException;
+//    public int uidRow(String query,String firma) throws SQLException;
+//    public int uidRow(String query,Object[] params,String firma) throws SQLException;
+//    public int beginTransaction(String firma);
+//    public int commitTr(String firma);
+//    public int rollbackTr(String firma);
+//    public String getCurrentLock(String fkey);
+    public byte[] fetch(File f);
+//    public Vector<Company> getFirmeList(String fkey);
+//    public int updateDB(String fkey);
+//    public Date getServerDate();
+//    public Vector<String> getServerVersion();
+//    public int vKCheck(String fkey, String cif);
+//    public boolean checkAuthorization(String firmaDb) throws NotAuthorizedException;
+    public boolean refreshMaxClients(String firmaDB);
+//    public boolean vKInsert(String k, String fkey, String versiune, String an,
+//			String osType, Date dataExpirarii, String moduleNr, String access, String maxClients);
+//    public boolean vKUpdateAccess(String fkey, String access);
+//    public String getOsType();
+    
+    public String addTax(Object[] p) throws SQLException;
+}

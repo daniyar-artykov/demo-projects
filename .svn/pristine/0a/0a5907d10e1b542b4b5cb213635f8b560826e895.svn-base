@@ -1,0 +1,24 @@
+package sleekbill.swingutils;
+
+import java.util.Date;
+
+/**
+ *
+ * @author  tonia
+ */
+public class SBDateTime extends Date {
+
+    boolean setLinie = false;
+
+    public SBDateTime(Date date) {
+        SBDateTime.this.setTime(date.getTime());
+    }
+
+    public SBDateTime(boolean setLinie) {
+        this.setLinie = setLinie;
+    }
+
+    boolean isLinie() {
+        return setLinie;
+    }
+}

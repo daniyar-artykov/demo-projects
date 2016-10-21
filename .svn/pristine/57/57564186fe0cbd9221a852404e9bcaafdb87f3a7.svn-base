@@ -1,0 +1,581 @@
+/*
+ * JDialogDespreProgram.java
+ *
+ * Created on February 12, 2008, 5:37 PM
+ */
+package sleekbill.frames;
+
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.net.URI;
+import java.sql.SQLException;
+import java.util.Calendar;
+import java.util.Date;
+
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
+
+import sleekbill.Common;
+import sleekbill.Company;
+import sleekbill.Config;
+import sleekbill.Messages;
+import sleekbill.SBConstants;
+import sleekbill.beans.SBDaoException;
+import sleekbill.db.SBConnection;
+import sleekbill.util.Modules;
+import sleekbill.util.SBSwingUtils;
+import sleekbill.utils.SBDesktop;
+
+/**
+ *
+ * @author  dani
+ */
+public class JDialogAbout extends javax.swing.JDialog {
+
+	private static String message = "";
+	private static String despreSB = "";
+	private static String despreIIT = "";
+	private boolean activat = false;
+	
+	Company company;
+	SBConnection connection;
+
+
+	/** Creates new form JDialogDespreProgram */
+	public JDialogAbout(java.awt.Frame parent, boolean modal, Company company, SBConnection connection) {
+		super(parent, modal);
+		initComponents();
+		setLocationRelativeTo(parent);
+ 
+		this.company = company;
+		this.connection = connection;
+		
+		String version = "";
+		if (Common.IS_INDIA){
+			String india = Common.selectedCompanyConfig.get(Config.INDIA);
+			if(india.isEmpty()){
+				version = " TRIAL";
+			} else if(india.equals("free")){
+				version = " FREE";
+			} else {
+				version = " PREMIUM";
+			}
+		}
+
+		despreSB = "<div style=\"font-family:Verdana;font-size:11;\"><b>"+(Common.IS_INDIA ? "Sleek Bill for India" : "Sleek Bill")+" " +
+				Common.getYear() + version + " </b>(ver. " + Common.getVersionNr() + "." + Common.getVersionMinor() + ")<br><br>" +
+				"<b>"+(Common.IS_INDIA ? "Sleek Bill for India" : "Sleek Bill")+"</b> " + (Common.IS_INDIA  ? "billing" : "invoicing") + " software is a product of <b>Intelligent IT</b></div>";
+
+		despreIIT = "<div style=\"font-family:Verdana;font-size:11;text-align=\"right\"><b><span style=\"color:#2382a5; font-size:11px\">Intelligent IT</span></b><br>"
+				+ "<a href='" + SBConstants.URL_HOMEPAGE + "'>" + SBConstants.URL_HOMEPAGE + "</a>" + "<br>"
+				+ "<a href='mailto:" + SBConstants.MAILTO + "'>" + SBConstants.MAILTO + "</a>" + "</div>";
+		message = "";
+		jEPSmartBill.setText(despreSB);
+		jEPIntelligentIT.setText(despreIIT);
+		
+		final int nrZile = Common.vKCheckAll(connection);
+		//System.err.println(nrZile);
+		long nrFacturiAvizeProformeEmise = 0;
+		try {
+			nrFacturiAvizeProformeEmise = Common.getNrDocEmise(connection);
+		} catch (SBDaoException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+		int nrZileExp = (int) ((Common.getDataExDb(connection).getTime()
+				- System.currentTimeMillis()) / (1000 * 60 * 60 * 24));
+
+		if (nrZile != -1) {
+			jPanel1.setPreferredSize(new Dimension(750, 400));
+			if (nrZile <= 30) {
+				if (!Common.IS_INDIA) {
+					message += "<div style=\"font-family:Verdana;font-size:11;\"><br>" + "You have not ordered your license for "+(Common.IS_INDIA ? "Sleek Bill for India" : "Sleek Bill")+" yet. "
+							+ "Your program will expire in <strong>" + (31 - nrZile) + " days</strong>. "
+							+ "To order a license please press the button below.</div>";
+				} else {
+					message += "<div style=\"font-family:Verdana;font-size:11;\"><br>" + "Your copy of "+(Common.IS_INDIA ? "Sleek Bill for India" : "Sleek Bill")+" for India is  <b>not registered</b>. This software will expire in  <strong>" + (31 - nrZile) + " day"+((31 - nrZile)==1?"":"s")+"</strong>. "
+							+ "Please activate "+(Common.IS_INDIA ? "Sleek Bill for India" : "Sleek Bill")+" using the button bellow:</div>";
+				}
+
+			} else {
+				if (!Common.IS_INDIA) {
+					message += "<div style=\"font-family:Verdana;font-size:11;\"><br>"
+							+ "You have not ordered your license for "+(Common.IS_INDIA ? "Sleek Bill for India" : "Sleek Bill")+" yet. "
+							+ "Your 30-days trial copy has expired. "
+							+ "However, you may issue " + (JDialogTrial.NR_DOCUMENTE_PERMISE - nrFacturiAvizeProformeEmise) + " more documents before termination.</div>";
+				} else {
+					message += "<div style=\"font-family:Verdana;font-size:11;\"><br>"
+							+ "You have not activated your license for "+(Common.IS_INDIA ? "Sleek Bill for India" : "Sleek Bill")+" yet. "
+							+ "Your 30-days trial copy has expired. "
+							+ "However, you may issue " + (JDialogTrial.NR_DOCUMENTE_PERMISE - nrFacturiAvizeProformeEmise) + " more documents before termination.</div>";
+				}
+			}
+
+			GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
+			JButton jBLink;
+
+			pack();
+			setLocationRelativeTo(parent);
+//			int i = 0;
+//			try {
+//				if (Common.links != null && !Common.links.isEmpty()) {
+//					for (final String title : Common.links.keySet()) {
+//						jBLink = new JButton(title);
+//						jBLink.setForeground(new java.awt.Color(51, 153, 255));
+//						jBLink.setBorder(null);
+//						//jBLink.setIcon(new ImageIcon("./images/buttons/sageata.gif"));
+//						jBLink.setBorderPainted(false);
+//						jBLink.setContentAreaFilled(false);
+//						jBLink.setFocusPainted(false);
+//						jBLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+//
+//
+//
+//						gridBagConstraints.gridx = 0;
+//						gridBagConstraints.gridy = i;
+//						i++;
+//						gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+//						// jPanel2.add(jBLink1, gridBagConstraints);
+//						jBLink.addActionListener(new java.awt.event.ActionListener() {
+//
+//							public void actionPerformed(java.awt.event.ActionEvent evt) {
+//								jBLinkActionPerformed(Common.links.get(title));
+//							}
+//						});
+//						jPLinks.add(jBLink, gridBagConstraints);
+//					}
+//				} else {
+//					jPInfoBottom.setVisible(false);
+//				}
+//			} catch (Exception e) {
+//				jPInfoBottom.setPreferredSize(new java.awt.Dimension(0, 0));
+//				jPInfoBottom.setVisible(false);
+//				e.printStackTrace();
+//			}
+		} else {            
+			jPanel1.setPreferredSize(new Dimension(750, 200));
+
+			jPComanda.setVisible(false);
+			jPActivare.setVisible(false);
+			jLabel1.setVisible(false);
+			
+			if(Common.IS_INDIA && Common.selectedCompanyConfig.get(Config.INDIA).equals("free")){
+				jPanel1.setPreferredSize(new Dimension(750, 200));
+				jPActivare.setVisible(true);
+				jLabel1.setVisible(true);
+				jLabel1.setText("If you have a Premium License Key, please enter it here:");
+				jPDespreSB.setBorder(javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 0, new java.awt.Color(203, 209, 213)));
+			}
+			pack();
+			jPanel1.revalidate();
+			setLocationRelativeTo(parent);
+		}
+
+		jEPText.setText(message);
+		jEPText.addHyperlinkListener(new AboutHyperlinkListener());
+        
+        jEPIntelligentIT.addHyperlinkListener(new AboutHyperlinkListener());
+
+		SBSwingUtils.addContextMenuToChildren(this);
+                SBSwingUtils.applyManualFocusBorder(jTFCodActivare);
+	}
+
+	class AboutHyperlinkListener implements HyperlinkListener {
+
+		@Override
+		public void hyperlinkUpdate(HyperlinkEvent e) {
+			if (!java.awt.Desktop.isDesktopSupported()) {
+				return;
+			}
+			try {
+				if (!e.getEventType().equals(HyperlinkEvent.EventType.ACTIVATED)) {
+					return;
+				}
+				if (e.getDescription().equals(SBConstants.URL_HOMEPAGE)) {
+					SBDesktop.browse(new URI(e.getDescription()));
+				} else if (e.getDescription().contains(SBConstants.MAILTO)) {
+					URI uri = new URI("mailto:" + SBConstants.MAILTO + "?subject=error&body=");
+					SBDesktop.browse(uri);
+				}
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+	}
+	
+	public boolean isActivat() {
+		return activat;
+	}
+
+
+
+	/** This method is called from within the constructor to
+	 * initialize the form.
+	 * WARNING: Do NOT modify this code. The content of this method is
+	 * always regenerated by the Form Editor.
+	 */
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
+
+        jPanel2 = new javax.swing.JPanel();
+        jPanel3 = new javax.swing.JPanel();
+        jPanel1 = new javax.swing.JPanel();
+        jPDespreSB = new javax.swing.JPanel();
+        jLSigla = new javax.swing.JLabel();
+        jPSB = new javax.swing.JPanel();
+        jEPSmartBill = new javax.swing.JEditorPane();
+        jPIIT = new javax.swing.JPanel();
+        jEPIntelligentIT = new javax.swing.JEditorPane();
+        jPComanda = new javax.swing.JPanel();
+        jBComanda = new javax.swing.JButton();
+        jEPText = new javax.swing.JEditorPane();
+        jLIcon1 = new javax.swing.JLabel();
+        jPActivare = new javax.swing.JPanel();
+        jLCod = new javax.swing.JLabel();
+        jTFCodActivare = new javax.swing.JTextField();
+        jBActiveaza = new javax.swing.JButton();
+        jCBAltCod = new javax.swing.JCheckBox();
+        jLabel1 = new javax.swing.JLabel();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setTitle("About Sleek Bill");
+        setResizable(false);
+        getContentPane().setLayout(new java.awt.GridBagLayout());
+
+        jPanel2.setBackground(new java.awt.Color(229, 235, 242));
+        jPanel2.setLayout(new java.awt.GridBagLayout());
+
+        jPanel3.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(195, 210, 219), 1, true));
+        jPanel3.setLayout(new java.awt.GridBagLayout());
+
+        jPanel1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(203, 209, 213)));
+        jPanel1.setPreferredSize(new java.awt.Dimension(580, 500));
+        jPanel1.setLayout(new java.awt.GridBagLayout());
+
+        jPDespreSB.setLayout(new java.awt.GridBagLayout());
+
+        jLSigla.setBackground(new java.awt.Color(255, 255, 255));
+        jLSigla.setMinimumSize(new java.awt.Dimension(200, 100));
+        jLSigla.setPreferredSize(new java.awt.Dimension(200, 100));
+        jLSigla.setIcon(Common.IS_INDIA ? new ImageIcon("./images/icons/logo.png") : new ImageIcon("./images/icons/logo.jpg"));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPDespreSB.add(jLSigla, gridBagConstraints);
+
+        jPSB.setLayout(new java.awt.GridBagLayout());
+
+        jEPSmartBill.setEditable(false);
+        jEPSmartBill.setContentType("text/html"); // NOI18N
+        jEPSmartBill.setOpaque(false);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        jPSB.add(jEPSmartBill, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPDespreSB.add(jPSB, gridBagConstraints);
+
+        jPIIT.setLayout(new java.awt.GridBagLayout());
+
+        jEPIntelligentIT.setContentType("text/html"); // NOI18N
+        jEPIntelligentIT.setEditable(false);
+        jEPIntelligentIT.setOpaque(false);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        jPIIT.add(jEPIntelligentIT, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPDespreSB.add(jPIIT, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        jPanel1.add(jPDespreSB, gridBagConstraints);
+
+        jPComanda.setBorder(javax.swing.BorderFactory.createMatteBorder(1, 0, 1, 0, new java.awt.Color(203, 209, 213)));
+        jPComanda.setLayout(new java.awt.GridBagLayout());
+
+        jBComanda.setText("Order Key");
+        jBComanda.setName("bOrder"); // NOI18N
+        jBComanda.setIcon(new ImageIcon("./images/buttons/lock.png"));
+        jBComanda.setText(Common.IS_INDIA? "Activate License" : "Order Key");
+        jBComanda.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBComandaActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 0, 20, 0);
+        jPComanda.add(jBComanda, gridBagConstraints);
+
+        jEPText.setEditable(false);
+        jEPText.setContentType("text/html"); // NOI18N
+        jEPText.setOpaque(false);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(10, 0, 0, 0);
+        jPComanda.add(jEPText, gridBagConstraints);
+
+        jLIcon1.setPreferredSize(new java.awt.Dimension(90, 90));
+        jLIcon1.setIcon(new ImageIcon("./images/dialogs/info_64.png"));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(10, 0, 0, 0);
+        jPComanda.add(jLIcon1, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        jPanel1.add(jPComanda, gridBagConstraints);
+
+        jPActivare.setLayout(new java.awt.GridBagLayout());
+
+        jLCod.setText("License Key");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(7, 5, 7, 5);
+        jPActivare.add(jLCod, gridBagConstraints);
+
+        jTFCodActivare.setMaximumSize(new java.awt.Dimension(200, 20));
+        jTFCodActivare.setMinimumSize(new java.awt.Dimension(150, 20));
+        jTFCodActivare.setName("tfLicenseKey"); // NOI18N
+        jTFCodActivare.setPreferredSize(new java.awt.Dimension(160, 20));
+        jTFCodActivare.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                jTFCodActivareKeyReleased(evt);
+            }
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                jTFCodActivareKeyTyped(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(7, 5, 7, 5);
+        jPActivare.add(jTFCodActivare, gridBagConstraints);
+
+        jBActiveaza.setText("Activate");
+        jBActiveaza.setEnabled(false);
+        jBActiveaza.setName("bActivate"); // NOI18N
+        jBActiveaza.setIcon(new ImageIcon("./images/buttons/Key.png"));
+        jBActiveaza.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBActiveazaActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(7, 5, 7, 5);
+        jPActivare.add(jBActiveaza, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        jPanel1.add(jPActivare, gridBagConstraints);
+
+        jCBAltCod.setText("Use a different license key");
+        jCBAltCod.setName("cbDifferentKey"); // NOI18N
+        jCBAltCod.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                jCBAltCodItemStateChanged(evt);
+            }
+        });
+        jCBAltCod.setSelected(false);
+        jCBAltCod.setVisible(false);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        jPanel1.add(jCBAltCod, gridBagConstraints);
+
+        jLabel1.setText("If you already have a License Key, please enter it here:");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 3;
+        jPanel1.add(jLabel1, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        jPanel3.add(jPanel1, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(15, 15, 15, 15);
+        jPanel2.add(jPanel3, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        getContentPane().add(jPanel2, gridBagConstraints);
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+	private void jBLinkActionPerformed(String url) {
+		if (java.awt.Desktop.isDesktopSupported()) {
+			java.awt.Desktop desktop = java.awt.Desktop.getDesktop();
+			if (desktop.isSupported(java.awt.Desktop.Action.BROWSE)) {
+				try {
+					java.net.URI uri = new java.net.URI(url);
+					desktop.browse(uri);
+				} catch (Exception ex) {
+					java.io.StringWriter sw = new java.io.StringWriter();
+					java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+					ex.printStackTrace(pw);
+					System.err.println("Error " + sw.toString());
+				}
+			}
+		}
+	}
+    private void jBActiveazaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBActiveazaActionPerformed
+        
+		String cif = Common.companyDetails.getName();
+		String cod = jTFCodActivare.getText().toUpperCase().trim();
+
+        boolean dejaActivat = Common.vKCheckAll(connection) == -1 ? true : false;
+
+		String cfNormal = Common.getC(cif);
+		String cfFree = Common.getC(cif+"free");
+		String cfPaid = Common.getC(cif+"paid");
+		boolean isEqual = cfFree.equals(cod) || cfPaid.equals(cod);
+		if (isEqual) {
+			Calendar c = Calendar.getInstance();
+	        c.set(9999, 11, 31);
+			Date data = new Date(c.getTimeInMillis());
+			String cf = "";
+			String type = "";
+			if (cfFree.equals(cod)) {
+				cf = cfFree;
+				type = "free";
+			} else if (cfPaid.equals(cod)) {
+				cf = cfPaid;
+				type = "paid";
+			} else {
+				cf = cfNormal;
+			}
+			Common.vKInsert(this.connection, cf, Common.getVersion(), String.valueOf(Common.getYear()),
+					Common.getOsType(), data, Integer.toString(new Modules().getModules()), "0", "3");
+			Common.selectedCompanyConfig.set(Config.INDIA, type);
+			Common.selectedCompanyConfig.set(Config.ACTIVATED, "true");
+            if(dejaActivat){
+                Common.sbProperties.remove(Config.SHOW_ABOUT_CODE);
+                Common.saveProperties();
+            }
+            activat = true;
+
+			Messages.showOkMessage(this, "You have successfully activated your copy of "+(Common.IS_INDIA ? "Sleek Bill for India" : "Sleek Bill")+"!", "Confirmation!");
+			dispose();
+			return;
+		}
+
+		String message = "<html>The activation key you entered does not match your company name <b>" + cif + "</b>.<br>"
+				+ "The spelling of both is case sensitive. If you still encounter problems,<br>"
+				+ "please send your company name, as found in <b>Settings > Company Details</b>,<br>"
+				+ "to <a href=\"mailto:" + SBConstants.MAILTO + "\">" + SBConstants.MAILTO + "</a> "
+				+ "and we will contact you to solve the problem.</html>";
+
+		Messages.showErrorMessageWithLink(this, message, "Error!");
+		
+
+    }//GEN-LAST:event_jBActiveazaActionPerformed
+
+    private void jBComandaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBComandaActionPerformed
+		if (!Common.IS_INDIA) {
+			Common.comandaCod(company, connection);
+		} else {
+			new JDialogChoosePlan(this, true).setVisible(true);
+		}
+    }//GEN-LAST:event_jBComandaActionPerformed
+
+    private void jTFCodActivareKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTFCodActivareKeyTyped
+		
+    }//GEN-LAST:event_jTFCodActivareKeyTyped
+
+    private void jCBAltCodItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jCBAltCodItemStateChanged
+        if (jCBAltCod.isSelected()) {
+            jPActivare.setVisible(true);
+            jPanel1.setPreferredSize(new Dimension(580, 310));
+            pack();
+            jPanel1.revalidate();
+        } else {
+            jPActivare.setVisible(false);
+            jPanel1.setPreferredSize(new Dimension(580, 200));
+            pack();
+            jPanel1.revalidate();
+        }
+    }//GEN-LAST:event_jCBAltCodItemStateChanged
+
+    private void jTFCodActivareKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTFCodActivareKeyReleased
+        jBActiveaza.setEnabled(!jTFCodActivare.getText().isEmpty());
+    }//GEN-LAST:event_jTFCodActivareKeyReleased
+
+    
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jBActiveaza;
+    private javax.swing.JButton jBComanda;
+    private javax.swing.JCheckBox jCBAltCod;
+    private javax.swing.JEditorPane jEPIntelligentIT;
+    private javax.swing.JEditorPane jEPSmartBill;
+    private javax.swing.JEditorPane jEPText;
+    private javax.swing.JLabel jLCod;
+    private javax.swing.JLabel jLIcon1;
+    private javax.swing.JLabel jLSigla;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JPanel jPActivare;
+    private javax.swing.JPanel jPComanda;
+    private javax.swing.JPanel jPDespreSB;
+    private javax.swing.JPanel jPIIT;
+    private javax.swing.JPanel jPSB;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
+    private javax.swing.JTextField jTFCodActivare;
+    // End of variables declaration//GEN-END:variables
+}

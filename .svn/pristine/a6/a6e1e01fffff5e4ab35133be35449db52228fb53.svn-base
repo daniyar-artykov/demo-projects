@@ -1,0 +1,88 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames.autosuggesterdata;
+
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import sleekbill.beans.Currency;
+import sleekbill.db.SBConnection;
+import sleekbill.entities.CurrencyEntity;
+import sleekbill.swingutils.autosuggesters.AutosuggesterDataBuilder;
+import sleekbill.swingutils.autosuggesters.AutosuggesterItem;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.dao.GenericRawResults;
+import com.j256.ormlite.dao.RawRowMapper;
+
+/**
+ *
+ * @author Andrei
+ */
+public class SBACCurrency implements AutosuggesterDataBuilder {
+
+	SBConnection connection;
+	
+    public SBACCurrency(SBConnection connection) {
+		super();
+		this.connection = connection;
+	}
+
+	@Override
+    public ArrayList<AutosuggesterItem> getData(String input, Integer rowNumber) {
+        ArrayList<AutosuggesterItem> l = new ArrayList<AutosuggesterItem>();
+        try {
+            Dao<CurrencyEntity, Integer> currencyDao = DaoManager.createDao(
+                    connection.getConnection(), CurrencyEntity.class);
+
+            //long x = System.currentTimeMillis();
+
+            GenericRawResults<AutosuggesterItem> rawResults =
+                    currencyDao.queryRaw("SELECT DISTINCT "
+                    + "'<html>' || substr(currency_name || ' (' || currency_symbol ||')',0,CHARINDEX(lower(?), lower(currency_name || ' (' || currency_symbol ||')'))) || '<b>' || substr(currency_name || ' (' || currency_symbol ||')',CHARINDEX(lower(?), lower(currency_name || ' (' || currency_symbol ||')')), length(lower(?))) || '</b>' || substr(currency_name || ' (' || currency_symbol ||')',CHARINDEX(lower(?), lower(currency_name || ' (' || currency_symbol ||')')) + length(lower(?))) || '</html>' AS den, "
+                    + "id, currency_name, currency_symbol, is_used "
+                    + "FROM currencies "
+                    + "WHERE currency_name LIKE ? OR currency_symbol LIKE ? ORDER BY lower(currency_name) ASC LIMIT " + rowNumber,
+                    new RawRowMapper<AutosuggesterItem>() {
+                public AutosuggesterItem mapRow(String[] columnNames, String[] resultColumns) {
+                    int id = 0;
+                    try {
+                        id = Integer.parseInt(resultColumns[1]);
+                    } catch (NumberFormatException e) {
+                    }
+
+                    Currency aux = new Currency();
+                    aux.setId(id);
+                    aux.setCurrencyName(resultColumns[2]);
+                    aux.setCurrencySymbol(resultColumns[3]);
+                    aux.setIsUsed((resultColumns[4] == null || !resultColumns[4].equalsIgnoreCase("1")) ? false : true);
+
+                    return new AutosuggesterItem(id, resultColumns[2] + " (" + resultColumns[3] + ")", resultColumns[0],
+                            aux, true);
+                }
+            },
+                    input, input, input, input, input, "%" + input + "%", "%" + input + "%");
+            l.addAll(rawResults.getResults());
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return l;
+    }
+
+    @Override
+    public long getCount() {
+            try {
+                Dao<CurrencyEntity, Integer> currencyDao = DaoManager.createDao(
+                            connection.getConnection(), CurrencyEntity.class);
+                return currencyDao.countOf();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            return 0;
+    }
+}

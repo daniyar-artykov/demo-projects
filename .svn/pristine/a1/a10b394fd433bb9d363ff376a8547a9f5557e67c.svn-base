@@ -1,0 +1,65 @@
+/*
+ * FType.java
+ *
+ * Created on 15 December 2007, 17:20
+ *
+ *Implements the invoice types with the coresponding templates
+ */
+package sleekbill.jasper;
+
+import sleekbill.Common;
+
+/**
+ *
+ * @author aganencei
+ */
+public class DocumentType {
+
+    public static final String PAGE_SIZE_A4 = "A4";
+    public static final String PAGE_SIZE_A5 = "A5";
+    public static final String PAGE_SIZE_2_A5 = "2A5";
+    public static final String PAGE_SIZE_LETTER = "Letter";
+
+    public static final DocumentType BLANK = new DocumentType("Blank", "blank");
+    public static final DocumentType ONE_INVOICE_A4 = new DocumentType("NormalA4", "a4_1i");
+    public static final DocumentType ONE_INVOICE_A5 = new DocumentType("NormalA5", "a5_1i");
+    public static final DocumentType TWO_INVOICE_A5 = new DocumentType("2A5", "a4_2i_2");
+    public static final DocumentType ONE_INVOICE_LETTER = new DocumentType("NormalLetter", "l_1i");
+
+    public static final int FORMAT_1INVOICE = 1;
+//	public static final int FORMAT_1FACTURA_1CHITANTA = 1;// 1 factura si 1 chitanta
+//	public static final int FORMAT_2FACTURI_2CHITANTE = 2;// 2 facturi si 2 chitante
+    public static final int FORMAT_2INVOICE = 2;// 2 facturi pe pagina
+//	public static final int FORMAT_3FACTURI = 5;// 3 facturi
+//	public static final int FORMAT_1INVOICE_A5 = 3;// pe A5
+
+    private String template;
+    private String id;
+    private static String path = Common.TEMPLATES_PATH;
+
+    private DocumentType(String id, String template) {
+        this.id = id;
+        this.template = template;
+    }
+
+    public String getTemplate() {
+        return path + template;
+    }
+
+    public String getTemplate(int layoutId) {
+        return path + template + "_" + layoutId;
+    }
+
+    public String getTitleTemplate(int layoutId) {
+        return path + template + "_t_" + layoutId;
+    }
+
+    public String getBottomTemplate(int layoutId) {
+        return path + template + "_b_" + layoutId;
+    }
+
+    public static String getPath(String name) {
+        return path + name;
+    }
+
+}

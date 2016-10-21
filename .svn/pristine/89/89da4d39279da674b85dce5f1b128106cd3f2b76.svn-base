@@ -1,0 +1,20 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package sleekbill.utils;
+
+import java.util.Date;
+
+/**
+ *
+ * @author dani
+ */
+public interface SBUtils {
+
+	public String getVersion();
+	public SBDateFirma fetchClientByCif(String cif);
+	public SBDateFirma fetchClientByCif(String cif, Date date);
+	
+}

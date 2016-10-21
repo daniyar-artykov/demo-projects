@@ -1,0 +1,25 @@
+# Root logger option
+log4j.rootLogger=INFO, file, stdout
+ 
+# Direct log messages to a log file
+log4j.appender.file=org.apache.log4j.RollingFileAppender
+log4j.appender.file.File=log/slick.log
+log4j.appender.file.MaxFileSize=1MB
+log4j.appender.file.MaxBackupIndex=3
+log4j.appender.file.layout=org.apache.log4j.PatternLayout
+log4j.appender.file.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n
+
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.Target=System.out
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n
+
+# be more verbose with our code
+log4j.logger.com.j256.ormlite=TRACE
+
+# to enable logging of arguments to all of the SQL calls
+# uncomment the following lines
+#log4j.logger.com.j256.ormlite.stmt.mapped.BaseMappedStatement=TRACE
+#log4j.logger.com.j256.ormlite.stmt.mapped.MappedCreate=TRACE
+#log4j.logger.com.j256.ormlite.stmt.StatementExecutor=TRACE
+

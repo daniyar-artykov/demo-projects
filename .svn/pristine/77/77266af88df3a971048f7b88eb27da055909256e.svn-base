@@ -1,0 +1,284 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.entities;
+
+import java.math.BigDecimal;
+
+import com.j256.ormlite.field.DataType;
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+
+/**
+ *
+ * @author Andrei
+ */
+@DatabaseTable(tableName = "invoice_products")
+public class InvoiceProductEntity {
+
+    public static final String PRODUCT_ID = "product_id";
+    public static final String INVOICE_ID = "invoice_id";
+    public static final String NAME = "name";
+    public static final String DESCRIPTION = "description";
+    public static final String MEASURING_UNIT = "measuring_unit";
+    public static final String PRICE = "price";
+    public static final String QUANTITY = "quantity";
+    public static final String HAS_TAX_INCLUDED = "has_tax_included";
+    public static final String TAX_ID = "tax_id";
+    public static final String TOTAL_NO_TAX = "total_no_tax";
+    public static final String TOTAL_TAX = "total_tax";
+    public static final String TOTAL_ALL = "total_all";
+    public static final String IS_DISCOUNT = "is_discount";
+    public static final String DISCOUNT_PERCENTAGE = "discount_percentage";
+    
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+    @DatabaseField(foreign = true, columnName = PRODUCT_ID, foreignAutoRefresh = true, foreignAutoCreate = true, columnDefinition = "INTEGER REFERENCES products (id)")
+    protected ProductEntity product;
+    @DatabaseField(foreign = true, columnName = INVOICE_ID, foreignAutoRefresh = true, foreignAutoCreate = true, columnDefinition = "INTEGER REFERENCES invoices (id)")
+    protected InvoiceEntity invoice;
+    @DatabaseField(columnName = NAME, canBeNull = false)
+    protected String name;
+    @DatabaseField(columnName = DESCRIPTION, canBeNull = true)
+    protected String description;
+    @DatabaseField(columnName = MEASURING_UNIT, canBeNull = true)
+    protected String measuringUnit;
+    @DatabaseField(columnName = PRICE, canBeNull = false, dataType = DataType.BIG_DECIMAL)
+    protected BigDecimal price;
+    @DatabaseField(columnName = QUANTITY, canBeNull = false)
+    protected BigDecimal quantity;
+    @DatabaseField(columnName = HAS_TAX_INCLUDED, canBeNull = true, dataType = DataType.BOOLEAN)
+    protected boolean hasTaxIncluded;
+    @DatabaseField(foreign = true, columnName = TAX_ID, foreignAutoRefresh = true, foreignAutoCreate = true, columnDefinition = "INTEGER REFERENCES taxes (id)")
+    protected TaxEntity tax;
+    @DatabaseField(columnName = TOTAL_NO_TAX, canBeNull = true, dataType = DataType.BIG_DECIMAL)
+    protected BigDecimal totalNoTax;
+    @DatabaseField(columnName = TOTAL_TAX, canBeNull = true, dataType = DataType.BIG_DECIMAL)
+    protected BigDecimal totalTax;
+    @DatabaseField(columnName = TOTAL_ALL, canBeNull = true, dataType = DataType.BIG_DECIMAL)
+    protected BigDecimal totalAll;
+    @DatabaseField(columnName = IS_DISCOUNT, canBeNull = true, dataType = DataType.BOOLEAN)
+    protected boolean isDiscount;
+    @DatabaseField(columnName = DISCOUNT_PERCENTAGE, canBeNull = false, dataType = DataType.BIG_DECIMAL)
+    protected BigDecimal discountPercentage;
+
+    public InvoiceProductEntity(InvoiceProductEntity invoiceProductsEntity) {
+        this.id = invoiceProductsEntity.id;
+        this.product = invoiceProductsEntity.product;
+        this.invoice = invoiceProductsEntity.invoice;
+        this.name = invoiceProductsEntity.name;
+        this.description = invoiceProductsEntity.description;
+        this.measuringUnit = invoiceProductsEntity.measuringUnit;
+        this.price = invoiceProductsEntity.price;
+        this.quantity = invoiceProductsEntity.quantity;
+        this.hasTaxIncluded = invoiceProductsEntity.hasTaxIncluded;
+        this.tax = invoiceProductsEntity.tax;
+        this.totalNoTax = invoiceProductsEntity.totalNoTax;
+        this.totalTax = invoiceProductsEntity.totalTax;
+        this.totalAll = invoiceProductsEntity.totalAll;
+        this.isDiscount = invoiceProductsEntity.isDiscount;
+        this.discountPercentage = invoiceProductsEntity.discountPercentage;
+    }
+
+    public InvoiceProductEntity() {
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public ProductEntity getProduct() {
+        return product;
+    }
+
+    public void setProduct(ProductEntity product) {
+        this.product = product;
+    }
+
+    public InvoiceEntity getInvoice() {
+        return invoice;
+    }
+
+    public void setInvoice(InvoiceEntity invoice) {
+        this.invoice = invoice;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getMeasuringUnit() {
+        return measuringUnit;
+    }
+
+    public void setMeasuringUnit(String measuringUnit) {
+        this.measuringUnit = measuringUnit;
+    }
+
+    public BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
+    }
+
+    public BigDecimal getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(BigDecimal quantity) {
+        this.quantity = quantity;
+    }
+
+    public boolean isHasTaxIncluded() {
+        return hasTaxIncluded;
+    }
+
+    public void setHasTaxIncluded(boolean hasTaxIncluded) {
+        this.hasTaxIncluded = hasTaxIncluded;
+    }
+
+    public TaxEntity getTax() {
+        return tax;
+    }
+
+    public void setTax(TaxEntity tax) {
+        this.tax = tax;
+    }
+
+    public BigDecimal getTotalNoTax() {
+        return totalNoTax;
+    }
+
+    public void setTotalNoTax(BigDecimal totalNoTax) {
+        this.totalNoTax = totalNoTax;
+    }
+
+    public BigDecimal getTotalTax() {
+        return totalTax;
+    }
+
+    public void setTotalTax(BigDecimal totalTax) {
+        this.totalTax = totalTax;
+    }
+
+    public BigDecimal getTotalAll() {
+        return totalAll;
+    }
+
+    public void setTotalAll(BigDecimal totalAll) {
+        this.totalAll = totalAll;
+    }
+
+    public boolean isDiscount() {
+        return isDiscount;
+    }
+
+    public void setIsDiscount(boolean isdiscount) {
+        this.isDiscount = isdiscount;
+    }
+
+    public BigDecimal getDiscountPercentage() {
+        return discountPercentage;
+    }
+
+    public void setDiscountPercentage(BigDecimal discountPercentage) {
+        this.discountPercentage = discountPercentage;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 17 * hash + this.id;
+        hash = 17 * hash + (this.product != null ? this.product.hashCode() : 0);
+        hash = 17 * hash + (this.invoice != null ? this.invoice.hashCode() : 0);
+        hash = 17 * hash + (this.name != null ? this.name.hashCode() : 0);
+        hash = 17 * hash + (this.description != null ? this.description.hashCode() : 0);
+        hash = 17 * hash + (this.measuringUnit != null ? this.measuringUnit.hashCode() : 0);
+        hash = 17 * hash + (this.price != null ? this.price.hashCode() : 0);
+        hash = 17 * hash + (this.quantity != null ? this.quantity.hashCode() : 0);
+        hash = 17 * hash + (this.hasTaxIncluded ? 1 : 0);
+        hash = 17 * hash + (this.tax != null ? this.tax.hashCode() : 0);
+        hash = 17 * hash + (this.totalNoTax != null ? this.totalNoTax.hashCode() : 0);
+        hash = 17 * hash + (this.totalTax != null ? this.totalTax.hashCode() : 0);
+        hash = 17 * hash + (this.totalAll != null ? this.totalAll.hashCode() : 0);
+        hash = 17 * hash + (this.isDiscount ? 1 : 0);
+        hash = 17 * hash + (this.discountPercentage != null ? this.discountPercentage.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final InvoiceProductEntity other = (InvoiceProductEntity) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (this.product != other.product && (this.product == null || !this.product.equals(other.product))) {
+            return false;
+        }
+        if (this.invoice != other.invoice && (this.invoice == null || !this.invoice.equals(other.invoice))) {
+            return false;
+        }
+        if ((this.name == null) ? (other.name != null) : !this.name.equals(other.name)) {
+            return false;
+        }
+        if ((this.description == null) ? (other.description != null) : !this.description.equals(other.description)) {
+            return false;
+        }
+        if ((this.measuringUnit == null) ? (other.measuringUnit != null) : !this.measuringUnit.equals(other.measuringUnit)) {
+            return false;
+        }
+        if (this.price != other.price && (this.price == null || !this.price.equals(other.price))) {
+            return false;
+        }
+        if (this.quantity != other.quantity && (this.quantity == null || !this.quantity.equals(other.quantity))) {
+            return false;
+        }
+        if (this.hasTaxIncluded != other.hasTaxIncluded) {
+            return false;
+        }
+        if (this.tax != other.tax && (this.tax == null || !this.tax.equals(other.tax))) {
+            return false;
+        }
+        if (this.totalNoTax != other.totalNoTax && (this.totalNoTax == null || !this.totalNoTax.equals(other.totalNoTax))) {
+            return false;
+        }
+        if (this.totalTax != other.totalTax && (this.totalTax == null || !this.totalTax.equals(other.totalTax))) {
+            return false;
+        }
+        if (this.totalAll != other.totalAll && (this.totalAll == null || !this.totalAll.equals(other.totalAll))) {
+            return false;
+        }
+        if (this.isDiscount != other.isDiscount) {
+            return false;
+        }
+        if (this.discountPercentage != other.discountPercentage && (this.discountPercentage == null || !this.discountPercentage.equals(other.discountPercentage))) {
+            return false;
+        }
+        return true;
+    }
+}

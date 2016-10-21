@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+X-COMMENT: Main-Class will be added automatically by build
+Main-Class: sleekbill.Main
+Class-Path: lib/balloontip-1.2.3.jar lib/commons-beanutils-1.8.3.jar lib/commons-collections-2.1.jar lib/commons-digester-1.7.jar lib/commons-logging-1.0.2.jar lib/font.jar lib/iText-2.1.7.js2.jar lib/jasperreports-5.1.0.jar lib/javax.servlet.jar lib/jxl.jar lib/log4j-1.2.17.jar lib/mail-1.4.1.jar lib/ormlite-core-4.47.jar lib/ormlite-jdbc-4.47.jar lib/pngj-2.0.0.jar lib/rowset.jar lib/sqlite-jdbc-3.7.15.jar lib/tinylaf.jar lib/utils-1.0.0.jar lib/ws-commons-util-1.0.2.jar lib/xmlrpc-client-3.1.jar lib/xmlrpc-common-3.1.jar lib/xmlrpc-server-3.1.jar

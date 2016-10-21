@@ -1,0 +1,385 @@
+package sleekbill.jasper;
+
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.awt.print.PageFormat;
+import java.awt.print.Printable;
+import java.awt.print.PrinterException;
+import java.awt.print.PrinterJob;
+
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRExporterParameter;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.export.JRGraphics2DExporter;
+import net.sf.jasperreports.engine.export.JRGraphics2DExporterParameter;
+import net.sf.jasperreports.engine.print.JRPrinterAWT;
+import net.sf.jasperreports.engine.util.JRGraphEnvInitializer;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+public class SBJRPrinterAWT extends JRPrinterAWT {
+
+	private static final Log log = LogFactory.getLog(SBJRPrinterAWT.class);
+	
+	public static boolean fitPage = false;
+
+	/**
+	 *
+	 */
+	private JasperPrint jasperPrint = null;
+	private int pageOffset = 0;
+
+
+	/**
+	 *
+	 */
+	protected SBJRPrinterAWT(JasperPrint jrPrint) throws JRException
+	{
+		super(jrPrint);
+		JRGraphEnvInitializer.initializeGraphEnv();
+		
+		jasperPrint = jrPrint;
+	}
+
+
+	/**
+	 *
+	 */
+	public static boolean printPages(
+		JasperPrint jrPrint,
+		int firstPageIndex,
+		int lastPageIndex,
+		boolean withPrintDialog
+		) throws JRException
+	{
+		SBJRPrinterAWT printer = new SBJRPrinterAWT(jrPrint);
+		return printer.printPages(
+			firstPageIndex, 
+			lastPageIndex, 
+			withPrintDialog
+			);
+	}
+
+
+	/**
+	 *
+	 */
+	public static Image printPageToImage(
+		JasperPrint jrPrint,
+		int pageIndex,
+		float zoom
+		) throws JRException
+	{
+		SBJRPrinterAWT printer = new SBJRPrinterAWT(jrPrint);
+		return printer.printPageToImage(pageIndex, zoom);
+	}
+
+
+	/**
+	 *
+	 */
+	public boolean printPages(
+		int firstPageIndex,
+		int lastPageIndex,
+		boolean withPrintDialog
+		) throws JRException
+	{
+		boolean isOK = true;
+
+		if (
+			firstPageIndex < 0 ||
+			firstPageIndex > lastPageIndex ||
+			lastPageIndex >= jasperPrint.getPages().size()
+			)
+		{
+			throw new JRException(
+				"Invalid page index range : " +
+				firstPageIndex + " - " +
+				lastPageIndex + " of " +
+				jasperPrint.getPages().size()
+				);
+		}
+
+		pageOffset = firstPageIndex;
+
+		PrinterJob printJob = PrinterJob.getPrinterJob();
+
+		// fix for bug ID 6255588 from Sun bug database
+		initPrinterJobFields(printJob);
+		
+//		PageFormat pageFormat = printJob.defaultPage();
+//		Paper paper = pageFormat.getPaper();
+//
+//		printJob.setJobName("JasperReports - " + jasperPrint.getName());
+//		
+//		switch (jasperPrint.getOrientation())
+//		{
+//			case JRReport.ORIENTATION_LANDSCAPE :
+//			{
+//				pageFormat.setOrientation(PageFormat.LANDSCAPE);
+//				paper.setSize(jasperPrint.getPageHeight(), jasperPrint.getPageWidth());
+//				paper.setImageableArea(
+//					0,
+//					0,
+//					jasperPrint.getPageHeight(),
+//					jasperPrint.getPageWidth()
+//					);
+//				break;
+//			}
+//			case JRReport.ORIENTATION_PORTRAIT :
+//			default :
+//			{
+//				pageFormat.setOrientation(PageFormat.PORTRAIT);
+//				paper.setSize(jasperPrint.getPageWidth(), jasperPrint.getPageHeight());
+//				paper.setImageableArea(
+//					0,
+//					0,
+//					jasperPrint.getPageWidth(),
+//					jasperPrint.getPageHeight()
+//					);
+//			}
+//		}
+//
+//		pageFormat.setPaper(paper);
+
+//		Book book = new Book();
+//		book.append(this, pageFormat, lastPageIndex - firstPageIndex + 1);
+//		printJob.setPageable(book);
+		printJob.setPrintable(this);
+		try
+		{
+			if (withPrintDialog)
+			{
+//				PrintRequestAttributeSet aset = new HashPrintRequestAttributeSet();
+////				aset.add(sun.print.DialogTypeSelection.NATIVE);
+//				if (printJob.printDialog(aset))
+////				if (printJob.printDialog())
+//				{
+//					//TODO fix HP here
+//					for (Attribute attrib : aset.toArray()) {
+//						System.out.println(attrib.getName() + ": " + attrib.toString());
+//					}
+//					aset.add(new PrinterResolution(1200, 600, PrinterResolution.DPI));
+//					printJob.print();
+//				}
+				if (printJob.printDialog())
+				{
+					printJob.print();
+				}
+				else
+				{
+					isOK = false;
+				}
+			}
+			else
+			{
+				printJob.print();
+			}
+		}
+		catch (Exception ex)
+		{
+			throw new JRException("Error printing report.", ex);
+		}
+
+		return isOK;
+	}
+
+
+	/**
+	 *
+	 */
+	public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) throws PrinterException
+	{
+		if (Thread.interrupted())
+		{
+			throw new PrinterException("Current thread interrupted.");
+		}
+
+		pageIndex += pageOffset;
+
+		if ( pageIndex < 0 || pageIndex >= jasperPrint.getPages().size() )
+		{
+			return Printable.NO_SUCH_PAGE;
+		}
+
+		try
+		{
+			JRGraphics2DExporter exporter = new JRGraphics2DExporter();
+			exporter.setParameter(JRExporterParameter.JASPER_PRINT, this.jasperPrint);
+			exporter.setParameter(JRGraphics2DExporterParameter.GRAPHICS_2D, graphics);
+			exporter.setParameter(JRExporterParameter.PAGE_INDEX, new Integer(pageIndex));
+			
+			if(fitPage){
+//				this.jasperPrint.get
+				//ver 1
+//				exporter.setParameter(JRExporterParameter.OFFSET_X, new Double(pageFormat.getImageableX()).intValue());
+//				exporter.setParameter(JRExporterParameter.OFFSET_Y, new Double(pageFormat.getImageableY()).intValue());
+//				double zoomWidth = pageFormat.getImageableWidth()*100 / pageFormat.getWidth();
+//				double zoomHeight = pageFormat.getImageableHeight()*100 / pageFormat.getHeight();
+//				double zoom = zoomHeight;
+//				if(zoomWidth < zoomHeight) {
+//					zoom = zoomWidth;
+//				}
+//				zoom /= 100;
+//				if (log.isDebugEnabled()) {
+//					log.debug("zoom: " + zoom);
+//				}
+//				exporter.setParameter(JRGraphics2DExporterParameter.ZOOM_RATIO, new Float(zoom));
+				
+				//SUS 7MM, JOS 1.5, STG 1.2, DR 1.5			
+				//varianta 2. Incercam sa se tina cont de marginile de pe jaspere. top=20, left=30, bottom=15, left=20
+				double top = 20;
+				double left = 30;
+				double bottom = 10;
+				double right = 20;
+				double pageWidth = pageFormat.getWidth();
+				double pageHeight = pageFormat.getHeight();
+				double pageImageableX = pageFormat.getImageableX();//8.64; //
+				double pageImageableY = pageFormat.getImageableY();//9.6; //
+				double pageImageableWidth = pageFormat.getImageableWidth();//576; //
+				double pageImageableHeight = pageFormat.getImageableHeight();//799; //
+				
+				double imageableY = pageImageableY; //8.64; //pageFormat.getImageableY();//cat raporteaza driverul
+				//daca marginea top jasper < marginea top driver => pastram top jasper si desenam de la diferenta
+				//adaca marginea top jasper > marginea top driver putem incepe desenarea de la 0
+				double offsetY = 0;
+				if(top < imageableY) {
+					offsetY = imageableY - top;
+				}
+				double imageableHeight = pageImageableHeight; //799.68; //pageFormat.getImageableHeight();//cat raporteaza driverul
+				//daca marginea top jasper < marginea top driver => se adauga doar top jasper
+				//adaca marginea top jasper > marginea top driver adaugam doar top driver
+				if(top < imageableY) {
+					imageableHeight += top;
+				} else {
+					imageableHeight += imageableY;
+				}
+				double imageableYBottom = pageHeight /*pageFormat.getHeight()*/ - pageImageableHeight /*799.68 /*pageFormat.getImageableHeight()*/ - pageImageableY /*8.64 /*pageFormat.getImageableY()*/;
+				//daca marginea bottom jasper < marginea bottom driver => se adauga doar bottom jasper
+				//adaca marginea bottom jasper > marginea bottom driver adaugam doar bottom driver
+				if(bottom < imageableYBottom) {
+					imageableHeight += bottom;
+				} else {
+					imageableHeight += imageableYBottom;
+				}
+				
+				if(imageableHeight > pageHeight /*pageFormat.getHeight()*/){
+					imageableHeight = pageHeight; //pageFormat.getHeight();
+				}
+				double zoomHeight = imageableHeight*100 / pageHeight; //pageFormat.getHeight();
+				
+				double imageableWidth = pageImageableWidth; //pageFormat.getImageableWidth();
+				double imageableX = pageImageableX; //pageFormat.getImageableX();//cat raporteaza driverul
+				//daca marginea right jasper < marginea right driver => se adauga right jasper
+				//adaca marginea right jasper > marginea right driver se adauga right driver
+				if(right < imageableX) {
+					imageableWidth += right;
+				} else {
+					imageableWidth += imageableX;
+				}
+				double imageableXRight = pageWidth /*pageFormat.getWidth()*/ - pageImageableWidth /*pageFormat.getImageableWidth()*/ - pageImageableX /*pageFormat.getImageableX()*/;
+				//daca marginea right jasper < marginea right driver => se adauga right jasper
+				//adaca marginea right jasper > marginea right driver se adauga right driver
+				if(left < imageableXRight) {
+					imageableWidth += left;
+				} else {
+					imageableWidth += imageableXRight;
+				}
+				if(imageableWidth > pageWidth /*pageFormat.getWidth()*/) {
+					imageableWidth = pageWidth; //pageFormat.getWidth();
+				}
+				double zoomWidth = imageableWidth*100 / pageWidth /*pageFormat.getWidth()*/;
+				
+				double zoom = zoomHeight;
+				if(zoomWidth < zoomHeight) {
+					zoom = zoomWidth;
+				}
+				zoom /= 100;
+				if (log.isDebugEnabled()) {
+					log.debug("zoom: " + zoom);
+				}
+				exporter.setParameter(JRGraphics2DExporterParameter.ZOOM_RATIO, new Float(zoom));
+				
+				double newImageableWidth = pageWidth /*pageFormat.getWidth()*/ * zoom;
+				double offsetX = (pageWidth /*pageFormat.getWidth()*/ - newImageableWidth) / 2;
+				
+				exporter.setParameter(JRExporterParameter.OFFSET_X, new Double(offsetX).intValue());
+				exporter.setParameter(JRExporterParameter.OFFSET_Y, new Double(offsetY).intValue());
+				//~ varianta 2
+				
+				System.out.println("w: " + pageFormat.getWidth());
+				System.out.println("h: " + pageFormat.getHeight());
+				System.out.println("iw: " + pageFormat.getImageableWidth());
+				System.out.println("ih: " + pageFormat.getImageableHeight());
+				System.out.println("ix: " + pageFormat.getImageableX());
+				System.out.println("iy: " + pageFormat.getImageableY());
+				System.out.println("p w: " + newImageableWidth);
+				System.out.println("p h: " + imageableHeight);
+				System.out.println("z w: " + zoomWidth);
+				System.out.println("z h: " + zoomHeight);
+				System.out.println("ox: " + offsetX);
+				System.out.println("oy: " + offsetY);
+			}
+			
+			exporter.exportReport();
+		}
+		catch (JRException e)
+		{
+			if (log.isDebugEnabled())
+				log.debug("Print failed.", e);
+
+			throw new PrinterException(e.getMessage());
+		}
+
+		return Printable.PAGE_EXISTS;
+	}
+
+
+	/**
+	 *
+	 */
+	public Image printPageToImage(int pageIndex, float zoom) throws JRException
+	{
+		Image pageImage = new BufferedImage(
+			(int)(jasperPrint.getPageWidth() * zoom) + 1,
+			(int)(jasperPrint.getPageHeight() * zoom) + 1,
+			BufferedImage.TYPE_INT_RGB
+			);
+
+		JRGraphics2DExporter exporter = new JRGraphics2DExporter();
+		exporter.setParameter(JRExporterParameter.JASPER_PRINT, this.jasperPrint);
+		exporter.setParameter(JRGraphics2DExporterParameter.GRAPHICS_2D, pageImage.getGraphics());
+		exporter.setParameter(JRExporterParameter.PAGE_INDEX, new Integer(pageIndex));
+		exporter.setParameter(JRGraphics2DExporterParameter.ZOOM_RATIO, new Float(zoom));
+		exporter.exportReport();
+
+		return pageImage;
+	}
+
+
+	/**
+	 * Fix for bug ID 6255588 from Sun bug database
+	 * @param job print job that the fix applies to
+	 */
+	public static void initPrinterJobFields(PrinterJob job)
+	{
+		try
+		{
+			job.setPrintService(job.getPrintService());
+		}
+		catch (PrinterException e)
+		{
+		}
+	}
+	
+	
+	public static long getImageSize(JasperPrint jasperPrint, float zoom)
+	{
+		int width = (int) (jasperPrint.getPageWidth() * zoom) + 1;
+		int height = (int) (jasperPrint.getPageHeight() * zoom) + 1;
+		return width * height;
+	}
+	
+}

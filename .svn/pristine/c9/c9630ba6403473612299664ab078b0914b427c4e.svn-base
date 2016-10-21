@@ -1,0 +1,126 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames.autosuggesterdata;
+
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import sleekbill.Common;
+import sleekbill.beans.Tax;
+import sleekbill.entities.TaxEntity;
+import sleekbill.swingutils.autosuggesters.AutosuggesterDataBuilder;
+import sleekbill.swingutils.autosuggesters.AutosuggesterItem;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.dao.GenericRawResults;
+import com.j256.ormlite.dao.RawRowMapper;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import sleekbill.beans.SBDaoException;
+import sleekbill.entities.TaxComboEntity;
+
+/**
+ *
+ * @author Andrei
+ */
+public class SBACTaxes implements AutosuggesterDataBuilder {
+	
+	private boolean skipCombinedTaxes = false;
+
+	public SBACTaxes() {
+	}
+	
+	public SBACTaxes(boolean skipCombinedTaxes) {
+		this.skipCombinedTaxes = skipCombinedTaxes;
+	}
+	
+    @Override
+    public ArrayList<AutosuggesterItem> getData(String input, Integer rowNumber) {
+        ArrayList<AutosuggesterItem> l = new ArrayList<AutosuggesterItem>();
+        try {
+            Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(
+                    Common.connection.getConnection(), TaxEntity.class);
+
+			String skipCombined = skipCombinedTaxes?" and type = 'normal' " : "";
+			
+            GenericRawResults<AutosuggesterItem> rawResults =
+                    taxesDao.queryRaw("SELECT "
+                    + "'<html>' || substr(tax_percentage,0,CHARINDEX(lower(?), lower(tax_percentage))) || '<b>' || substr(tax_percentage,CHARINDEX(lower(?), lower(tax_percentage)), length(lower(?))) || '</b>' || substr(tax_percentage,CHARINDEX(lower(?), lower(tax_percentage)) + length(lower(?))) || ' %' || '</html>' AS den, "
+                    + "id, tax_name, tax_percentage, is_default_tax, type, explicit_order "
+                    + "FROM taxes "
+                    + "WHERE tax_percentage LIKE ? and deleted ='n' and id not in ("+Common.sheCess.getId()+ "," + Common.educationCess.getId()+ "," + Common.sbCess.getId() +") "+skipCombined+"ORDER by tax_percentage ASC LIMIT " + rowNumber,
+                    new RawRowMapper<AutosuggesterItem>() {
+                public AutosuggesterItem mapRow(String[] columnNames, String[] resultColumns) {
+                    int id = 0;
+                    try {
+                        id = Integer.parseInt(resultColumns[1]);
+                    } catch (NumberFormatException e) {
+                    }
+
+                    Tax aux = new Tax();
+                    aux.setId(id);
+                    aux.setTaxName(resultColumns[2]);
+                    aux.setTaxPercentage(new BigDecimal(resultColumns[3]));
+                    aux.setIsDefaultTax(Integer.parseInt(resultColumns[4]) == 1 ? true : false);
+					aux.setType(resultColumns[5]);
+					aux.setExplicitOrder(Integer.parseInt(resultColumns[6]) == 1 ? true : false);
+					
+					//evidentiere taxe compuse
+					boolean isComposed = resultColumns[5].equals(Tax.TYPE_COMBINED);
+					String text = resultColumns[0];
+					String paranthesis = "";
+					
+					if(isComposed){
+						text = Tax.getCombinedPercentageName(Common.connection.getConnection(), text, aux.getId(), aux.isExplicitOrder());
+//						int indexStart = text.indexOf("(");
+//						int indexEnd = text.indexOf(")");
+//						StringBuilder sb = new StringBuilder();
+//						for (int i = indexStart; i <= indexEnd; i++) {
+//							sb.append(text.charAt(i));
+//						}
+//						paranthesis += sb.toString() + (aux.isExplicitOrder()?"*":"");
+							
+						text = text.replace("</html>", "") + "</html>";
+					}
+					
+					text =  text.replace("<html>", "<html>" + aux.getTaxName() + " ");
+
+                    return new AutosuggesterItem(id, resultColumns[3] + " %"+paranthesis, text,
+                            aux, true);
+                }
+            },
+                    input, input, input, input, input, "%" + input + "%");
+			if (!skipCombinedTaxes) {
+				try {
+					Tax aux = new Tax(Tax.getNone(Common.connection.getConnection()));
+					l.add(new AutosuggesterItem(aux.getId(), "0 %", "None", aux, true));
+				} catch (SBDaoException ex) {
+					ex.printStackTrace();
+				}
+			}
+            
+            l.addAll(rawResults.getResults());
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return l;
+    }
+
+    @Override
+    public long getCount() {
+        try {
+            Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(
+                        Common.connection.getConnection(), TaxEntity.class);
+            return taxesDao.countOf();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return 0;
+    }
+}

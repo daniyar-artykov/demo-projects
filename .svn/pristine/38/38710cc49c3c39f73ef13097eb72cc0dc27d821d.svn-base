@@ -1,0 +1,343 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.beans;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.dao.GenericRawResults;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.stmt.UpdateBuilder;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.sql.SQLException;
+import java.text.ParseException;
+import java.util.Date;
+import java.util.List;
+import sleekbill.Common;
+import sleekbill.entities.InvoicePaymentEntity;
+
+/**
+ *
+ * @author Andrei
+ */
+public class InvoicePayment extends InvoicePaymentEntity {
+
+    private Dao<InvoicePaymentEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+
+    public InvoicePayment(InvoicePaymentEntity invoicePaymentEntity) {
+        this(0);
+        this.id = invoicePaymentEntity.getId();
+        this.amount = invoicePaymentEntity.getAmount();
+        this.payment = invoicePaymentEntity.getPayment();
+        this.invoice = invoicePaymentEntity.getInvoice();
+        this.deleted = invoicePaymentEntity.getDeleted();
+    }
+
+    public InvoicePayment() {
+        this(0);
+    }
+
+    public InvoicePayment(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager
+                        .createDao(mainConnection, InvoicePaymentEntity.class);
+
+                if (id != null && id != 0) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void refreshDao() {
+        try {
+            mainDao = DaoManager
+                    .createDao(Common.connection.getConnection(), InvoicePaymentEntity.class);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void create() throws Exception {
+        mainDao.create(this);
+    }
+
+    public InvoicePaymentEntity read(Integer id) throws Exception {
+        return mainDao.queryForId(id);
+    }
+
+    public void update() throws Exception {
+        mainDao.update(this);
+    }
+
+    public void delete() throws Exception {
+        mainDao.delete(this);
+    }
+
+    public static BigDecimal getTotalPaidById(JdbcConnectionSource connection, Integer id, Integer precision) {
+        BigDecimal ret = BigDecimal.ZERO;
+        Dao<InvoicePaymentEntity, Integer> ipDao;
+        try {
+            ipDao = DaoManager.createDao(connection, InvoicePaymentEntity.class);
+
+            GenericRawResults<String[]> rawResults = ipDao.queryRaw(
+                    "SELECT ifnull(sum(P.amount),0.00) as paid  FROM payments AS P JOIN invoice_payments AS IP ON P.id=IP.payment_id where IP.invoice_id=" + id);
+            List<String[]> results = rawResults.getResults();
+            String result = results.get(0)[0];
+            return new BigDecimal(result).setScale(precision, RoundingMode.HALF_UP);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return ret.setScale(precision, RoundingMode.HALF_UP);
+    }
+
+    public static Integer getPaymentsCount(JdbcConnectionSource connection, Integer id) {
+        Integer ret = 0;
+        Dao<InvoicePaymentEntity, Integer> ipDao;
+        try {
+            ipDao = DaoManager.createDao(connection, InvoicePaymentEntity.class);
+
+            GenericRawResults<String[]> rawResults = ipDao.queryRaw(
+                    "SELECT count(*)  FROM payments AS P JOIN invoice_payments AS IP ON P.id=IP.payment_id where IP.invoice_id=" + id);
+            List<String[]> results = rawResults.getResults();
+            String result = results.get(0)[0];
+            return new Integer(result);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return ret;
+    }
+
+    public static Payment getFirstPayment(JdbcConnectionSource connection, Integer id) {
+
+        Dao<InvoicePaymentEntity, Integer> ipDao;
+        try {
+            ipDao = DaoManager.createDao(connection, InvoicePaymentEntity.class);
+            List<InvoicePaymentEntity> query = ipDao.queryBuilder().where().eq(INVOICE_ID, id).and().eq(DELETED, "n").query();
+            return new Payment(query.get(0).getPayment());
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return null;
+    }
+
+    public static String getTooltip(JdbcConnectionSource connection, Invoice invoice, Integer precision) {
+        try {
+            boolean isRoundedOff = invoice.getFlag().isTotalWithoutDecimals();
+            CompanyDetails cd = new CompanyDetails(invoice.getCompanyDetails().getId());
+            invoice.setCompanyDetails(cd);
+            BigDecimal paid = getTotalPaidById(connection, invoice.getId(), precision);
+            BigDecimal total = invoice.getTotalAll().setScale(isRoundedOff ? 0 : precision, RoundingMode.HALF_UP);
+            BigDecimal outstanding = total.subtract(paid);
+            String symbol = invoice.getCompanyDetails().getCurrency().getSymbol();
+
+            String tooltip
+                    = "<html><body bgcolor=\"#FFFFFF\">"
+                    + "<table>\n"
+                    + "<tr>\n"
+                    + "  <td>Paid:</td>\n"
+                    + "  <td align=right style=\"font-family:'Segoe UI';\">" + symbol + "</td>\n"
+                    + "  <td align=right>" + paid.setScale(precision, RoundingMode.HALF_UP) + "</td>\n"
+                    + "</tr>\n"
+                    + "<tr>\n"
+                    + "  <td>Outstanding:</td>\n"
+                    + "  <td align=right style=\"font-family:'Segoe UI';\">" + symbol + "</td>\n"
+                    + "  <td align=right>" + outstanding.setScale(precision, RoundingMode.HALF_UP) + "</td>\n"
+                    + "</tr>\n"
+                    + "</table>" + "<br>";
+
+            Dao<InvoicePaymentEntity, Integer> ipDao;
+            try {
+                ipDao = DaoManager.createDao(connection, InvoicePaymentEntity.class);
+
+                GenericRawResults<String[]> rawResults = ipDao.queryRaw(
+                        "SELECT P.id, P.amount, P.type, P.note, P.pay_date FROM payments AS P JOIN invoice_payments AS IP ON P.id=IP.payment_id where IP.invoice_id=" + invoice.getId() + " ORDER by P.pay_date DESC");
+                List<String[]> results = rawResults.getResults();
+
+                if (results.size() > 0) {
+                    tooltip += "<table>\n";
+                    for (String[] row : results) {
+                        Date parse = Common.SQLITE_DATE_FORMAT.parse(row[4]);
+                        String format = Common.US_DATE_FORMAT.format(parse);
+                        tooltip += "<tr>\n"
+                                + "  <td align=left>Payment Type: " + row[2] 
+                                + "; Amount: <span style=\"font-family:'Segoe UI';\">" 
+                                + symbol + "</span>" + new BigDecimal(row[1] == null ? "0" : row[1]).setScale(Common.PRECISION, RoundingMode.HALF_UP) 
+                                + "; Payment Date: " + format + "<br> Notes: " 
+                                + (row[3].isEmpty() ? "None" : row[3]) + "</td>\n"
+                                + "</tr>\n";
+
+                    }
+                    tooltip += "</table>" + "<br>";
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            } catch (ParseException ex) {
+                ex.printStackTrace();
+            }
+
+            StringBuilder b = new StringBuilder(tooltip);
+            b.replace(tooltip.lastIndexOf("<br>"), tooltip.lastIndexOf("<br>") + 1, "</body></html>");
+            tooltip = b.toString();
+
+            return tooltip;
+        } catch (Exception ex) {
+//            ex.printStackTrace();
+        }
+        return "";
+    }
+
+    public static String getTooltipWithCount(JdbcConnectionSource connection, Invoice invoice, Integer precision) {
+        try {
+            boolean isRoundedOff = invoice.getFlag().isTotalWithoutDecimals();
+            CompanyDetails cd = new CompanyDetails(invoice.getCompanyDetails().getId());
+            invoice.setCompanyDetails(cd);
+            BigDecimal paid = getTotalPaidById(connection, invoice.getId(), precision);
+            BigDecimal total = invoice.getTotalAll().setScale(isRoundedOff ? 0 : precision, RoundingMode.HALF_UP);
+            BigDecimal outstanding = total.subtract(paid);
+            String symbol = invoice.getCompanyDetails().getCurrency().getSymbol();
+            String tooltip
+                    = "<html><body bgcolor=\"#FFFFFF\">"
+                    + "<div style=\"font-family:Verdana;font-size:11;\">"
+                    + "<table>\n"
+                    + "<tr>\n"
+                    + "  <td>Paid:</td>\n"
+                    + "  <td align=right style=\"font-family:'Segoe UI';\">" + symbol + "</td>\n"
+                    + "  <td align=right>" + paid.setScale(precision, RoundingMode.HALF_UP) + "</td>\n"
+                    + "</tr>\n"
+                    + "<tr>\n"
+                    + "  <td>Outstanding:</td>\n"
+                    + "  <td align=right style=\"font-family:'Segoe UI';\">" + symbol + "</td>\n"
+                    + "  <td align=right>" + outstanding.setScale(precision, RoundingMode.HALF_UP) + "</td>\n"
+                    + "</tr>\n"
+                    + "</table>" + "<br>";
+
+            Dao<InvoicePaymentEntity, Integer> ipDao;
+            try {
+                ipDao = DaoManager.createDao(connection, InvoicePaymentEntity.class);
+
+                GenericRawResults<String[]> rawResults = ipDao.queryRaw(
+                        "SELECT P.id, P.amount, P.type, P.note, P.pay_date  FROM payments AS P JOIN invoice_payments AS IP ON P.id=IP.payment_id where IP.invoice_id=" + invoice.getId() + " ORDER by P.pay_date DESC");
+                List<String[]> results = rawResults.getResults();
+                int count = 1;
+                if (results.size() > 0) {
+                    tooltip += "<table>\n";
+                    for (String[] row : results) {
+                        Date parse = Common.SQLITE_DATE_FORMAT.parse(row[4]);
+                        String format = Common.US_DATE_FORMAT.format(parse);
+                        tooltip += "<tr>\n"
+                                + "  <td align=left> " + count + ". Payment Type: " 
+                                + row[2] + "; Amount: <span style=\"font-family:'Segoe UI';\">" + symbol + "</span>" 
+                                + new BigDecimal(row[1] == null ? "0" : row[1]).setScale(Common.PRECISION, RoundingMode.HALF_UP) 
+                                + "; Payment Date: " + format + "<br> Notes: " 
+                                + (row[3].isEmpty() ? "None" : row[3]) + "</td>\n"
+                                + "</tr>\n";
+                        count++;
+
+                    }
+                    tooltip += "</table>" + "<br>";
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            } catch (ParseException ex) {
+                ex.printStackTrace();
+            }
+
+            StringBuilder b = new StringBuilder(tooltip);
+            b.replace(tooltip.lastIndexOf("<br>"), tooltip.lastIndexOf("<br>") + 1, "</body></div></html>");
+            tooltip = b.toString();
+
+            return tooltip;
+        } catch (Exception ex) {
+//            ex.printStackTrace();
+        }
+        return "";
+    }
+
+    public static String getFirstPaymentDate(JdbcConnectionSource connection, Invoice invoice) {
+        try {
+            Dao<InvoicePaymentEntity, Integer> ipDao = DaoManager.createDao(connection, InvoicePaymentEntity.class);
+
+            GenericRawResults<String[]> rawResults = ipDao.queryRaw(
+                    "SELECT P.id, P.amount, P.type, P.note, P.pay_date  FROM payments AS P JOIN invoice_payments AS IP ON P.id=IP.payment_id where IP.invoice_id=" + invoice.getId() + " ORDER by P.pay_date ASC LIMIT 1");
+            List<String[]> results = rawResults.getResults();
+
+            String format = "";
+            if (results.size() > 0) {
+                for (String[] row : results) {
+                    Date parse = Common.SQLITE_DATE_FORMAT.parse(row[4]);
+                    format = Common.US_DATE_FORMAT.format(parse);
+                    return format;
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return "";
+    }
+
+    public static void editInvoice(JdbcConnectionSource connection, Integer from, Integer to) {
+        Dao<InvoicePaymentEntity, Integer> ipDao;
+        try {
+            ipDao = DaoManager.createDao(connection, InvoicePaymentEntity.class);
+            UpdateBuilder<InvoicePaymentEntity, Integer> updateBuilder = ipDao.updateBuilder();
+            updateBuilder.updateColumnValue(InvoicePayment.INVOICE_ID, to);
+            updateBuilder.where().eq(InvoicePayment.INVOICE_ID, from);
+            updateBuilder.update();
+        } catch (Exception ex) {
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 89 * hash + this.id;
+        hash = 89 * hash + (this.payment != null ? this.payment.hashCode() : 0);
+        hash = 89 * hash + (this.invoice != null ? this.invoice.hashCode() : 0);
+        hash = 89 * hash + (this.amount != null ? this.amount.hashCode() : 0);
+        hash = 89 * hash + (this.deleted != null ? this.deleted.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final InvoicePayment other = (InvoicePayment) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (this.payment != other.payment && (this.payment == null || !this.payment.equals(other.payment))) {
+            return false;
+        }
+        if (this.invoice != other.invoice && (this.invoice == null || !this.invoice.equals(other.invoice))) {
+            return false;
+        }
+        if (this.amount != other.amount && (this.amount == null || !this.amount.equals(other.amount))) {
+            return false;
+        }
+
+        return !((this.deleted == null) ? (other.deleted != null) : !this.deleted.equals(other.deleted));
+    }
+}

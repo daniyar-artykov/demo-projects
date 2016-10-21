@@ -1,0 +1,96 @@
+package sleekbill.swingutils;
+
+import java.awt.Color;
+import java.awt.GradientPaint;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Paint;
+import java.awt.RenderingHints;
+
+import javax.swing.JLabel;
+
+public class JGradientLabel extends JLabel {
+
+	public static final int TOP_TO_BOTTOM = 1;
+	public static final int LEFT_TO_RIGHT = 2;
+
+	int orientation = TOP_TO_BOTTOM;
+	boolean enableGradient = true;
+
+	Color startColor = Color.BLACK;
+	Color endColor = Color.WHITE;
+
+	public JGradientLabel() {
+		super();
+	}
+
+	public JGradientLabel(String text) {
+		super(text);
+		setOpaque(false);
+	}
+
+	@Override
+	protected void paintComponent(Graphics g) {
+		
+		if (enableGradient) {
+
+			int x1 = 0;
+			int y1 = 0;
+			int x2 = 0;
+			int y2 = 0;
+	
+			switch (orientation) {
+				case TOP_TO_BOTTOM:
+					x1 = 0;
+					y1 = 0;
+					x2 = 0;
+					y2 = getHeight();
+					break;
+				case LEFT_TO_RIGHT:
+				default:
+					x1 = 0;
+					y1 = 0;
+					x2 = getWidth();
+					y2 = 0;
+					break;
+	
+			}
+
+			Graphics2D g2d = (Graphics2D)g;
+			g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON); 
+			Paint oldPaint = g2d.getPaint();
+			
+			GradientPaint gp = new GradientPaint(x1, y1, startColor, x2, y2, endColor); 
+			g2d.setPaint(gp);
+			g2d.fillRect(0, 0, getWidth(), getHeight());
+			
+			
+			g2d.setPaint(oldPaint);
+
+			
+		}
+		
+		super.paintComponent(g);
+		
+	}
+
+	public Color getStartColor() {
+		return startColor;
+	}
+
+	public void setStartColor(Color startColor) {
+		this.startColor = startColor;
+	}
+
+	public Color getEndColor() {
+		return endColor;
+	}
+
+	public void setEndColor(Color endColor) {
+		this.endColor = endColor;
+	}
+
+
+
+}

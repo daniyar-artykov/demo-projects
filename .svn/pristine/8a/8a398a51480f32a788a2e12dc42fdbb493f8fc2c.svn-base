@@ -1,0 +1,128 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.entities;
+
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+
+/**
+ *
+ * @author dani
+ */
+@DatabaseTable(tableName = "facturi_stornate")
+public class FacturiStornateEntity {
+
+    public static final String FACTURA_ID = "factura_id";
+    public static final String DATA_STORNARII = "data_stornarii";
+    public static final String VALOARE1 = "valoare1";
+    public static final String VALOARE2 = "valoare2";
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+    @DatabaseField(columnName = FACTURA_ID, canBeNull = true)
+    protected Integer facturaId;
+    @DatabaseField(columnName = DATA_STORNARII, canBeNull = false)
+    protected String dataStornarii;
+    @DatabaseField(columnName = VALOARE1, canBeNull = false)
+    protected String valoare1;
+    @DatabaseField(columnName = VALOARE2, canBeNull = false)
+    protected String valoare2;
+
+    public FacturiStornateEntity(FacturiStornateEntity facturiStornate) {
+        this.id = facturiStornate.id;
+        this.facturaId = new Integer(facturiStornate.facturaId.intValue());
+        this.dataStornarii = new String(facturiStornate.dataStornarii);
+        this.valoare1 = new String(facturiStornate.valoare1);
+        this.valoare2 = new String(facturiStornate.valoare2);
+    }
+
+    public FacturiStornateEntity(Integer facturaId, String dataStornarii, String valoare1, String valoare2) {
+		super();
+		this.facturaId = facturaId;
+		this.dataStornarii = dataStornarii;
+		this.valoare1 = valoare1;
+		this.valoare2 = valoare2;
+	}
+
+    public FacturiStornateEntity() {
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public Integer getFacturaId() {
+		return facturaId;
+	}
+
+	public void setFacturaId(Integer facturaId) {
+		this.facturaId = facturaId;
+	}
+
+	public String getDataStornarii() {
+		return dataStornarii;
+	}
+
+	public void setDataStornarii(String dataStornarii) {
+		this.dataStornarii = dataStornarii;
+	}
+
+	public String getValoare1() {
+		return valoare1;
+	}
+
+	public void setValoare1(String valoare1) {
+		this.valoare1 = valoare1;
+	}
+
+	public String getValoare2() {
+		return valoare2;
+	}
+
+	public void setValoare2(String valoare2) {
+		this.valoare2 = valoare2;
+	}
+
+	@Override
+	public int hashCode() {
+		int hash = 7;
+		hash = 71 * hash + this.id;
+		hash = 71 * hash + (this.facturaId != null ? this.facturaId.hashCode() : 0);
+		hash = 71 * hash + (this.dataStornarii != null ? this.dataStornarii.hashCode() : 0);
+		hash = 71 * hash + (this.valoare1 != null ? this.valoare1.hashCode() : 0);
+		hash = 71 * hash + (this.valoare2 != null ? this.valoare2.hashCode() : 0);
+		return hash;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final FacturiStornateEntity other = (FacturiStornateEntity) obj;
+		if (this.id != other.id) {
+			return false;
+		}
+		if (this.facturaId != other.facturaId && (this.facturaId == null || !this.facturaId.equals(other.facturaId))) {
+			return false;
+		}
+		if ((this.dataStornarii == null) ? (other.dataStornarii != null) : !this.dataStornarii.equals(other.dataStornarii)) {
+			return false;
+		}
+		if ((this.valoare1 == null) ? (other.valoare1 != null) : !this.valoare1.equals(other.valoare1)) {
+			return false;
+		}
+		if ((this.valoare2 == null) ? (other.valoare2 != null) : !this.valoare2.equals(other.valoare2)) {
+			return false;
+		}
+		return true;
+	}
+}

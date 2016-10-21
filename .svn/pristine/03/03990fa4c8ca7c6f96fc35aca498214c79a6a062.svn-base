@@ -1,0 +1,137 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package sleekbill.util;
+
+import java.awt.Component;
+import java.awt.GridBagConstraints;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.MouseListener;
+import java.beans.PropertyVetoException;
+import java.util.LinkedHashMap;
+
+import javax.swing.JComponent;
+import javax.swing.JDesktopPane;
+import javax.swing.JFrame;
+import javax.swing.JInternalFrame;
+import javax.swing.JLabel;
+import javax.swing.JLayeredPane;
+import javax.swing.JPanel;
+import javax.swing.event.InternalFrameAdapter;
+import javax.swing.event.InternalFrameEvent;
+import javax.swing.plaf.basic.BasicInternalFrameUI;
+
+import sleekbill.swingutils.ModalJPanel;
+
+/**
+ *
+ * @author dani
+ */
+public class ModalInternalFrameUtil {
+
+	public static void showAsModal(JFrame frame, JInternalFrame internalFrame, 
+			LinkedHashMap<Component, Point> drawComponents)
+			throws PropertyVetoException {
+
+		ModalJPanel panel = new ModalJPanel(drawComponents);
+		panel.setOpaque(true);
+
+		final JDesktopPane desktopPane = new JDesktopPane();
+		desktopPane.setOpaque(false);
+		desktopPane.add(internalFrame);
+
+		GridBagConstraints gridBagConstraints = new GridBagConstraints();
+		gridBagConstraints.gridx = 0;
+		gridBagConstraints.gridy = 0;
+		gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+		gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+		gridBagConstraints.weightx = 0.1;
+		gridBagConstraints.weighty = 0.1;
+
+		panel.add(desktopPane, gridBagConstraints);
+		panel.setBounds(0, 0, 1000, 1000);
+		panel.setVisible(true);
+		panel.revalidate();
+
+		removeSystemMenuListener(internalFrame);
+		JLayeredPane layeredPane = frame.getLayeredPane();
+		layeredPane.addComponentListener(new ModalComponentAdapter(panel));
+		panel.setBounds(layeredPane.getX(), layeredPane.getY(),
+				layeredPane.getWidth(), layeredPane.getHeight());//0, 0, 3000, 3000);
+		internalFrame.addInternalFrameListener(new ModalInternalFrameAdapter(frame, panel));
+		Rectangle screen = frame.getBounds();
+		internalFrame.setLocation(screen.x + screen.width/2  - internalFrame.getSize().width/2,
+						  screen.y + screen.height/2 - internalFrame.getSize().height/2);
+		layeredPane.add(panel, JLayeredPane.MODAL_LAYER);
+		layeredPane.revalidate();
+		internalFrame.setVisible(true);
+		internalFrame.setSelected(true);
+
+	}
+
+	public static class ModalComponentAdapter extends ComponentAdapter {
+
+		JPanel component;
+
+		public ModalComponentAdapter(JPanel component) {
+			this.component = component;
+		}
+		
+		@Override
+		public void componentResized(ComponentEvent e) {
+			super.componentResized(e);
+			component.setBounds(0, 0, e.getComponent().getWidth(), e.getComponent().getHeight());
+			component.revalidate();
+		}
+
+	};
+
+	public static class ModalInternalFrameAdapter extends InternalFrameAdapter {
+		private JFrame frame;
+		ModalJPanel modalJPanel;
+
+		public ModalInternalFrameAdapter(JFrame frame, ModalJPanel modalJPanel) {
+			this.frame = frame;
+			this.modalJPanel = modalJPanel;
+		}
+
+		@Override
+		public void internalFrameClosed(InternalFrameEvent e) {
+			super.internalFrameClosed(e);
+			modalJPanel.enableDrawComponents(true);
+			if(this.frame != null && modalJPanel != null) {
+				this.frame.getLayeredPane().remove(modalJPanel);
+				this.frame.repaint();
+			}
+			modalJPanel = null;
+		}
+
+		@Override
+		public void internalFrameIconified(InternalFrameEvent e) {
+			super.internalFrameIconified(e);
+			if(this.frame != null) {
+				this.frame.setExtendedState(JFrame.ICONIFIED | this.frame.getExtendedState());
+			}
+		}
+
+	}
+    private static void removeSystemMenuListener(JInternalFrame modal) {
+
+    	modal.getActionMap();
+
+        BasicInternalFrameUI ui = (BasicInternalFrameUI)modal.getUI();
+        JComponent titleBar = (JComponent)ui.getNorthPane();
+        for(Component c:titleBar.getComponents()) {
+            if(c instanceof JLabel || "InternalFrameTitlePane.menuButton".equals(c.getName())) {
+                for(MouseListener ml: c.getMouseListeners()) {
+                    ((JComponent)c).removeMouseListener(ml);
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,90 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.entities;
+
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+
+/**
+ *
+ * @author Andrei
+ */
+@DatabaseTable(tableName = "estimate_conversions")
+public class EstimateConversionEntity {
+
+    public static final String ESTIMATE = "estimate_id";
+    public static final String INVOICE = "invoice_id";
+    
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+    @DatabaseField(foreign = true, columnName = ESTIMATE, columnDefinition = "INTEGER REFERENCES estimate (id)")
+    protected EstimateEntity estimate;
+    @DatabaseField(foreign = true, columnName = INVOICE, columnDefinition = "INTEGER REFERENCES invoices (id)")
+    protected InvoiceEntity invoice;
+
+    public EstimateConversionEntity() {
+    }
+
+    public EstimateConversionEntity(EstimateConversionEntity estimateConversionEntity) {
+        this.id = estimateConversionEntity.id;
+        this.estimate = estimateConversionEntity.estimate;
+        this.invoice = estimateConversionEntity.invoice;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public EstimateEntity getEstimate() {
+        return estimate;
+    }
+
+    public void setEstimate(EstimateEntity estimate) {
+        this.estimate = estimate;
+    }
+
+    public InvoiceEntity getInvoice() {
+        return invoice;
+    }
+
+    public void setInvoice(InvoiceEntity invoice) {
+        this.invoice = invoice;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 41 * hash + this.id;
+        hash = 41 * hash + (this.estimate != null ? this.estimate.hashCode() : 0);
+        hash = 41 * hash + (this.invoice != null ? this.invoice.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final EstimateConversionEntity other = (EstimateConversionEntity) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (this.estimate != other.estimate && (this.estimate == null || !this.estimate.equals(other.estimate))) {
+            return false;
+        }
+        if (this.invoice != other.invoice && (this.invoice == null || !this.invoice.equals(other.invoice))) {
+            return false;
+        }
+        return true;
+    }
+
+}

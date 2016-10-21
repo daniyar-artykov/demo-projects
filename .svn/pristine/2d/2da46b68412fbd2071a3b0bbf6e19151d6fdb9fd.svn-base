@@ -1,0 +1,101 @@
+/*
+ * Versiuni.java
+ *
+ * Created on February 21, 2008, 12:26 PM
+ */
+
+package sleekbill;
+
+/**
+ *
+ * @author flaviu marcu
+ */
+
+public class Versiuni {   
+    
+    public static boolean isNotAvailable(Facilitate f){
+        return !isAvailable(f);
+    }    
+    
+    public static boolean isAvailable(Facilitate f){
+        int v = 0;
+        try {
+            v= Integer.parseInt(Common.getVersion());
+        } catch (NumberFormatException ex) {
+        }
+        switch(v){
+            case 1: return isAvailableForStandard(f);
+            case 2: return isAvailableForProfesional(f);
+            case 3: return isAvailableForProfesionalPlus(f);
+        }    
+        return false;
+    }
+    
+    public static boolean isAvailableForStandard(Facilitate f){
+        switch(f){
+            case CREARE_FACTURA_PE_BAZA_DE_CHITANTA: return false;
+            case INCASAREA_MAI_MULTOR_FACTURI_PE_O_SINGURA_CHITANTA: return false;
+            case EMITERE_CHITANTE_DE_AVANS: return false;
+            case MODEL_FACTURI_2A4_2A5: return false;
+            case PERSONALIZARE_FACTURA_CU_FUNDAL: return false;
+            case FACTURI_EXTERNE: return false;
+            case CURS_VALUTAR_LUAT_DE_PE_INTERNET: return false;
+            case POSIBILITATEA_ADAUGARII_LIMBI_NOI_SI_MODIFICARE_TRADUCERI_EXISTENTE: return false;
+            case SUPORT_TRADUCERI_FACTURA_IN_ALTE_LIMBI: return false;
+            case IMPORT_EXCEL: return false;
+            case EXPORT_EXCEL: return false;
+            case DECLARATIA_394: return false;
+            case DECIZIE_INSERIERE: return false;
+            case POSIBILITATEA_FOLOSIRII_DE_CATRE_MAI_MULTI_UTILIZATORI: return false;
+            case INTRARE_IN_PROGRAM_PE_BAZA_DE_PAROLA: return false;
+            case ADAUGARE_MODIFICARE_STERGERE_UTILIZATORI: return false;
+            case ALOCARE_DREPTURI_EMITERE: return false;
+            case EMITERE_ALTE_MONEDE: return false;
+            case POSIBILITATE_EVIDENTA_PRETURI_IN_ALTE_MONEDE: return false;
+            case TIP_OPERATIUNE: return false;
+            case CONTURI_SWIFT: return false;
+            case PRECIZIE_VARIABILA: return false;
+            case DATE_ADITIONALE: return false;
+            case EMITERE_IN_ALB: return false;
+            case IMAGINE_STAMPILA: return false;
+            case GRAFICE: return false;
+            case RAPORT_INCASARI: return false;
+            case TREI_DOC_PE_O_FOAIE: return false;
+            case EMAIL: return false;
+            case JURNAL_OPERATIUNI: return false;
+            case FISA_OPERATIUNI: return false;
+            case RETEA: return false;
+            case CASE_MARCAT: return false;
+            case PRINT_ALL_DOCUMENTS: return false;
+            case REGISTRU_CASA: return false;
+            default: return true;
+        }        
+    }
+    
+    public static boolean isAvailableForProfesional(Facilitate f){
+        switch(f){
+            case PERSONALIZARE_FACTURA_CU_FUNDAL: return false;
+            case FACTURI_EXTERNE: return false;
+            case POSIBILITATEA_ADAUGARII_LIMBI_NOI_SI_MODIFICARE_TRADUCERI_EXISTENTE: return false;
+            case SUPORT_TRADUCERI_FACTURA_IN_ALTE_LIMBI: return false;
+            case DECIZIE_INSERIERE: return false;    
+            case PRECIZIE_VARIABILA: return false;
+            case DATE_ADITIONALE: return false;
+            case EMITERE_IN_ALB: return false;
+            case IMAGINE_STAMPILA: return false;
+            case GRAFICE: return false;
+            case EMAIL: return false;
+            case RETEA: return false;
+            case CASE_MARCAT: return false;
+            case PRINT_ALL_DOCUMENTS: return false;
+            case REGISTRU_CASA: return false;
+            default: return true;
+        }        
+    }
+    
+    public static boolean isAvailableForProfesionalPlus(Facilitate f){    
+        switch(f){
+            default: return true;
+        }
+    }
+}

@@ -1,0 +1,139 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.utils;
+
+import java.io.File;
+import java.net.URI;
+import java.net.URL;
+
+import sleekbill.Common;
+
+/**
+ *
+ * @author Esteban
+ */
+public class Ajutor {
+    public final static String OFFLINE_HELP_DIR                         = "./ajutor/scr/";    
+    public final static String OFFLINE_HELP_DIR_INDEX 					= "./ajutor/";
+    public final static String URL_HELP                                 = "http://program-facturi.ro/ajutor/";
+    public final static String URL_HELP_DIR_INDEX						= "http://program-facturi.ro/ajutor/";
+
+    public final static String INDEX									= "index.htm";                               							    
+    public final static String MODIFICARE_DOCUMENTE                     = "Cum_modific_un_document.htm";
+    public final static String ALEGERE_DATE_FACTURA                     = "Cum_aleg_datele_care_apar_pe_facturi.htm";                			
+    public final static String ADAUGARE_LIMBA							= "Cum_adaug_o_limba.htm";                                   			
+    public final static String ADAUGARE_COTA_TVA						= "Cum_adaug_o_cota_TVA.htm";                                			
+    public final static String ADAUGARE_CONTURI_IBAN					= "Cum_adaug_conturi_IBAN.htm";                              			
+    public final static String DEFINIRE_SERIE							= "Cum_definesc_o_serie.htm";                                			
+    public final static String CONFIGURARI_GENERALE_FIRMA				= "Configurari_generale.htm";                                			
+    public final static String TRIMITERE_DOCUMENTE_EMAIL_DIN_PROFORMA	= "Cum_trimit_documente_prin_e-mail_direct_din_program.htm";    
+    public final static String CONECTARE_PROGRAM_LA_CASA_DE_MARCAT		= "Cum_conectez_programul_la_o_casa_de_marcat.htm";          			
+    public final static String CONFIGURARE_DATE_GENERALE_FIRMA			= "Date_generale_firma.htm";
+    public final static String CONFIGURARE_RETEA                        = "Utilizare_Sleek_Bill_in_Retea.htm";
+    public final static String RAPORT_SOLD_PER_DOCUMENT                 = "Raport_sold_per_document.htm";
+    public final static String RAPORT_EVOLUTIE_SOLD_CLIENT              = "Raport_evolutie_sold_client.htm";
+    public final static String RAPORT_OPERATIUNI						= "Operatiuni_casa.htm";                     							
+    public final static String UTILIZATORI								= "Cum_se_adauga_utilizatori_noi.htm";                         							
+    public final static String TVA_LA_INCASARE                          = "TVA_la_incasare_Date_noi_factura.htm";
+    public final static String MODIFICAREA_MANUALA_A_VALORILOR_TOTALE   = "Modificarea_manuala_a_valorilor_totale_de_pe_documente.htm";
+    public final static String CONFIGURARE_BACKUP_SI_RAPOARTE_ONLINE    = "Configurare_Serviciu_Backup_si_Rapoarte_Online.htm";
+    public final static String PANOU_LATERAL_INTERACTIV                 = "Panou_lateral_interactiv.htm";
+    
+    public final static String CASA_MARCAT_DATECS                                  = "Casa_de_marcat_Datecs.htm";               
+    public final static String CASA_MARCAT_ELTRADE                                 = "Casa_de_marcat_Eltrade.htm";                      
+    public final static String CASA_MARCAT_SAPEL                                   = "Casa_de_marcat_Sapel.htm";                
+    public final static String CASA_MARCAT_ACTIVA                                  = "Casa_de_marcat_Activa.htm";                         
+    public final static String CASA_MARCAT_PARTNER                                 = "Casa_de_marcat_Partner.htm";            
+    public final static String PROGRAM_FACTURARE_CASA_MARCAT_DATECS_ELTRADE_SAPEL  = "Cum_conectez_programul_la_o_casa_de_marcat.htm";     
+
+    public final static String DECLARATIA_394							=  "Declaratia_394.htm";                      							
+    public final static String INCHIDERE_LUNA/**de verificat*/								=  "Inchidere_luna.htm";                      							
+    public final static String TAXARE_INVERSA_SDD_SFDD/**de verificat*/					=  "Taxarea_inversa_si_produse_SDD_SFDD.htm"; 
+                        							
+
+    
+    public static URI getLinkAjutor(String capitol){
+        URI helpUri = null;
+        try {
+            helpUri = Common.existsOfflineHelp()? getLinkAjutorOffLine(capitol): getLinkAjutorOnLine(capitol);
+//            Desktop.getDesktop().browse(helpUri);
+			SBDesktop.browse(helpUri);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }  
+        return helpUri;
+    }
+    public static URI getLinkAjutorOnLine(String capitol){
+        URI helpUri = null;
+        try{          
+            helpUri = new URI(URL_HELP + capitol);
+        }catch (Exception ex){
+            ex.printStackTrace();
+        }
+        return helpUri;
+    }
+    
+    public static URI getLinkAjutorOffLine(String capitol){
+        URI helpUri = null;
+        try{
+            helpUri = new File(new File(OFFLINE_HELP_DIR + capitol).getCanonicalPath()).toURI();
+        }catch (Exception ex){
+            ex.printStackTrace();
+        }
+        return helpUri;
+    }  
+    
+    public static URI getLinkAjutorIndex(String index){
+        URI helpUri = null;
+        try{
+			if(Common.existsOfflineHelp()){
+				helpUri = new File(new File(OFFLINE_HELP_DIR_INDEX + index).getCanonicalPath()).toURI();
+			} else {
+				helpUri = new URL(URL_HELP_DIR_INDEX + index).toURI();
+			}
+//            Desktop.getDesktop().browse(helpUri);
+			SBDesktop.browse(helpUri);
+        }catch (Exception ex){
+            ex.printStackTrace();
+        }
+        return helpUri;
+    } 
+    
+    
+    
+    
+    public static URI getLinkAjutorCaseMarcat(String index){
+        URI helpUri = null;
+        String url = "";
+       
+        try{
+            if (index.equals("Datecs")) {
+                url = CASA_MARCAT_DATECS;                
+            } else if (index.equals("Eltrade")) {
+                url = CASA_MARCAT_ELTRADE;                
+            } else if (index.equals("Sapel")) {
+                url = CASA_MARCAT_SAPEL;                
+            } else if (index.equals("Activa")) {
+                url = CASA_MARCAT_ACTIVA;                
+            } else if (index.equals("Partner 500 EJ")) {
+                url = CASA_MARCAT_PARTNER;               
+            } else {
+                url = PROGRAM_FACTURARE_CASA_MARCAT_DATECS_ELTRADE_SAPEL;                
+            }        
+        }catch (Exception ex){
+            ex.printStackTrace();
+        }
+        
+        try{
+            helpUri = Ajutor.getLinkAjutor(url);
+        }catch (Exception ex){
+            ex.printStackTrace();
+        }
+        
+        return  helpUri;
+
+    }
+    
+}

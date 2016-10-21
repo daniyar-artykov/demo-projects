@@ -1,0 +1,468 @@
+package sleekbill.beans;
+
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.util.List;
+
+import sleekbill.Common;
+import sleekbill.entities.TaxEntity;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.dao.GenericRawResults;
+import com.j256.ormlite.dao.RawRowMapper;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.stmt.PreparedQuery;
+import com.j256.ormlite.stmt.SelectArg;
+import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+public class Tax extends TaxEntity {
+	
+	public static String EDUCATION_CESS = "Education Cess";
+	public static String SHE_CESS = "SHE Cess";
+	public static String SB_CESS = "Swachh Bharat Cess";
+
+    private Dao<TaxEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+
+     public Tax(TaxEntity taxesEntity) {
+        this(0);
+        this.id = taxesEntity.getId();
+        this.taxName = taxesEntity.getTaxName();
+        this.taxPercentage = taxesEntity.getTaxPercentage();
+        this.isDefaultTax = taxesEntity.isDefaultTax();
+        this.deleted = taxesEntity.getDeleted();
+        this.products = taxesEntity.getProducts();
+        this.invoiceProducts = taxesEntity.getInvoiceProducts();
+		this.combinedTaxes = taxesEntity.getCombinedTaxes();
+		this.type = taxesEntity.getType();
+		this.explicitOrder = taxesEntity.isExplicitOrder();
+    }
+    
+    public Tax() {
+        this(0);
+    }
+
+    public Tax(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager
+                        .createDao(mainConnection, TaxEntity.class);
+
+                if (id != null && id != 0) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    
+     public void refreshDao(){
+            try {
+                mainDao = DaoManager
+                        .createDao(Common.connection.getConnection(), TaxEntity.class);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+    }
+
+    public void create() throws Exception {
+        mainDao.create(this);
+    }
+
+    public TaxEntity read(Integer id) throws Exception {
+        return mainDao.queryForId(id);
+    }
+
+    public void update() throws Exception {
+        mainDao.update(this);
+    }
+
+    public void delete() throws Exception {
+        mainDao.delete(this);
+    }
+    
+    public static void add(JdbcConnectionSource connectionSource, Tax taxes) throws SBDaoException, SQLException {
+
+        Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+
+        taxesDao.create(taxes);
+    }
+    
+     public static TaxEntity get(JdbcConnectionSource connectionSource, String name, BigDecimal percentage) throws SBDaoException, SQLException {
+
+    	Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+        PreparedQuery<TaxEntity> pq = taxesDao.queryBuilder().where().like(Tax.TAX_NAME, name).and().like(Tax.TAX_PERCENTAGE, percentage).prepare();
+        List<TaxEntity> list = taxesDao.query(pq);
+
+        if (list.size() > 0) {
+            return list.get(0);
+        }
+        return null;
+    }
+     
+     public static TaxEntity get(JdbcConnectionSource connectionSource, String name) throws SBDaoException, SQLException {
+
+    	Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+        PreparedQuery<TaxEntity> pq = taxesDao.queryBuilder().where().like(Tax.TAX_NAME, name).and().like(Tax.DELETED, "n").prepare();
+        List<TaxEntity> list = taxesDao.query(pq);
+
+        if (list.size() > 0) {
+            return list.get(0);
+        }
+        return null;
+    }
+     
+     public static TaxEntity getExact(JdbcConnectionSource connectionSource, String name) throws SBDaoException, SQLException {
+
+    	Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+        PreparedQuery<TaxEntity> pq = taxesDao.queryBuilder().where().eq(Tax.TAX_NAME, name).and().like(Tax.DELETED, "n").prepare();
+        List<TaxEntity> list = taxesDao.query(pq);
+
+        if (list.size() > 0) {
+            return list.get(0);
+        }
+        return null;
+    }
+    
+    public static TaxEntity get(JdbcConnectionSource connectionSource, String name, BigDecimal percentage, boolean defaultTax) throws SBDaoException, SQLException {
+
+        SelectArg selectArg = new SelectArg();
+    	Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+        PreparedQuery<TaxEntity> pq = taxesDao.queryBuilder().where().eq(Tax.TAX_NAME, selectArg).and().eq(Tax.TAX_PERCENTAGE, percentage).and().eq(Tax.IS_DEFAULT_TAX, defaultTax).prepare();
+        selectArg.setValue(name);
+        List<TaxEntity> list = taxesDao.query(pq);
+
+        if (list.size() > 0) {
+            return list.get(0);
+        }
+        return null;
+    }
+    
+    public static TaxEntity get(JdbcConnectionSource connectionSource, BigDecimal percentage) throws SBDaoException, SQLException {
+
+    	Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+        PreparedQuery<TaxEntity> pq = taxesDao.queryBuilder().where().eq(Tax.TAX_PERCENTAGE, percentage).prepare();
+        List<TaxEntity> list = taxesDao.query(pq);
+
+        if (list.size() > 0) {
+            return list.get(0);
+        }
+        return null;
+    }
+    
+    public static TaxEntity getNone(JdbcConnectionSource connectionSource) throws SBDaoException, SQLException {
+
+    	Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+        PreparedQuery<TaxEntity> pq = taxesDao.queryBuilder().where().eq(Tax.TAX_PERCENTAGE, BigDecimal.ZERO).and().eq(Tax.TAX_NAME, "None").and().eq(Tax.DELETED, "y").prepare();
+        List<TaxEntity> list = taxesDao.query(pq);
+
+        if (list.size() > 0) {
+            return list.get(0);
+        }
+        return null;
+    }
+	
+	public static TaxEntity getEducationCess(JdbcConnectionSource connectionSource) throws SBDaoException, SQLException {
+
+    	Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+        PreparedQuery<TaxEntity> pq = taxesDao.queryBuilder().where().eq(Tax.TAX_NAME, EDUCATION_CESS).and().eq(Tax.DELETED, "n").prepare();
+        List<TaxEntity> list = taxesDao.query(pq);
+
+        if (list.size() > 0) {
+            return list.get(0);
+        }
+        return null;
+    }
+	
+	public static TaxEntity getSBCess(JdbcConnectionSource connectionSource) throws SBDaoException, SQLException {
+
+    	Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+        PreparedQuery<TaxEntity> pq = taxesDao.queryBuilder().where().eq(Tax.TAX_NAME, SB_CESS).and().eq(Tax.DELETED, "n").prepare();
+        List<TaxEntity> list = taxesDao.query(pq);
+
+        if (list.size() > 0) {
+            return list.get(0);
+        }
+        return null;
+    }
+	
+		public static TaxEntity getServiceTax(JdbcConnectionSource connectionSource) throws SBDaoException, SQLException {
+
+    	Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+        PreparedQuery<TaxEntity> pq = taxesDao.queryBuilder().where().eq(Tax.TAX_NAME, "Service Tax").and().eq(Tax.DELETED, "n").and().eq(Tax.TYPE, Tax.TYPE_MULTI).prepare();
+        List<TaxEntity> list = taxesDao.query(pq);
+
+        if (list.size() > 0) {
+            return list.get(0);
+        }
+        return null;
+    }
+	
+	public static TaxEntity getSheCess(JdbcConnectionSource connectionSource) throws SBDaoException, SQLException {
+
+    	Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+        PreparedQuery<TaxEntity> pq = taxesDao.queryBuilder().where().eq(Tax.TAX_NAME, SHE_CESS).and().eq(Tax.DELETED, "n").prepare();
+        List<TaxEntity> list = taxesDao.query(pq);
+
+        if (list.size() > 0) {
+            return list.get(0);
+        }
+        return null;
+    }
+    
+    public static TaxEntity getDefault(JdbcConnectionSource connectionSource) throws SBDaoException, SQLException {
+
+    	Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+        PreparedQuery<TaxEntity> pq = taxesDao.queryBuilder().where().eq(Tax.IS_DEFAULT_TAX, true).and().eq(Tax.DELETED, "n").prepare();
+        List<TaxEntity> list = taxesDao.query(pq);
+
+        if (list.size() > 0) {
+            return list.get(0);
+        }
+        return null;
+    }
+	
+	public static List<TaxEntity> getCombined(JdbcConnectionSource connectionSource, Integer id) throws SBDaoException, SQLException {
+
+    	Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+
+		GenericRawResults<String> rawResults = taxesDao.queryRaw(
+				"SELECT component_tax_id from tax_combo where main_tax_id=" + id.toString() + " ORDER BY id",
+				new RawRowMapper<String>() {
+					public String mapRow(String[] columnNames, String[] resultColumns) {
+						return resultColumns[0];
+					}
+				});
+		List<String> results = rawResults.getResults();
+		
+        PreparedQuery<TaxEntity> pq = taxesDao.queryBuilder().where().in("id", results).and().prepare();
+        List<TaxEntity> list = taxesDao.query(pq);
+
+        if (list.size() > 0) {
+            return list;
+        }
+		
+		//pt pastrarea comportamentului vechi: daca nu se gaseste vreo valoare, macar sa fie adaugata taxa de baza
+		List<TaxEntity> auxList = new ArrayList<TaxEntity>();
+		auxList.add(taxesDao.queryForId(id));
+        return auxList;
+    }
+	
+	public static List<TaxEntity> getMulti(JdbcConnectionSource connectionSource, Integer id) throws SBDaoException, SQLException {
+
+    	Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+
+		GenericRawResults<String> rawResults = taxesDao.queryRaw(
+				"SELECT component_tax_id from tax_combo where main_tax_id=" + id.toString() + " ORDER BY id",
+				new RawRowMapper<String>() {
+					public String mapRow(String[] columnNames, String[] resultColumns) {
+						return resultColumns[0];
+					}
+				});
+		List<String> results = rawResults.getResults();
+		
+        PreparedQuery<TaxEntity> pq = taxesDao.queryBuilder().where().in("id", results).and().prepare();
+        List<TaxEntity> list = new ArrayList<TaxEntity>();
+
+        for(String s : results){
+			TaxEntity t = new TaxEntity();
+			t.setId(Integer.parseInt(s));
+			taxesDao.refresh(t);
+			list.add(t);
+		}
+		
+		return list;
+    }
+	
+	public static boolean isCombined(JdbcConnectionSource connectionSource, Integer id) throws SBDaoException, SQLException {
+
+		Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+
+		GenericRawResults<String> rawResults = taxesDao.queryRaw(
+				"SELECT main_tax_id from tax_combo where component_tax_id=" + id.toString() + " ORDER BY id",
+				new RawRowMapper<String>() {
+					public String mapRow(String[] columnNames, String[] resultColumns) {
+						return resultColumns[0];
+					}
+				});
+		List<String> results = rawResults.getResults();
+
+		if (results.size() > 0) {
+			return true;
+		}
+		return false;
+	}
+	
+	public static long getSimpleCount(JdbcConnectionSource connectionSource) {
+
+		try {
+			Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+
+			PreparedQuery<TaxEntity> pq = taxesDao.queryBuilder().setCountOf(true).where().eq(Tax.TYPE, Tax.TYPE_NORMAL).and().eq(Tax.DELETED, "n").prepare();
+			return taxesDao.countOf(pq);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		return 0;
+	}
+	
+	public static long getSimpleCountWithoutCess(JdbcConnectionSource connectionSource) {
+
+		try {
+			Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+
+			PreparedQuery<TaxEntity> pq = taxesDao.queryBuilder().setCountOf(true).where().eq(Tax.TYPE, Tax.TYPE_NORMAL).and().eq(Tax.DELETED, "n").prepare();
+			return taxesDao.countOf(pq) - 2;
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		return 0;
+	}
+	
+	public static long getCountWithoutCess(JdbcConnectionSource connectionSource) {
+
+		try {
+			Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+
+			PreparedQuery<TaxEntity> pq = taxesDao.queryBuilder().setCountOf(true).where().eq(Tax.DELETED, "n").prepare();
+			return taxesDao.countOf(pq) - 2;
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		return 0;
+	}
+	
+	public static long getCombinedCount(JdbcConnectionSource connectionSource) {
+
+		try {
+			Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+
+			PreparedQuery<TaxEntity> pq = taxesDao.queryBuilder().setCountOf(true).where().eq(Tax.TYPE, Tax.TYPE_COMBINED).and().eq(Tax.DELETED, "n").prepare();
+			return taxesDao.countOf(pq);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		return 0;
+	}
+	
+	public static String getCombinedName(JdbcConnectionSource connection, String taxName, Integer id, boolean isExplicitOrder) {
+		try {
+			List<TaxEntity> combined = Tax.getCombined(Common.connection.getConnection(), id);
+
+			if (combined != null) {
+				taxName = taxName + " (";
+				boolean replaceLast2Characters = false; //ultimele 2 caractere vor trebui ori sterse ori inlocuite cu ")"
+				for (TaxEntity taxEntity : combined) {
+					taxName += taxEntity.getTaxName() + ", ";
+					replaceLast2Characters = true;
+				}
+				taxName = taxName.substring(0, taxName.length() - 2);
+
+				if (replaceLast2Characters) {
+					taxName += ")";
+				}
+				
+				if(isExplicitOrder){
+					taxName += "*";
+				}
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		return taxName;
+	}
+	
+	public static String getCombinedPercentageName(JdbcConnectionSource connection, String taxPercentage, Integer id, boolean isExplicitOrder) {
+		try {
+			List<TaxEntity> combined = Tax.getCombined(Common.connection.getConnection(), id);
+
+			if (combined != null) {
+				taxPercentage = taxPercentage + " (";
+				boolean replaceLast2Characters = false; //ultimele 2 caractere vor trebui ori sterse ori inlocuite cu ")"
+				for (TaxEntity taxEntity : combined) {
+					taxPercentage += taxEntity.getTaxPercentage() + "%, ";
+					replaceLast2Characters = true;
+				}
+				taxPercentage = taxPercentage.substring(0, taxPercentage.length() - 2);
+
+				if (replaceLast2Characters) {
+					taxPercentage += ")";
+				}
+				
+				if(isExplicitOrder){
+					taxPercentage += "*";
+				}
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		return taxPercentage;
+	}
+	
+    public Dao<TaxEntity, Integer> getMainDao() {
+        return mainDao;
+    }
+
+    public void setMainDao(Dao<TaxEntity, Integer> mainDao) {
+        this.mainDao = mainDao;
+    }
+	
+	public static BigDecimal calculateTax(BigDecimal value, BigDecimal percentage){
+		return value.multiply(percentage).divide(new BigDecimal("100"));
+	}
+	
+	@Override
+	public int hashCode() {
+		int hash = 5;
+		hash = 89 * hash + this.id;
+		hash = 89 * hash + (this.taxName != null ? this.taxName.hashCode() : 0);
+		hash = 89 * hash + (this.taxPercentage != null ? this.taxPercentage.hashCode() : 0);
+		hash = 89 * hash + (this.isDefaultTax ? 1 : 0);
+		hash = 89 * hash + (this.deleted != null ? this.deleted.hashCode() : 0);
+		hash = 89 * hash + (this.type != null ? this.type.hashCode() : 0);
+		hash = 89 * hash + (this.explicitOrder ? 1 : 0);
+		return hash;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final Tax other = (Tax) obj;
+		if (this.id != other.id) {
+			return false;
+		}
+		if ((this.taxName == null) ? (other.taxName != null) : !this.taxName.equals(other.taxName)) {
+			return false;
+		}
+		if (this.taxPercentage != other.taxPercentage && (this.taxPercentage == null || !this.taxPercentage.equals(other.taxPercentage))) {
+			return false;
+		}
+		if (this.isDefaultTax != other.isDefaultTax) {
+			return false;
+		}
+		if ((this.deleted == null) ? (other.deleted != null) : !this.deleted.equals(other.deleted)) {
+			return false;
+		}
+		if ((this.type == null) ? (other.type != null) : !this.type.equals(other.type)) {
+			return false;
+		}
+		if (this.explicitOrder != other.explicitOrder) {
+			return false;
+		}
+		return true;
+	}
+}

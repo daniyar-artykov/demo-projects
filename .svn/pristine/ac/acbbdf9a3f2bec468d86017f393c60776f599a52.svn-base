@@ -1,0 +1,311 @@
+package sleekbill.util;
+
+import java.awt.AWTKeyStroke;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.KeyboardFocusManager;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.swing.BorderFactory;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
+import javax.swing.text.DefaultEditorKit;
+import javax.swing.text.JTextComponent;
+import sleekbill.Common;
+import sleekbill.Config;
+import sleekbill.Messages;
+import sleekbill.frames.JDialogRegister;
+
+import sleekbill.swingutils.autosuggesters.SBACPanelTextArea;
+import sleekbill.swingutils.autosuggesters.SBACPanelTextField;
+import sleekbill.swingutils.autosuggesters.SBAutoSuggesterJTextArea;
+import sleekbill.swingutils.autosuggesters.SBAutoSuggesterJTextField;
+import sleekbill.swingutils.datepicker.calendar.JMaskedDateField;
+
+public class SBSwingUtils {
+	
+	final static Color lightGray = new Color(171, 173, 179);
+	
+	public static void addContextMenuToChildren(Container comp) {
+		
+		addContext(comp, false);
+	}
+	
+	public static void addContextMenuToChildren(Container comp, boolean addAlsoFocusEnchantements) {
+		
+		addContext(comp, addAlsoFocusEnchantements);
+	}
+	
+	private static void addContext(Container comp, boolean addAlsoFocusEnchantements) {
+		for (Component c : comp.getComponents()) {
+			if (c instanceof JTextComponent) {
+				c.addMouseListener(new MouseAdapter() {
+					@Override
+					public void mouseReleased(final MouseEvent e) {
+						e.getComponent().requestFocusInWindow();
+						if (SwingUtilities.isRightMouseButton(e)) {
+							final JTextComponent component = (JTextComponent) e.getComponent();
+							final JPopupMenu menu = new JPopupMenu();
+							JMenuItem item;
+							
+							item = new JMenuItem(new DefaultEditorKit.CutAction());
+							item.setText("Cut");
+							item.setEnabled(component.isEditable() && component.getSelectionStart() != component.getSelectionEnd());
+							menu.add(item);
+							
+							item = new JMenuItem(new DefaultEditorKit.CopyAction());
+							item.setText("Copy");
+							item.setEnabled(component.getSelectionStart() != component.getSelectionEnd());
+							menu.add(item);
+							
+							item = new JMenuItem(new DefaultEditorKit.PasteAction());
+							item.setText("Paste");
+							item.setEnabled(component.isEditable());
+							menu.add(item);
+							
+							menu.show(e.getComponent(), e.getX(), e.getY());
+						}
+					}
+					
+					@Override
+					public void mousePressed(MouseEvent e) {
+						e.getComponent().requestFocusInWindow();
+					}
+				});
+				
+			} else if (c instanceof Container) {
+				
+				if (addAlsoFocusEnchantements) {
+					Set<AWTKeyStroke> defaultKeys = c.getFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS);
+					Set<AWTKeyStroke> newKeys;
+					newKeys = new HashSet(defaultKeys);
+					newKeys.add(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0));
+					c.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, newKeys);
+					
+				}
+				
+				addContextMenuToChildren((Container) c, addAlsoFocusEnchantements);
+			}
+		}
+	}
+	
+	public static void applyManualFocusBorder(Component c) {
+		
+		final JTextComponent text = (JTextComponent) c;
+		text.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(lightGray), BorderFactory.createEmptyBorder(0, 3, 0, 0)));
+		text.addFocusListener(new FocusListener() {
+			@Override
+			public void focusGained(FocusEvent fe) {
+				text.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(0x23, 0x82, 0xa5)), BorderFactory.createEmptyBorder(0, 3, 0, 0)));
+			}
+			
+			@Override
+			public void focusLost(FocusEvent fe) {
+				text.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(lightGray), BorderFactory.createEmptyBorder(0, 3, 0, 0)));
+			}
+		});
+		
+	}
+	
+	public static void applyManuaScrollPaneFocusBorder(Component c) {
+		
+		if (c instanceof JScrollPane) {
+			final JScrollPane panel = (JScrollPane) c;
+			panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(lightGray), BorderFactory.createEmptyBorder(3, 3, 3, 3)));
+			if (panel.getViewport().getView() instanceof JTextComponent) {
+				JTextComponent jta = (JTextComponent) panel.getViewport().getView();
+				jta.addFocusListener(new FocusListener() {
+					@Override
+					public void focusGained(FocusEvent fe) {
+						panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(0x23, 0x82, 0xa5)), BorderFactory.createEmptyBorder(3, 3, 3, 3)));
+					}
+					
+					@Override
+					public void focusLost(FocusEvent fe) {
+						panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(lightGray), BorderFactory.createEmptyBorder(3, 3, 3, 3)));
+					}
+				});
+			}
+		}
+		
+	}
+	
+	public static void applyCalendarFocusBorder(Component c) {
+		
+		final JTextComponent text = (JTextComponent) c;
+		text.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(lightGray), BorderFactory.createEmptyBorder(0, 3, 0, 0)));
+		text.addFocusListener(new FocusListener() {
+			@Override
+			public void focusGained(FocusEvent fe) {
+				text.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(0x23, 0x82, 0xa5)), BorderFactory.createEmptyBorder(0, 3, 0, 0)));
+			}
+			
+			@Override
+			public void focusLost(FocusEvent fe) {
+				text.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(lightGray), BorderFactory.createEmptyBorder(0, 3, 0, 0)));
+			}
+		});
+		
+	}
+	
+	public static void applyFocusBorder(Container comp) {
+		
+		for (Component c : comp.getComponents()) {
+			if (c instanceof JTextComponent && !(c instanceof JMaskedDateField)) {
+				if (!(c instanceof SBAutoSuggesterJTextArea) && !(c instanceof SBAutoSuggesterJTextField)) {
+					if (!(c instanceof JTextArea)) {
+						final JTextComponent text = (JTextComponent) c;
+						
+						text.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(lightGray), BorderFactory.createEmptyBorder(0, 3, 0, 0)));
+						text.addFocusListener(new FocusListener() {
+							@Override
+							public void focusGained(FocusEvent fe) {
+								text.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(0x23, 0x82, 0xa5)), BorderFactory.createEmptyBorder(0, 3, 0, 0)));
+							}
+							
+							@Override
+							public void focusLost(FocusEvent fe) {
+								text.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(lightGray), BorderFactory.createEmptyBorder(0, 3, 0, 0)));
+							}
+						});
+					}
+				}
+				if (c instanceof JTextArea) {
+					final JTextComponent text = (JTextComponent) c;
+					text.setBorder(null);
+				}
+			} else if (c instanceof Container) {
+				if (c instanceof SBACPanelTextField || c instanceof SBACPanelTextArea) {
+					final JPanel panel = (JPanel) c;
+					panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(lightGray), BorderFactory.createEmptyBorder(0, 3, 0, 0)));
+					panel.addFocusListener(new FocusListener() {
+						@Override
+						public void focusGained(FocusEvent fe) {
+							panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(0x23, 0x82, 0xa5)), BorderFactory.createEmptyBorder(0, 3, 0, 0)));							
+						}
+						
+						@Override
+						public void focusLost(FocusEvent fe) {
+							panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(lightGray), BorderFactory.createEmptyBorder(0, 3, 0, 0)));
+						}
+					});
+				}
+				if (c instanceof JScrollPane) {
+					final JScrollPane panel = (JScrollPane) c;
+					panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(lightGray), BorderFactory.createEmptyBorder(3, 3, 3, 3)));
+					if (panel.getViewport().getView() instanceof JTextArea) {
+						JTextArea jta = (JTextArea) panel.getViewport().getView();
+						jta.addFocusListener(new FocusListener() {
+							@Override
+							public void focusGained(FocusEvent fe) {
+								panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(0x23, 0x82, 0xa5)), BorderFactory.createEmptyBorder(3, 3, 3, 3)));
+							}
+							
+							@Override
+							public void focusLost(FocusEvent fe) {
+								panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(lightGray), BorderFactory.createEmptyBorder(3, 3, 3, 3)));
+							}
+						});
+					}
+				}
+				applyFocusBorder((Container) c);
+			}
+			
+		}
+	}
+	
+	public static void removeTabInTextArea(final JTextArea jta) {
+		jta.addKeyListener(new KeyAdapter() {
+			public void keyPressed(KeyEvent e) {
+				if (e.getKeyCode() == KeyEvent.VK_TAB) {
+					e.consume();
+					jta.transferFocus();
+				}
+			}
+		});
+	}
+	
+	public static void setDecimalField(final JTextField tf, final int decimals) {
+		tf.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyTyped(KeyEvent ke) {
+				tf.replaceSelection("");
+				String text = tf.getText().trim();
+				char keyChar = ke.getKeyChar();
+				char chrDot = '.';
+				char chrMinus = '-';
+				
+				if (!Character.isDigit(keyChar) && chrDot != keyChar && chrMinus != keyChar) {
+					ke.consume();
+					return;
+				}
+				
+				if (text.contains(".") && chrDot == keyChar) {
+					ke.consume();
+					return;
+				}
+				
+				if (text.contains("-") && chrMinus == keyChar) {
+					ke.consume();
+					return;
+				}
+				
+				int caretPosition = tf.getCaretPosition();
+				if (caretPosition < text.length() - decimals && chrDot == keyChar) {
+					ke.consume();
+					return;
+				}
+				
+				if (caretPosition > 0 && chrMinus == keyChar) {
+					ke.consume();
+					return;
+				}
+				
+				int dot = text.indexOf('.');
+				if (dot > 0) {
+					if (caretPosition > dot
+							&& dot + decimals < text.length()) {
+						ke.consume();
+					}
+				}
+			}
+		});
+	}
+	
+	public static void addPaidComponent(JComponent component) {
+		if (Common.IS_INDIA) {
+			final boolean bPaid = !Common.selectedCompanyConfig.get(Config.INDIA).equals("free");
+			component.setEnabled(bPaid);
+			component.addMouseListener(new MouseAdapter() {
+				@Override
+				public void mousePressed(MouseEvent e) {
+					if (!bPaid && 1 == Messages.showWarningMessage(null, "<html><center>This is a Premium only feature.</center></html>", "Information", new String[]{"Cancel", "Go Premium"}, "Go Premium")) {
+						new JDialogRegister(new JDialog(), true, true).setVisible(true);
+					}
+				}
+			});
+			
+			if(component instanceof JCheckBox && !bPaid){
+				((JCheckBox)component).setSelected(bPaid);
+			}
+		}
+	}
+}

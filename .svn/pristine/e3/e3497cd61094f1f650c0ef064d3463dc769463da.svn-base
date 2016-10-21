@@ -1,0 +1,9 @@
+package sleekbill.swingutils.autosuggesters;
+
+import java.awt.event.ActionEvent;
+
+public interface EditActionListener {
+
+	public void actionPerformed(ActionEvent e, AutosuggesterItem item); 
+	
+}

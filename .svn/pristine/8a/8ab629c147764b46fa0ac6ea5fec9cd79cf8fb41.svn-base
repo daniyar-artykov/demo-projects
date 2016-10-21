@@ -1,0 +1,126 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames.records;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Date;
+import sleekbill.Common;
+import sleekbill.beans.Invoice;
+import static sleekbill.beans.Invoice.TYPE_EXCISE;
+import static sleekbill.beans.Invoice.TYPE_RETAIL;
+import static sleekbill.beans.Invoice.TYPE_STANDARD;
+import static sleekbill.beans.Invoice.TYPE_TAX;
+import sleekbill.beans.InvoicePayment;
+
+/**
+ *
+ * @author Andrei
+ */
+public class InvoiceRecord extends Record {
+
+//    public InvoiceRecord(Integer id, String name, String number, String issueDate, String dueDate, String value, String tax, String total, String paid, String notes) {       
+//        this.data = new String[]{name, number, issueDate, dueDate, value, tax, total, paid, notes, ""};
+//        this.id = id;
+//    }
+    private BigDecimal needsToBePaid = BigDecimal.ZERO;
+    private BigDecimal isPaid = BigDecimal.ZERO;
+    private Invoice invoice = null;
+    private String tooltip = "";
+    private boolean isRoundedOff;
+
+    public InvoiceRecord(Integer id, String name, String number, Date issueDate,
+            Date dueDate, BigDecimal value, BigDecimal tax, BigDecimal total,
+            String paid, String notes, BigDecimal needsToBePaid,
+            BigDecimal isPaid, boolean isSent, String type, Invoice invoice,
+            Integer precision, boolean isRoundedOff) {
+        this.tooltip = InvoicePayment.getTooltip(Common.connection.getConnection(), invoice, precision);
+        needsToBePaid = needsToBePaid.setScale(isRoundedOff ? 0 : precision, RoundingMode.HALF_UP);
+        BigDecimal balance = needsToBePaid.subtract(isPaid).setScale(precision, RoundingMode.HALF_UP);
+        String firstPaymentDate = InvoicePayment.getFirstPaymentDate(Common.connection.getConnection(), invoice);
+        boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) == -1;
+        if (type.equals(TYPE_STANDARD)) {
+            type = "Standard";
+        } else if (type.equals(TYPE_TAX)) {
+            type = "Tax";
+        } else if (type.equals(TYPE_RETAIL)) {
+            type = "Retail";
+        } else if (type.equals(TYPE_EXCISE)) {
+            type = "Excise";
+        }
+        
+        // construct invoice number
+        StringBuilder invoiceNumber = new StringBuilder();
+        
+        // prefix
+        if(invoice.getNumberPrefix() != null && invoice.getNumberPrefix().length() > 0) {
+            invoiceNumber.append(invoice.getNumberPrefix());
+        }
+        
+        if (invoice.getFlag().getPrefixSeparator() != null) {
+            invoiceNumber.append(invoice.getFlag().getPrefixSeparator());
+        }
+        
+        // invoice number
+        invoiceNumber.append(number);
+        
+        // second number
+        if(invoice.getSecondNumber() != null && invoice.getSecondNumber().length() > 0) {
+            invoiceNumber.append("-");
+            invoiceNumber.append(invoice.getSecondNumber());
+        }
+        
+        this.data = new Object[]{name, invoiceNumber.toString(), issueDate, dueDate, value, tax, 
+            total.setScale(isRoundedOff ? 0 : precision, RoundingMode.HALF_UP).setScale(precision, RoundingMode.HALF_UP), 
+            paid, notes, isSent ? "1" : "0", isPaid.toPlainString(), 
+            isNegativeBalance ? ("(" + balance.negate().toPlainString() + ")") : balance.toPlainString(), isNegativeBalance ? "Cr." : "Dr.", 
+            firstPaymentDate, type, ""};
+        this.id = id;
+        this.isPaid = isPaid;
+        this.needsToBePaid = needsToBePaid;
+        this.isRoundedOff = isRoundedOff;
+        this.invoice = invoice;
+    }
+
+    public boolean isIsRoundedOff() {
+        return isRoundedOff;
+    }
+
+    public void setIsRoundedOff(boolean isRoundedOff) {
+        this.isRoundedOff = isRoundedOff;
+    }
+
+    public BigDecimal getNeedsToBePaid() {
+        return needsToBePaid;
+    }
+
+    public void setNeedsToBePaid(BigDecimal needsToBePaid) {
+        this.needsToBePaid = needsToBePaid;
+    }
+
+    public BigDecimal getIsPaid() {
+        return isPaid;
+    }
+
+    public void setIsPaid(BigDecimal isPaid) {
+        this.isPaid = isPaid;
+    }
+
+    public Invoice getInvoice() {
+        return invoice;
+    }
+
+    public void setInvoice(Invoice invoice) {
+        this.invoice = invoice;
+    }
+
+    public String getTooltip() {
+        return tooltip;
+    }
+
+    public void setTooltip(String tooltip) {
+        this.tooltip = tooltip;
+    }
+}

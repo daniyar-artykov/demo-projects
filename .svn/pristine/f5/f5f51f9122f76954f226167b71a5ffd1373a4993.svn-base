@@ -1,0 +1,156 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.GregorianCalendar;
+
+/**
+ *
+ * @author flaviu marcu
+ */
+public interface SBConstants {
+
+    public final static String YEAR = "2016";
+    public final static String UNIVERSAL_SO = "-";
+    public final static String URL_HOMEPAGE = Common.IS_INDIA ? "http://www.billingsoftware.in/" : "http://www.sleekbill.com";
+    public final static String MAILTO = Common.IS_INDIA ? "support@billingsoftware.in" : "support@sleekbill.com";
+    public final static String TELEPHONE = "";
+    public final static String URL_INSERT_LICENCE_INDIA = "https://www.sleekbill.com/insert_free_licence/";
+    public final static String URL_SAVE_SILENT = "https://www.sleekbill.com/insert_india_lead/";
+    public final static String URL_CHECK_FOR_UPDATES_SCRIPT = Common.IS_INDIA ? "https://www.sleekbill.com/is_valid_licence/" : "https://www.sleekbill.com/is-new-license/";
+    public final static String URL_ORDER = "http://www.sleekbill.com/buy-billing-software-Sleek-Bill/";
+    public final static String URL_ORDER_INDIA = "https://www.billingsoftware.in/invoice-pricing.html?utm_source=popup-tooltip-expired&utm_medium=sleek-india&utm_campaign=sleek-expired";
+    //public final static String URL_ORDER_TO_ENCODE = "https://secure.avangate.com/order/checkout.php?PRODS=4596965&QTY=1&CART=1&CARD=2&DESIGN_TYPE=1&LANG=en&PAY_TYPE=CCVISAMC";
+    public final static String PROPERTIES_FILE = "./sb.properties";
+    public final static String SECRET_PASS_PHRASE = "I am a secret";
+
+    public final static String DB_FILE = "sleekbill.db";
+    public final static String FIRMA_TEST_KEY = "_FIRMATEST_";
+    public final static String COMPANIES_PATH = System.getProperty("os.name").toLowerCase().contains("mac")
+            ? System.getProperty("user.home") + "/Library/" + "SleekBill/companies/" : "./companies/";
+    public final static String TEMPLATES_PATH = "./template/";
+    public final static String TESTDB_PATH = "./test_company/";
+    public final static String IMAGES_FOLDER_PATH = "./images/";
+    public final static String DOWNLOADED_IMAGES_FOLDER_PATH = IMAGES_FOLDER_PATH + "downloaded/";
+    public final static String REPORTS_FOLDER_PATH = System.getProperty("os.name").toLowerCase().contains("mac")
+            ? System.getProperty("user.home") + "/Library/" + "SleekBill/reports/" : "./reports/";
+    public final static String SPLASH_FILE_PATH = "./images/splash/splash-screen.jpg";
+    public final static String INDIA_SPLASH_FILE_PATH = "./images/splash/splash-screen-india.jpg";
+
+    public final static boolean IS_LINUX_OR_MAC = System.getProperty("os.name").toLowerCase().contains("mac")
+            || System.getProperty("os.name").toLowerCase().contains("linux");
+    public final static boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("win");
+    public final static boolean IS_MAC = System.getProperty("os.name").toLowerCase().contains("mac");
+
+    public final static int PRECISION = 2;
+    public final static int URLCONNECTION_TIMEOUT_EX = 5000;
+    public final static int URLCONNECTION_TIMEOUT = 2000;
+    public final static int CLIENT_TIMEOUT = 3500;
+
+    public final static String FIRMA_TEMP_KEY = "_FIRMATEMP_";
+
+    public static SimpleDateFormat STANDARD_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
+    public static SimpleDateFormat STANDARD_HOUR_FORMAT = new SimpleDateFormat("HH:mm:ss");
+    public static SimpleDateFormat STANDARD_DATE_HOUR_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    public static SimpleDateFormat SQLITE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
+    public static SimpleDateFormat SQLITE_DATE_HOUR_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    public final static String URL_FEEDBACK = Common.IS_INDIA
+            ? "https://www.sleekbill.com/feedback-india/"
+            : "https://www.sleekbill.com/feedback/";
+
+    public final static String SUGESTII_SCRIPT_RESPONSE = "ok";
+    public final static boolean SERVER_MODE = true;
+
+    public final static String CHECK_FOR_UPDATES_RESPONSE = "ok";
+
+    //images
+    public final static String ICON = "./images/icons/icon.png";
+
+    final GregorianCalendar GREGORIAN_CALENDAR = 
+            new GregorianCalendar(2012, GregorianCalendar.DECEMBER, 26);
+    public final static Date RELEASE_DATE = GREGORIAN_CALENDAR.getTime();
+
+    public final static String PORTOCALIU = "E58B00";
+    public final static String ALBASTRU_INCHIS = "3D6B86";
+    public final static String VERDE_INCHIS = "4B8B4A";
+    public final static String MOB = "A7127B";
+    public final static String BORDO = "B82D2D";
+    public final static String VERDE = "2CA70F";
+    public final static String ALBASTRU = "0091E5";
+    public final static String GRI = "A3A3A3";
+    public final static String NEGRU = "000000";
+
+    public final static String FOOTER_INFO_SB = "Issued using Sleek Bill Free from www.billingsoftware.in";//SLICK-323    
+
+//*********************************** OLD	
+//    
+//    
+//    public final static int MINIMUM_PASS_LENGTH = 0;
+//    
+//    
+//          //"http://www.program-facturi.ro/sugestii/";
+//    public final static String URL_CURS_VALUTA = "http://www.intelligentit.ro";
+//     //"http://licence.program-facturi.ro/is-new-licence/"; //"http://licence.program-facturi.ro/check-licence/";
+//	public final static String URL_CHECK_FOR_UPDATES_SCRIPT_CLIENT = "http://licence.program-facturi.ro/get-client-last-version/";
+//    
+//    public final static String URL_ACTIVATION = "http://www.program-facturi.ro/activare-licenta";
+////    public final static String URL_HELP = "http://program-facturi.ro/ajutor/";
+////    public final static String OFFLINE_HELP_DIR = "./ajutor/program-facturi.ro/ajutor/";
+//    
+//    
+//    
+//    public final static int URLCONNECTION_TIMEOUT2 = 50;  
+//    
+//    public final static int ADMIN_ID = 1;
+//    
+//    public final static String BONURI_DIR = "./bonuri/";    
+//
+//    
+//    public final static String LOG_FILE = "./sb.log";
+//    public final static String DEMO_PATH = "./demo/";  
+//    
+//    public static final String HELPSET_NAME = "SBHelp.hs";
+//    public static final String HELPSET_LABEL = "Sleek Bill Help";    // Main HelpSet & Broker    
+//    
+//    public static final SimpleDateFormat ROMANIAN_DATE_FORMAT = new SimpleDateFormat("dd/MM/yyyy");
+//    public static final SimpleDateFormat ROMANIAN_HOUR_FORMAT = new SimpleDateFormat("HH:mm");
+//    public static final SimpleDateFormat ROMANIAN_DATE_HOUR_FORMAT = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+//    public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.00");
+//
+//    public final static String PREMIUM = "https://program-facturi.ro/premium/";
+//  
+//    
+//
+//    public final static boolean IS_STOC_MODE = false;
+//    public final static int STOC_PRECISION = 4;
+//    
+//    
+//    
+//
+//    
+//    public final static String TEST_REPORTS_FOLDER_PATH = "./userdata/reports/";
+//
+//    public final static String URL_CHECK_CIF = "http://program-facturi.ro/actualizare-versiune/";
+//
+//                                                  
+//    public final static String URL_QUESTIONS_POLL = "http://licence.program-facturi.ro/client-poll/"; //"./poll.xml";
+//    public final static String URL_QUESTIONS_TRIAL_POLL = "http://licence.program-facturi.ro/trial-poll/";
+//    public final static String URL_ANSWER_POLL = "http://licence.program-facturi.ro/client-vote/";
+//    public final static String URL_ANSWER_TRIAL_POLL = "http://licence.program-facturi.ro/trial-vote/";
+//	public final static String URL_PROMOS_TEST_DB = "http://licence.program-facturi.ro/test-database/";
+//
+//    public final static String URL_RECOMANDA_SLEEKBILL = "http://sleekbill.com";
+//
+//    public final static String URL_OFERTE = "http://program-facturi.ro/detalii-program/";
+//
+//    public final static String URL_SLEEK_BILL = "http://sleekbill.com";
+//
+//
+//    public final static int HIDE_FISA_CLIENT_BUTTON = 567;
+//    public final static int SHOW_FISA_CLIENT_BUTTON = 568;
+}

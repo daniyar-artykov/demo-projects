@@ -1,0 +1,242 @@
+package sleekbill.beans;
+
+import java.sql.SQLException;
+import java.util.List;
+
+import sleekbill.Common;
+import sleekbill.entities.CompanyDetailsEntity;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.dao.GenericRawResults;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.stmt.PreparedQuery;
+
+public class CompanyDetails extends CompanyDetailsEntity {
+
+    private Dao<CompanyDetailsEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+
+    public CompanyDetails(CompanyDetailsEntity companyDetailsEntity) {
+        this(0);
+        this.id = companyDetailsEntity.getId();
+        this.name = companyDetailsEntity.getName();
+        this.address = companyDetailsEntity.getAddress();
+        this.zip = companyDetailsEntity.getZip();
+        this.city = companyDetailsEntity.getCity();
+        this.email = companyDetailsEntity.getEmail();
+        this.telephone = companyDetailsEntity.getTelephone();
+        this.website = companyDetailsEntity.getWebsite();
+        this.logo = companyDetailsEntity.getLogo();
+        this.state = companyDetailsEntity.getState();
+        this.currency = companyDetailsEntity.getCurrency();
+        this.invoices = companyDetailsEntity.getInvoices();
+        this.details = companyDetailsEntity.getDetails();
+		this.tin = companyDetailsEntity.getTin();
+		this.pan = companyDetailsEntity.getPan();
+		this.stn = companyDetailsEntity.getStn();
+    }
+    
+    public CompanyDetails() {
+        this(0);
+    }
+
+    public CompanyDetails(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager
+                        .createDao(mainConnection, CompanyDetailsEntity.class);
+
+                if (id != null && id != 0) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    public void refreshDao(){
+            try {
+                mainDao = DaoManager
+                        .createDao(Common.connection.getConnection(), CompanyDetailsEntity.class);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+    }
+
+    public void create() throws Exception {
+        mainDao.create(this);
+    }
+
+    public CompanyDetailsEntity read(Integer id) throws Exception {
+        return mainDao.queryForId(id);
+    }
+
+    public void update() throws Exception {
+        mainDao.update(this);
+    }
+
+    public void delete() throws Exception {
+        mainDao.delete(this);
+    }
+    
+    public static void add(JdbcConnectionSource connectionSource, CompanyDetails companyDetails) throws SBDaoException, SQLException {
+
+        Dao<CompanyDetailsEntity, Integer> companyDetailsDao = DaoManager.createDao(connectionSource, CompanyDetailsEntity.class);
+
+//        companyDetails.setState(State.get(connectionSource, companyDetails.getState()));
+
+        companyDetailsDao.create(companyDetails);
+    }
+    
+    public static CompanyDetails getLast(JdbcConnectionSource connectionSource) throws SBDaoException, SQLException {
+
+//        Dao<CompanyDetailsEntity, Integer> companyDetailsDao = DaoManager.createDao(connectionSource, CompanyDetailsEntity.class);
+//        List<CompanyDetailsEntity> queryForAll = companyDetailsDao.queryForAll();
+//
+//        if(queryForAll.size() > 0){
+//            return new CompanyDetails(queryForAll.get(queryForAll.size()-1));
+//        }
+
+        Dao<CompanyDetailsEntity, Integer> productDao = DaoManager.createDao(Common.connection.getConnection(), CompanyDetailsEntity.class);
+        PreparedQuery<CompanyDetailsEntity> pq = productDao.queryBuilder().orderBy("id", false).limit(1L).prepare();
+        List<CompanyDetailsEntity> list = productDao.query(pq);
+        if (list.size() > 0) {
+
+            return new CompanyDetails(list.get(0));
+        }
+
+        return null;
+    }
+    
+     public static String getLastName(JdbcConnectionSource connectionSource) throws SBDaoException, SQLException {
+
+        Dao<CompanyDetailsEntity, Integer> companyDetailsDao = DaoManager.createDao(connectionSource, CompanyDetailsEntity.class);
+        GenericRawResults<String[]> queryRaw = companyDetailsDao.queryRaw("select name from company_details");
+        List<String[]> results = queryRaw.getResults();
+        
+        if(results.size() > 0){
+            String[] str = results.get(results.size()-1);
+            return str[0];
+        }
+
+        return null;
+    }
+     
+    public static String[] getLastDetails(JdbcConnectionSource connectionSource) throws SBDaoException, SQLException {
+
+        Dao<CompanyDetailsEntity, Integer> companyDetailsDao = DaoManager.createDao(connectionSource, CompanyDetailsEntity.class);
+        GenericRawResults<String[]> queryRaw = companyDetailsDao.queryRaw("select cd.address,cd.website,c.currency_symbol from company_details cd inner join currencies c where cd.currency_id=c.id");
+        List<String[]> results = queryRaw.getResults();
+        
+        if(results.size() > 0){
+            return results.get(results.size()-1);
+        }
+
+        return null;
+    }
+    
+    public static CompanyDetails get(JdbcConnectionSource connectionSource, Integer id) throws Exception {
+    	Dao<CompanyDetailsEntity, Integer> dao = DaoManager.createDao(connectionSource, CompanyDetailsEntity.class);
+		if (id != null) {
+			CompanyDetails i = new CompanyDetails();
+		    i.setId(id);
+		    if(dao.refresh(i) != 0){
+		    	return i;
+		    }
+		}
+        return null;
+    }    
+    
+    @Override
+	public int hashCode() {
+		int hash = 3;
+		hash = 79 * hash + this.id;
+		hash = 79 * hash + (this.name != null ? this.name.hashCode() : 0);
+		hash = 79 * hash + (this.address != null ? this.address.hashCode() : 0);
+		hash = 79 * hash + (this.zip != null ? this.zip.hashCode() : 0);
+		hash = 79 * hash + (this.city != null ? this.city.hashCode() : 0);
+		hash = 79 * hash + (this.email != null ? this.email.hashCode() : 0);
+		hash = 79 * hash + (this.telephone != null ? this.telephone.hashCode() : 0);
+		hash = 79 * hash + (this.website != null ? this.website.hashCode() : 0);
+		hash = 79 * hash + (this.logo != null ? this.logo.hashCode() : 0);
+		hash = 79 * hash + (this.details != null ? this.details.hashCode() : 0);
+		hash = 79 * hash + (this.tin != null ? this.tin.hashCode() : 0);
+		hash = 79 * hash + (this.pan != null ? this.pan.hashCode() : 0);
+		hash = 79 * hash + (this.stn != null ? this.stn.hashCode() : 0);
+		hash = 79 * hash + (this.state != null ? this.state.hashCode() : 0);
+		hash = 79 * hash + (this.currency != null ? this.currency.hashCode() : 0);
+		return hash;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final CompanyDetails other = (CompanyDetails) obj;
+		if (this.id != other.id) {
+			return false;
+		}
+		if ((this.name == null) ? (other.name != null) : !this.name.equals(other.name)) {
+			return false;
+		}
+		if ((this.address == null) ? (other.address != null) : !this.address.equals(other.address)) {
+			return false;
+		}
+		if ((this.zip == null) ? (other.zip != null) : !this.zip.equals(other.zip)) {
+			return false;
+		}
+		if ((this.city == null) ? (other.city != null) : !this.city.equals(other.city)) {
+			return false;
+		}
+		if ((this.email == null) ? (other.email != null) : !this.email.equals(other.email)) {
+			return false;
+		}
+		if ((this.telephone == null) ? (other.telephone != null) : !this.telephone.equals(other.telephone)) {
+			return false;
+		}
+		if ((this.website == null) ? (other.website != null) : !this.website.equals(other.website)) {
+			return false;
+		}
+		if ((this.logo == null) ? (other.logo != null) : !this.logo.equals(other.logo)) {
+			return false;
+		}
+		if ((this.details == null) ? (other.details != null) : !this.details.equals(other.details)) {
+			return false;
+		}
+		if ((this.tin == null) ? (other.tin != null) : !this.tin.equals(other.tin)) {
+			return false;
+		}
+		if ((this.pan == null) ? (other.pan != null) : !this.pan.equals(other.pan)) {
+			return false;
+		}
+		if ((this.stn == null) ? (other.stn != null) : !this.stn.equals(other.stn)) {
+			return false;
+		}
+		if (this.state != other.state && (this.state == null || !this.state.equals(other.state))) {
+			return false;
+		}
+		if (this.currency != other.currency && (this.currency == null || !this.currency.equals(other.currency))) {
+			return false;
+		}
+		return true;
+	}  
+    
+    public Dao<CompanyDetailsEntity, Integer> getMainDao() {
+        return mainDao;
+    }
+
+    public void setMainDao(Dao<CompanyDetailsEntity, Integer> mainDao) {
+        this.mainDao = mainDao;
+    }
+}

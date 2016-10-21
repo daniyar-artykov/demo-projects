@@ -1,0 +1,1027 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="in_1" pageWidth="612" pageHeight="792" columnWidth="572" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="1143cbda-67b7-4ad1-9a49-700bdaef740b">
+	<property name="ireport.zoom" value="1.6105100000000077"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="125"/>
+	<property name="ireport.callouts" value="##Tue Mar 05 10:09:55 EET 2013"/>
+	<template><![CDATA["StyleTemplate3.jrtx"]]></template>
+	<style name="detail_number_amount" forecolor="#000000" hAlign="Right" vAlign="Middle" markup="styled" fontName="Roboto" fontSize="13" isBold="true" isItalic="false">
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$F{AMOUNT}.length()>14]]></conditionExpression>
+			<style fontName="Roboto" fontSize="12"/>
+		</conditionalStyle>
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$F{AMOUNT}.length()>12 && $F{AMOUNT}.length()<=14]]></conditionExpression>
+			<style fontName="Roboto" fontSize="12"/>
+		</conditionalStyle>
+	</style>
+	<style name="detail_number_tax" forecolor="#000000" hAlign="Right" vAlign="Middle" markup="styled" fontName="Roboto" fontSize="13" isBold="true" isItalic="false">
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$F{TAX_AMOUNT}.length()>11]]></conditionExpression>
+			<style fontName="Roboto" fontSize="12"/>
+		</conditionalStyle>
+	</style>
+	<style name="detail_number_price" forecolor="#000000" hAlign="Right" vAlign="Middle" markup="styled" fontName="Roboto" fontSize="13" isBold="true" isItalic="false">
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$F{PRICE}.length()>11]]></conditionExpression>
+			<style fontName="Roboto" fontSize="12"/>
+		</conditionalStyle>
+	</style>
+	<style name="detail_number" forecolor="#000000" hAlign="Right" vAlign="Middle" markup="styled" fontName="Roboto" fontSize="13" isBold="true" isItalic="false">
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$F{AMOUNT}.length()>16]]></conditionExpression>
+			<style fontName="Roboto" fontSize="12"/>
+		</conditionalStyle>
+	</style>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["D:\\proiecte\\SlickBillUSA\\template\\"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="subReportTop" class="java.lang.String">
+		<defaultValueExpression><![CDATA["1"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="subReportBottom" class="java.lang.String">
+		<defaultValueExpression><![CDATA["1"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="title_txt_document" class="java.lang.String"/>
+	<parameter name="title_document_numbrer" class="java.lang.String"/>
+	<parameter name="title_txt_amount_due" class="java.lang.String"/>
+	<parameter name="title_amount_due" class="java.lang.String"/>
+	<parameter name="title_txt_document_date" class="java.lang.String"/>
+	<parameter name="title_document_date" class="java.lang.String"/>
+	<parameter name="title_txt_due_date" class="java.lang.String"/>
+	<parameter name="title_due_date" class="java.lang.String"/>
+	<parameter name="title_logo" class="java.lang.String"/>
+	<parameter name="title_txt_po_number" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="title_po_number" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="title_provider_company_name" class="java.lang.String"/>
+	<parameter name="title_provider_address" class="java.lang.String"/>
+	<parameter name="title_provider_location" class="java.lang.String"/>
+	<parameter name="title_provider_phone" class="java.lang.String"/>
+	<parameter name="title_provider_fax" class="java.lang.String"/>
+	<parameter name="title_provider_web" class="java.lang.String"/>
+	<parameter name="title_provider_additional_details" class="java.lang.String"/>
+	<parameter name="title_billing_company_name" class="java.lang.String"/>
+	<parameter name="title_billing_address" class="java.lang.String"/>
+	<parameter name="title_billing_location" class="java.lang.String"/>
+	<parameter name="title_billing_phone" class="java.lang.String"/>
+	<parameter name="title_billing_fax" class="java.lang.String"/>
+	<parameter name="title_billing_web" class="java.lang.String"/>
+	<parameter name="title_shipping_company_name" class="java.lang.String"/>
+	<parameter name="title_shipping_address" class="java.lang.String"/>
+	<parameter name="title_shipping_location" class="java.lang.String"/>
+	<parameter name="title_shipping_phone" class="java.lang.String"/>
+	<parameter name="title_shipping_fax" class="java.lang.String"/>
+	<parameter name="title_shipping_web" class="java.lang.String"/>
+	<parameter name="detail_no" class="java.lang.String"/>
+	<parameter name="detail_product" class="java.lang.String"/>
+	<parameter name="detail_quantity" class="java.lang.String"/>
+	<parameter name="detail_price" class="java.lang.String"/>
+	<parameter name="detail_amount" class="java.lang.String"/>
+	<parameter name="bottom_notes" class="java.lang.String"/>
+	<parameter name="bottom_conditions" class="java.lang.String"/>
+	<parameter name="bottom_txt_total_document" class="java.lang.String"/>
+	<parameter name="bottom_total_document" class="java.lang.String"/>
+	<parameter name="bottom_tax" class="java.lang.String"/>
+	<parameter name="bottom_subtotal" class="java.lang.String"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="bottom_txt_total_tax" class="java.lang.String"/>
+	<parameter name="bottom_txt_subtotal" class="java.lang.String"/>
+	<parameter name="pay_link" class="java.lang.String"/>
+	<parameter name="icon_address" class="java.lang.String"/>
+	<parameter name="icon_phone" class="java.lang.String"/>
+	<parameter name="icon_web" class="java.lang.String"/>
+	<parameter name="icon_mail" class="java.lang.String"/>
+	<parameter name="icon_details" class="java.lang.String"/>
+	<parameter name="title_client_additional_details" class="java.lang.String"/>
+	<parameter name="hide_ship_to" class="java.lang.Boolean">
+		<defaultValueExpression><![CDATA[new Boolean("FALSE")]]></defaultValueExpression>
+	</parameter>
+	<parameter name="title_provider_email" class="java.lang.String"/>
+	<parameter name="showAmountDue" class="java.lang.Boolean"/>
+	<parameter name="footer_info_sb" class="java.lang.String"/>
+	<parameter name="bottom_string_total_document" class="java.lang.String">
+		<defaultValueExpression><![CDATA[" Nine hundred fifty-six and fourty four paise only"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="bottom_txt_signature" class="java.lang.String">
+		<defaultValueExpression><![CDATA["Authorized Signatory"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="pay_text" class="java.lang.String"/>
+	<parameter name="detail_tax_name" class="java.lang.String"/>
+	<parameter name="detail_tax" class="java.lang.String"/>
+	<parameter name="detail_um" class="java.lang.String"/>
+	<parameter name="show_um_column" class="java.lang.Boolean"/>
+	<parameter name="show_tax_percentage" class="java.lang.Boolean"/>
+	<parameter name="show_column" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="show_tax_column" class="java.lang.Boolean"/>
+	<parameter name="show_price_column" class="java.lang.Boolean"/>
+	<parameter name="show_quantity_column" class="java.lang.Boolean"/>
+	<parameter name="is_challan" class="java.lang.Boolean">
+		<defaultValueExpression><![CDATA[Boolean.FALSE]]></defaultValueExpression>
+	</parameter>
+	<field name="NO" class="java.lang.String"/>
+	<field name="PRODUCT" class="java.lang.String"/>
+	<field name="DESCRIPTION" class="java.lang.String"/>
+	<field name="UM" class="java.lang.String"/>
+	<field name="QUANTITY" class="java.lang.String"/>
+	<field name="PRICE" class="java.lang.String"/>
+	<field name="DISCOUNT" class="java.lang.String"/>
+	<field name="VALUE" class="java.lang.String"/>
+	<field name="AMOUNT" class="java.lang.String"/>
+	<field name="TAX_AMOUNT" class="java.lang.String"/>
+	<field name="TAX_NAME" class="java.lang.String"/>
+	<field name="BREAK" class="java.lang.String"/>
+	<variable name="currencySymbol" class="java.lang.String">
+		<variableExpression><![CDATA["<style fontName='FreeSerif'>" + $P{currency_symbol} + "</style>"]]></variableExpression>
+		<initialValueExpression><![CDATA["<style fontName='FreeSerif'>" + $P{currency_symbol} + "</style>"]]></initialValueExpression>
+	</variable>
+	<variable name="product" class="java.lang.String">
+		<variableExpression><![CDATA["<style fontName='Roboto' size='12' isBold='true' isItalic='false'>" +
+    $F{PRODUCT}.replace( "&","&amp;" ).replace( "<","&lt; " ).replace( ">","&gt;" ) +
+"</style>" + ($F{DESCRIPTION}.isEmpty()? " ":"\n") + "<style fontName='Segoe UI' size='10'>" +
+$F{DESCRIPTION}.replace( "&","&amp;" ).replace( "<","&lt; " ).replace( ">","&gt;" ) + "</style>"]]></variableExpression>
+		<initialValueExpression><![CDATA["<style fontName='Roboto' size='12' isBold='true' isItalic='true'>" +
+    $F{PRODUCT}.replace( "&","&amp;" ).replace( "<","&lt; " ).replace( ">","&gt;" ) +
+"</style>" + ($F{DESCRIPTION}.isEmpty()? " ":"\n") + "<style fontName='Roboto' size='10'>" +
+$F{DESCRIPTION}.replace( "&","&amp;" ).replace( "<","&lt; " ).replace( ">","&gt;" ) + "</style>"]]></initialValueExpression>
+	</variable>
+	<variable name="showTVA" class="java.lang.Boolean" resetType="Page">
+		<variableExpression><![CDATA[new Boolean("FALSE")]]></variableExpression>
+	</variable>
+	<variable name="tax" class="java.lang.String">
+		<variableExpression><![CDATA[$V{space}  +
+$F{TAX_AMOUNT} + "\n" +
+"<style fontName='Roboto' size='"
++ $V{font_size} + "' isBold='false'>"
++ ( $P{show_tax_percentage}?$F{TAX_NAME}:" " )
++ "</style>"]]></variableExpression>
+		<initialValueExpression><![CDATA[]]></initialValueExpression>
+	</variable>
+	<variable name="qty_um" class="java.lang.String">
+		<variableExpression><![CDATA[$V{space}  +
+$F{QUANTITY} + "\n<style fontName='Roboto' size='" +
+$V{font_size} + "' isBold='false'>" + ($P{show_um_column}?$F{UM}:" ") + "</style>"]]></variableExpression>
+		<initialValueExpression><![CDATA[]]></initialValueExpression>
+	</variable>
+	<variable name="font_size" class="java.lang.Integer">
+		<variableExpression><![CDATA[10]]></variableExpression>
+		<initialValueExpression><![CDATA[10]]></initialValueExpression>
+	</variable>
+	<variable name="price" class="java.lang.String">
+		<variableExpression><![CDATA[$V{space} +
+$F{PRICE} + "\n<style fontName='Roboto' size='" +
+$V{font_size} + "' isBold='false'>" + $F{DISCOUNT} + "</style>"]]></variableExpression>
+		<initialValueExpression><![CDATA[]]></initialValueExpression>
+	</variable>
+	<variable name="show_detail_1" class="java.lang.Boolean">
+		<variableExpression><![CDATA[!$P{show_price_column} && !$P{show_quantity_column} && !$P{show_tax_column}]]></variableExpression>
+		<initialValueExpression><![CDATA[!$P{show_price_column} && !$P{show_quantity_column} && !$P{show_tax_column}]]></initialValueExpression>
+	</variable>
+	<variable name="show_detail_2" class="java.lang.Boolean">
+		<variableExpression><![CDATA[(!$P{show_price_column} && $P{show_quantity_column} && !$P{show_tax_column})
+||
+(!$P{show_price_column} && !$P{show_quantity_column} && $P{show_tax_column})
+||
+($P{show_price_column} &&  !$P{show_quantity_column} && !$P{show_tax_column})]]></variableExpression>
+		<initialValueExpression><![CDATA[(!$P{show_price_column} && $P{show_quantity_column} && !$P{show_tax_column})
+||
+(!$P{show_price_column} && !$P{show_quantity_column} && $P{show_tax_column})
+||
+($P{show_price_column} &&  !$P{show_quantity_column} && !$P{show_tax_column})]]></initialValueExpression>
+	</variable>
+	<variable name="show_detail_3" class="java.lang.Boolean">
+		<variableExpression><![CDATA[($P{show_price_column} && !$P{show_tax_column} && $P{show_quantity_column})||
+(!$P{show_price_column} && $P{show_tax_column} && $P{show_quantity_column})||
+($P{show_tax_column} && $P{show_price_column} && !$P{show_quantity_column} )]]></variableExpression>
+		<initialValueExpression><![CDATA[($P{show_price_column} && !$P{show_tax_column} && $P{show_quantity_column})||
+(!$P{show_price_column} && $P{show_tax_column} && $P{show_quantity_column})||
+($P{show_tax_column} && $P{show_price_column} && !$P{show_quantity_column} )]]></initialValueExpression>
+	</variable>
+	<variable name="show_detail_4" class="java.lang.Boolean">
+		<variableExpression><![CDATA[$P{show_tax_column} && $P{show_price_column} && $P{show_quantity_column}]]></variableExpression>
+		<initialValueExpression><![CDATA[$P{show_tax_column} && $P{show_price_column} && $P{show_quantity_column}]]></initialValueExpression>
+	</variable>
+	<variable name="space_1" class="java.lang.String">
+		<variableExpression><![CDATA["<style fontName='Roboto' size='9' >\n</style>"]]></variableExpression>
+		<initialValueExpression><![CDATA["<style fontName='Roboto' size='9' >\n</style>"]]></initialValueExpression>
+	</variable>
+	<variable name="space" class="java.lang.String">
+		<variableExpression><![CDATA["<style fontName='Roboto' size='8' >\n</style>"]]></variableExpression>
+		<initialValueExpression><![CDATA["<style fontName='Roboto' size='8' >\n</style>"]]></initialValueExpression>
+	</variable>
+	<variable name="amount" class="java.lang.String">
+		<variableExpression><![CDATA[$V{space} + $F{AMOUNT} + $V{space_1}]]></variableExpression>
+		<initialValueExpression><![CDATA[]]></initialValueExpression>
+	</variable>
+	<group name="SubReports" isReprintHeaderOnEachPage="true" footerPosition="StackAtBottom">
+		<groupHeader>
+			<band height="108" splitType="Stretch">
+				<textField isBlankWhenNull="true">
+					<reportElement uuid="bad8cb46-ab7e-4a6c-87b8-43763eecaabf" key="header_height" stretchType="RelativeToBandHeight" x="129" y="0" width="7" height="108"/>
+					<box>
+						<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+						<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+						<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+						<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					</box>
+					<textElement/>
+					<textFieldExpression><![CDATA[]]></textFieldExpression>
+				</textField>
+				<subreport>
+					<reportElement uuid="3ea1c107-d5d8-41e3-85c8-c8bc27be3a8b" key="subReportTop" mode="Opaque" x="0" y="0" width="572" height="76" isPrintWhenDetailOverflows="true"/>
+					<parametersMapExpression><![CDATA[$P{REPORT_PARAMETERS_MAP}]]></parametersMapExpression>
+					<subreportParameter name="title_provider_phone">
+						<subreportParameterExpression><![CDATA[$P{title_provider_phone}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_txt_po_number">
+						<subreportParameterExpression><![CDATA[$P{title_txt_po_number}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_billing_web">
+						<subreportParameterExpression><![CDATA[$P{title_billing_web}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_provider_additional_details">
+						<subreportParameterExpression><![CDATA[$P{title_provider_additional_details}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_shipping_address">
+						<subreportParameterExpression><![CDATA[$P{title_shipping_address}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="icon_address">
+						<subreportParameterExpression><![CDATA[$P{icon_address}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_shipping_fax">
+						<subreportParameterExpression><![CDATA[$P{title_shipping_fax}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_shipping_web">
+						<subreportParameterExpression><![CDATA[$P{title_shipping_web}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_document_numbrer">
+						<subreportParameterExpression><![CDATA[$P{title_document_numbrer}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_txt_document_date">
+						<subreportParameterExpression><![CDATA[$P{title_txt_document_date}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="icon_details">
+						<subreportParameterExpression><![CDATA[$P{icon_details}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_txt_document">
+						<subreportParameterExpression><![CDATA[$P{title_txt_document}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="icon_web">
+						<subreportParameterExpression><![CDATA[$P{icon_web}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_po_number">
+						<subreportParameterExpression><![CDATA[$P{title_po_number}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_logo">
+						<subreportParameterExpression><![CDATA[$P{title_logo}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="currency_symbol">
+						<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_txt_due_date">
+						<subreportParameterExpression><![CDATA[$P{title_txt_due_date}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_provider_address">
+						<subreportParameterExpression><![CDATA[$P{title_provider_address}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_billing_phone">
+						<subreportParameterExpression><![CDATA[$P{title_billing_phone}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="icon_phone">
+						<subreportParameterExpression><![CDATA[$P{icon_phone}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_billing_company_name">
+						<subreportParameterExpression><![CDATA[$P{title_billing_company_name}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_amount_due">
+						<subreportParameterExpression><![CDATA[$P{title_amount_due}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_billing_location">
+						<subreportParameterExpression><![CDATA[$P{title_billing_location}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_provider_fax">
+						<subreportParameterExpression><![CDATA[$P{title_provider_fax}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_provider_company_name">
+						<subreportParameterExpression><![CDATA[$P{title_provider_company_name}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_shipping_location">
+						<subreportParameterExpression><![CDATA[$P{title_shipping_location}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_txt_amount_due">
+						<subreportParameterExpression><![CDATA[$P{title_txt_amount_due}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_due_date">
+						<subreportParameterExpression><![CDATA[$P{title_due_date}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_provider_location">
+						<subreportParameterExpression><![CDATA[$P{title_provider_location}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="hide_ship_to">
+						<subreportParameterExpression><![CDATA[$P{hide_ship_to}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_provider_mail">
+						<subreportParameterExpression><![CDATA[$P{title_provider_email}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_billing_fax">
+						<subreportParameterExpression><![CDATA[$P{title_billing_fax}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_client_additional_details">
+						<subreportParameterExpression><![CDATA[$P{title_client_additional_details}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_document_date">
+						<subreportParameterExpression><![CDATA[$P{title_document_date}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_shipping_company_name">
+						<subreportParameterExpression><![CDATA[$P{title_shipping_company_name}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_shipping_phone">
+						<subreportParameterExpression><![CDATA[$P{title_shipping_phone}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_provider_web">
+						<subreportParameterExpression><![CDATA[$P{title_provider_web}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="icon_mail">
+						<subreportParameterExpression><![CDATA[$P{icon_mail}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="title_billing_address">
+						<subreportParameterExpression><![CDATA[$P{title_billing_address}]]></subreportParameterExpression>
+					</subreportParameter>
+					<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.JREmptyDataSource()]]></dataSourceExpression>
+					<subreportExpression><![CDATA[$P{subReportTop}]]></subreportExpression>
+				</subreport>
+				<subreport>
+					<reportElement uuid="aada3d0e-eaa5-422a-8384-5ff122a9d958" positionType="Float" mode="Opaque" x="0" y="76" width="572" height="30" isPrintWhenDetailOverflows="true"/>
+					<subreportParameter name="detail_tax_name">
+						<subreportParameterExpression><![CDATA[$P{detail_tax_name}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="detail_price">
+						<subreportParameterExpression><![CDATA[$P{detail_price}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="detail_tax">
+						<subreportParameterExpression><![CDATA[$P{detail_tax}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="detail_amount">
+						<subreportParameterExpression><![CDATA[$P{detail_amount}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="show_quantity_column">
+						<subreportParameterExpression><![CDATA[$P{show_quantity_column}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="show_tax_column">
+						<subreportParameterExpression><![CDATA[$P{show_tax_column}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="detail_um">
+						<subreportParameterExpression><![CDATA[$P{detail_um}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="show_price_column">
+						<subreportParameterExpression><![CDATA[$P{show_price_column}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="show_tax_percentage">
+						<subreportParameterExpression><![CDATA[$P{show_tax_percentage}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="detail_no">
+						<subreportParameterExpression><![CDATA[$P{detail_no}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="detail_quantity">
+						<subreportParameterExpression><![CDATA[$P{detail_quantity}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="show_um_column">
+						<subreportParameterExpression><![CDATA[$P{show_um_column}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="detail_product">
+						<subreportParameterExpression><![CDATA[$P{detail_product}]]></subreportParameterExpression>
+					</subreportParameter>
+					<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.JREmptyDataSource()]]></dataSourceExpression>
+					<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "l_1i_t_title_3.jasper"]]></subreportExpression>
+				</subreport>
+				<line>
+					<reportElement uuid="39c757af-955d-48d0-8843-473e41c836d8" key="header_line2" style="normal_color" positionType="Float" x="0" y="106" width="572" height="1"/>
+					<graphicElement>
+						<pen lineWidth="1.5"/>
+					</graphicElement>
+				</line>
+			</band>
+			<band/>
+		</groupHeader>
+		<groupFooter>
+			<band height="40" splitType="Prevent">
+				<frame>
+					<reportElement uuid="abb80d09-1bcd-469a-9022-c2ef31e917b1" key="notes" mode="Opaque" x="-1" y="1" width="573" height="38">
+						<printWhenExpression><![CDATA[$P{is_challan}]]></printWhenExpression>
+					</reportElement>
+					<textField isStretchWithOverflow="true">
+						<reportElement uuid="35aa3349-7457-4457-a8b6-87e27773ac71" style="note_text" positionType="Float" mode="Transparent" x="1" y="28" width="555" height="5"/>
+						<box>
+							<pen lineWidth="0.0"/>
+							<topPen lineWidth="0.0"/>
+							<leftPen lineWidth="0.0"/>
+							<bottomPen lineWidth="0.0"/>
+							<rightPen lineWidth="0.0"/>
+						</box>
+						<textElement/>
+						<textFieldExpression><![CDATA[$P{bottom_notes}]]></textFieldExpression>
+					</textField>
+					<textField isStretchWithOverflow="true">
+						<reportElement uuid="92b8ee8e-bbea-4e30-bf91-d6e26f6d1f46" style="note" mode="Transparent" x="2" y="19" width="332" height="6">
+							<printWhenExpression><![CDATA[!$P{bottom_notes}.isEmpty()]]></printWhenExpression>
+						</reportElement>
+						<box>
+							<pen lineWidth="0.0"/>
+							<topPen lineWidth="0.0"/>
+							<leftPen lineWidth="0.0"/>
+							<bottomPen lineWidth="0.0"/>
+							<rightPen lineWidth="0.0"/>
+						</box>
+						<textElement/>
+						<textFieldExpression><![CDATA["Note:"]]></textFieldExpression>
+					</textField>
+				</frame>
+				<subreport>
+					<reportElement uuid="fa740fd1-193f-410b-b453-9870b9ca1d5f" key="subreport-bottom" mode="Opaque" x="0" y="1" width="572" height="39">
+						<printWhenExpression><![CDATA[!$P{is_challan}]]></printWhenExpression>
+					</reportElement>
+					<subreportParameter name="title_amount_due">
+						<subreportParameterExpression><![CDATA[$P{title_amount_due}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="pay_text">
+						<subreportParameterExpression><![CDATA[$P{pay_text}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="bottom_string_total_document">
+						<subreportParameterExpression><![CDATA[$P{bottom_string_total_document}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="bottom_subtotal">
+						<subreportParameterExpression><![CDATA[$P{bottom_subtotal}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="pay_link">
+						<subreportParameterExpression><![CDATA[$P{pay_link}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="icon_details">
+						<subreportParameterExpression><![CDATA[$P{icon_details}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="bottom_total_document">
+						<subreportParameterExpression><![CDATA[$P{bottom_total_document}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="bottom_txt_subtotal">
+						<subreportParameterExpression><![CDATA[$P{bottom_txt_subtotal}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="bottom_conditions">
+						<subreportParameterExpression><![CDATA[$P{bottom_conditions}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="bottom_tax">
+						<subreportParameterExpression><![CDATA[$P{bottom_tax}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="showAmountDue">
+						<subreportParameterExpression><![CDATA[$P{showAmountDue}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="bottom_txt_total_document">
+						<subreportParameterExpression><![CDATA[$P{bottom_txt_total_document}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="bottom_txt_signature">
+						<subreportParameterExpression><![CDATA[$P{bottom_txt_signature}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="currency_symbol">
+						<subreportParameterExpression><![CDATA[$P{currency_symbol}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="bottom_txt_total_tax">
+						<subreportParameterExpression><![CDATA[$P{bottom_txt_total_tax}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="bottom_notes">
+						<subreportParameterExpression><![CDATA[$P{bottom_notes}]]></subreportParameterExpression>
+					</subreportParameter>
+					<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.JREmptyDataSource()]]></dataSourceExpression>
+					<subreportExpression><![CDATA[$P{subReportBottom}]]></subreportExpression>
+				</subreport>
+				<line>
+					<reportElement uuid="458ef812-2180-4ef5-8163-790e74b0d210" key="line_color" style="normal_color" x="0" y="0" width="572" height="1" forecolor="#FF0033"/>
+					<graphicElement>
+						<pen lineWidth="1.5"/>
+					</graphicElement>
+				</line>
+			</band>
+		</groupFooter>
+	</group>
+	<group name="break" isStartNewPage="true" footerPosition="StackAtBottom">
+		<groupExpression><![CDATA[$F{BREAK}]]></groupExpression>
+		<groupHeader>
+			<band/>
+		</groupHeader>
+	</group>
+	<background>
+		<band height="750">
+			<textField evaluationTime="Report" isBlankWhenNull="true">
+				<reportElement uuid="1b970290-57ba-4e96-91a6-734b7684913b" key="vertical_articol_line_1" positionType="Float" stretchType="RelativeToBandHeight" mode="Transparent" x="136" y="221" width="435" height="493" isPrintWhenDetailOverflows="true"/>
+				<box>
+					<leftPen lineWidth="0.0" lineStyle="Dotted"/>
+					<rightPen lineWidth="0.75" lineStyle="Dotted"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font fontName="Segoe UI"/>
+					<paragraph leftIndent="3" rightIndent="3"/>
+				</textElement>
+			</textField>
+			<textField evaluationTime="Report" isBlankWhenNull="true">
+				<reportElement uuid="f5806e64-0bea-4cd6-8c69-20bd835dde4b" key="vertical_articol_line_1" positionType="Float" stretchType="RelativeToBandHeight" mode="Transparent" x="1" y="221" width="40" height="493" isPrintWhenDetailOverflows="true"/>
+				<box>
+					<leftPen lineWidth="0.75" lineStyle="Dotted"/>
+					<rightPen lineWidth="0.75" lineStyle="Dotted"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font fontName="Segoe UI"/>
+					<paragraph leftIndent="3" rightIndent="3"/>
+				</textElement>
+			</textField>
+			<textField evaluationTime="Report" isBlankWhenNull="true">
+				<reportElement uuid="781a5682-bca8-4b7d-b667-71d749c9ab14" key="vertical_articol_line_1" positionType="Float" stretchType="RelativeToBandHeight" mode="Transparent" x="41" y="221" width="255" height="493" isPrintWhenDetailOverflows="true">
+					<printWhenExpression><![CDATA[Boolean.FALSE]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<leftPen lineWidth="0.75" lineStyle="Dotted"/>
+					<rightPen lineWidth="0.75" lineStyle="Dotted"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font fontName="Segoe UI"/>
+					<paragraph leftIndent="3" rightIndent="3"/>
+				</textElement>
+			</textField>
+			<textField evaluationTime="Report" isBlankWhenNull="true">
+				<reportElement uuid="987ae803-ef8a-4421-8f39-9c03087a9230" key="vertical_articol_line_1" positionType="Float" stretchType="RelativeToBandHeight" mode="Transparent" x="381" y="221" width="90" height="493" isPrintWhenDetailOverflows="true">
+					<printWhenExpression><![CDATA[Boolean.FALSE]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<leftPen lineWidth="0.75" lineStyle="Dotted"/>
+					<rightPen lineWidth="0.75" lineStyle="Dotted"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font fontName="Segoe UI"/>
+					<paragraph leftIndent="3" rightIndent="3"/>
+				</textElement>
+			</textField>
+			<textField evaluationTime="Report" isBlankWhenNull="true">
+				<reportElement uuid="61b1ca47-d78c-4f73-a289-ab64d9d28672" key="vertical_articol_line_1" positionType="Float" stretchType="RelativeToBandHeight" mode="Transparent" x="452" y="221" width="95" height="493" isPrintWhenDetailOverflows="true">
+					<printWhenExpression><![CDATA[$V{show_detail_1}]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<leftPen lineWidth="0.75" lineStyle="Dotted"/>
+					<rightPen lineWidth="0.0" lineStyle="Dotted"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font fontName="Segoe UI"/>
+					<paragraph leftIndent="3" rightIndent="3"/>
+				</textElement>
+			</textField>
+			<textField evaluationTime="Report" isBlankWhenNull="true">
+				<reportElement uuid="9e92a729-de9c-42ff-b067-0498d3beb917" key="vertical_articol_line_2" positionType="Float" stretchType="RelativeToBandHeight" mode="Transparent" x="331" y="221" width="121" height="493" isPrintWhenDetailOverflows="true" backcolor="#9900CC">
+					<printWhenExpression><![CDATA[$V{show_detail_2}]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<leftPen lineWidth="0.75" lineStyle="Dotted"/>
+					<rightPen lineWidth="0.75" lineStyle="Dotted"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font fontName="Segoe UI"/>
+					<paragraph leftIndent="3" rightIndent="3"/>
+				</textElement>
+			</textField>
+			<textField evaluationTime="Report" isBlankWhenNull="true">
+				<reportElement uuid="2984f142-0966-423c-b5c1-aab8bbb721a7" key="vertical_articol_line_3" positionType="Float" stretchType="RelativeToBandHeight" mode="Transparent" x="296" y="221" width="95" height="493" isPrintWhenDetailOverflows="true" backcolor="#9900CC">
+					<printWhenExpression><![CDATA[$V{show_detail_3}]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<leftPen lineWidth="0.75" lineStyle="Dotted"/>
+					<rightPen lineWidth="0.75" lineStyle="Dotted"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font fontName="Segoe UI"/>
+					<paragraph leftIndent="3" rightIndent="3"/>
+				</textElement>
+			</textField>
+			<textField evaluationTime="Report" isBlankWhenNull="true">
+				<reportElement uuid="34578a8d-3ff2-4c4c-9560-e51f2331f6dc" key="vertical_articol_line_3" positionType="Float" stretchType="RelativeToBandHeight" mode="Transparent" x="296" y="221" width="176" height="493" isPrintWhenDetailOverflows="true" backcolor="#9900CC">
+					<printWhenExpression><![CDATA[$V{show_detail_3}]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<leftPen lineWidth="0.0" lineStyle="Dotted"/>
+					<rightPen lineWidth="0.75" lineStyle="Dotted"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font fontName="Segoe UI"/>
+					<paragraph leftIndent="3" rightIndent="3"/>
+				</textElement>
+			</textField>
+			<textField evaluationTime="Report" isBlankWhenNull="true">
+				<reportElement uuid="d1feb8e5-b49d-4fa9-8cf7-ab618f0cd638" key="vertical_articol_line_4" positionType="Float" stretchType="RelativeToBandHeight" mode="Transparent" x="240" y="221" width="91" height="493" isPrintWhenDetailOverflows="true">
+					<printWhenExpression><![CDATA[$V{show_detail_4}]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<leftPen lineWidth="0.75" lineStyle="Dotted"/>
+					<rightPen lineWidth="0.75" lineStyle="Dotted"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font fontName="Segoe UI"/>
+					<paragraph leftIndent="3" rightIndent="3"/>
+				</textElement>
+			</textField>
+			<textField evaluationTime="Report" isBlankWhenNull="true">
+				<reportElement uuid="f087fd54-16e0-4a2c-b341-c5f5bffe2037" key="vertical_articol_line_4" positionType="Float" stretchType="RelativeToBandHeight" mode="Transparent" x="411" y="221" width="75" height="493" isPrintWhenDetailOverflows="true">
+					<printWhenExpression><![CDATA[$V{show_detail_4}]]></printWhenExpression>
+				</reportElement>
+				<box>
+					<leftPen lineWidth="0.75" lineStyle="Dotted"/>
+					<rightPen lineWidth="0.75" lineStyle="Dotted"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font fontName="Segoe UI"/>
+					<paragraph leftIndent="3" rightIndent="3"/>
+				</textElement>
+			</textField>
+		</band>
+	</background>
+	<title>
+		<band height="21">
+			<printWhenExpression><![CDATA[Boolean.FALSE]]></printWhenExpression>
+			<textField>
+				<reportElement uuid="b76eeb28-8c00-4183-afa0-10da162336de" x="0" y="0" width="136" height="20"/>
+				<textElement/>
+				<textFieldExpression><![CDATA[$P{show_tax_percentage}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="3d156466-f739-4ef1-b046-78bc1abbf1f2" x="148" y="0" width="132" height="20"/>
+				<textElement/>
+				<textFieldExpression><![CDATA[$P{show_tax_column}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="e178c73f-1317-4a13-95ca-633f62103676" x="295" y="0" width="130" height="20"/>
+				<textElement/>
+				<textFieldExpression><![CDATA[$P{show_price_column}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="05709f8b-a6e1-4aec-8396-4f72fb91cf60" x="434" y="0" width="137" height="20"/>
+				<textElement/>
+				<textFieldExpression><![CDATA[$P{show_quantity_column}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<detail>
+		<band height="40" splitType="Prevent">
+			<printWhenExpression><![CDATA[$V{show_detail_1}]]></printWhenExpression>
+			<frame>
+				<reportElement uuid="2d7daa9f-f444-4a83-b467-2674da6b439d" x="0" y="0" width="572" height="40"/>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="52c73309-b3b5-4cf2-a78a-14c0ad754e88" key="product_description" style="detail_product" mode="Transparent" x="41" y="0" width="411" height="40" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true" backcolor="#FFFFCC"/>
+					<box topPadding="1" bottomPadding="2">
+						<pen lineWidth="0.0" lineColor="#FFFFFF"/>
+						<topPen lineWidth="0.0" lineColor="#FFFFFF"/>
+						<leftPen lineWidth="0.0" lineColor="#FFFFFF"/>
+						<bottomPen lineWidth="0.0" lineColor="#FFFFFF"/>
+						<rightPen lineWidth="0.0" lineColor="#FFFFFF"/>
+					</box>
+					<textElement verticalAlignment="Middle" markup="styled">
+						<font size="12" isUnderline="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{product}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="06fa763e-b74a-4fa1-a8ea-fe314c5d1645" style="detail_number" mode="Transparent" x="0" y="0" width="42" height="40" backcolor="#F0F0F0"/>
+					<box topPadding="1" bottomPadding="2">
+						<pen lineWidth="0.0"/>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0" lineColor="#000000"/>
+						<rightPen lineWidth="0.0" lineColor="#E3E3E3"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{NO}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement uuid="21466dd1-e838-4358-a051-c6f1a9cee78e" style="detail_number" mode="Transparent" x="452" y="0" width="120" height="40" isPrintWhenDetailOverflows="true" backcolor="#F0F0F0"/>
+					<box topPadding="2" bottomPadding="2" rightPadding="0"/>
+					<textElement textAlignment="Right" markup="styled">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{amount}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement uuid="38463065-d372-4f40-b642-d31193d29c1a" key="detail_height" stretchType="RelativeToBandHeight" x="129" y="0" width="7" height="40"/>
+				<box topPadding="5" leftPadding="2" bottomPadding="5" rightPadding="2">
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement/>
+				<textFieldExpression><![CDATA[]]></textFieldExpression>
+			</textField>
+		</band>
+		<band height="40" splitType="Prevent">
+			<printWhenExpression><![CDATA[$V{show_detail_2}]]></printWhenExpression>
+			<frame>
+				<reportElement uuid="68d620e4-aa44-45e0-9f25-6cbf64e61558" x="0" y="0" width="572" height="40"/>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="3b35fb2e-3f4a-4521-aff5-353bac8d5898" key="product_description" style="detail_product" mode="Transparent" x="41" y="0" width="290" height="40" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true" backcolor="#CCFF33"/>
+					<box topPadding="1" bottomPadding="2">
+						<pen lineWidth="0.0" lineColor="#FFFFFF"/>
+						<topPen lineWidth="0.0" lineColor="#FFFFFF"/>
+						<leftPen lineWidth="0.0" lineColor="#FFFFFF"/>
+						<bottomPen lineWidth="0.0" lineColor="#FFFFFF"/>
+						<rightPen lineWidth="0.0" lineColor="#FFFFFF"/>
+					</box>
+					<textElement verticalAlignment="Middle" markup="styled">
+						<font size="12" isUnderline="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{product}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="88f33a8f-914e-494d-bab1-7b792a71881a" style="detail_number" mode="Transparent" x="0" y="0" width="42" height="40" backcolor="#F0F0F0"/>
+					<box topPadding="1" bottomPadding="2">
+						<pen lineWidth="0.0"/>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0" lineColor="#000000"/>
+						<rightPen lineWidth="0.0" lineColor="#E3E3E3"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{NO}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement uuid="a8f15844-6a41-43c9-add1-6ed55d7a1793" style="detail_text" mode="Transparent" x="331" y="0" width="121" height="40" isPrintWhenDetailOverflows="true" backcolor="#F0F0F0"/>
+					<box topPadding="2" bottomPadding="2">
+						<pen lineWidth="0.0"/>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0" lineColor="#000000"/>
+						<rightPen lineWidth="0.0" lineColor="#E3E3E3"/>
+					</box>
+					<textElement textAlignment="Right" markup="styled">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{show_quantity_column}?
+$V{qty_um}:
+$P{show_tax_column}?
+$V{tax}:
+$V{price}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement uuid="4e9760f0-4003-4c6d-a121-e9a0f91d03ad" style="detail_number" mode="Transparent" x="452" y="0" width="120" height="40" isPrintWhenDetailOverflows="true" backcolor="#F0F0F0"/>
+					<box topPadding="2" bottomPadding="2" rightPadding="0"/>
+					<textElement textAlignment="Right" markup="styled">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{amount}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement uuid="582083dc-a983-4063-92f1-7ff6a1a88c7d" key="detail_height" stretchType="RelativeToBandHeight" x="129" y="0" width="7" height="40"/>
+				<box topPadding="5" leftPadding="2" bottomPadding="5" rightPadding="2">
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement/>
+				<textFieldExpression><![CDATA[]]></textFieldExpression>
+			</textField>
+		</band>
+		<band height="40">
+			<printWhenExpression><![CDATA[$V{show_detail_3}]]></printWhenExpression>
+			<frame>
+				<reportElement uuid="48754690-4dd6-4119-afde-46a5c62bbd35" x="0" y="0" width="572" height="40" backcolor="#3333FF"/>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="a6a632df-8e63-487b-9cba-d6b4188beb11" key="product_description" style="detail_product" mode="Transparent" x="41" y="0" width="254" height="40" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true" backcolor="#66FF66"/>
+					<box topPadding="1" bottomPadding="2">
+						<pen lineWidth="0.0" lineColor="#FFFFFF"/>
+						<topPen lineWidth="0.0" lineColor="#FFFFFF"/>
+						<leftPen lineWidth="0.0" lineColor="#FFFFFF"/>
+						<bottomPen lineWidth="0.0" lineColor="#FFFFFF"/>
+						<rightPen lineWidth="0.0" lineColor="#FFFFFF"/>
+					</box>
+					<textElement verticalAlignment="Middle" markup="styled">
+						<font size="12" isUnderline="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{product}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement uuid="f425612e-c6d3-41c9-a261-030c3f164324" style="detail_number_price" mode="Transparent" x="389" y="0" width="83" height="40" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="2">
+						<pen lineWidth="0.0"/>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0" lineColor="#000000"/>
+						<rightPen lineWidth="0.0" lineColor="#E3E3E3"/>
+					</box>
+					<textElement textAlignment="Right" markup="styled">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{show_price_column}? $V{price}: $V{tax}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="bb5b6e69-a8bf-4768-9f4c-55fca0234da6" style="detail_number" mode="Transparent" x="0" y="0" width="42" height="40" backcolor="#F0F0F0"/>
+					<box topPadding="1" bottomPadding="2">
+						<pen lineWidth="0.0"/>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0" lineColor="#000000"/>
+						<rightPen lineWidth="0.0" lineColor="#E3E3E3"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{NO}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement uuid="273558a9-f449-4358-8c73-5693b9870a58" style="detail_text" mode="Transparent" x="295" y="0" width="95" height="40" isPrintWhenDetailOverflows="true" backcolor="#F0F0F0"/>
+					<box topPadding="2" bottomPadding="2">
+						<pen lineWidth="0.0"/>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0" lineColor="#000000"/>
+						<rightPen lineWidth="0.0" lineColor="#E3E3E3"/>
+					</box>
+					<textElement textAlignment="Right" markup="styled">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{show_quantity_column}?
+ $V{qty_um}:
+ $V{tax}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement uuid="ad1851dc-d3e3-4432-b30d-1500ae90d497" style="detail_number_amount" mode="Transparent" x="471" y="0" width="101" height="40" isPrintWhenDetailOverflows="true" backcolor="#F0F0F0"/>
+					<box topPadding="2" bottomPadding="2" rightPadding="0"/>
+					<textElement textAlignment="Right" markup="styled">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{amount}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement uuid="bcd7a5e1-a7d4-4189-b0a2-ae1e229407df" key="detail_height" stretchType="RelativeToBandHeight" x="129" y="0" width="7" height="40"/>
+				<box topPadding="5" leftPadding="2" bottomPadding="5" rightPadding="2">
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement/>
+				<textFieldExpression><![CDATA[]]></textFieldExpression>
+			</textField>
+		</band>
+		<band height="40">
+			<printWhenExpression><![CDATA[$V{show_detail_4}]]></printWhenExpression>
+			<frame>
+				<reportElement uuid="17cc5d72-4496-402e-9c1c-2b9553a11969" x="0" y="0" width="572" height="40"/>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="7af8d29f-e74f-4953-b333-d45ea770d079" key="product_description" style="detail_product" mode="Transparent" x="41" y="0" width="200" height="40" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true" backcolor="#00CC33"/>
+					<box topPadding="1" bottomPadding="2">
+						<pen lineWidth="0.0" lineColor="#FFFFFF"/>
+						<topPen lineWidth="0.0" lineColor="#FFFFFF"/>
+						<leftPen lineWidth="0.0" lineColor="#FFFFFF"/>
+						<bottomPen lineWidth="0.0" lineColor="#FFFFFF"/>
+						<rightPen lineWidth="0.0" lineColor="#FFFFFF"/>
+					</box>
+					<textElement verticalAlignment="Middle" markup="styled">
+						<font size="12" isUnderline="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{product}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement uuid="f8315545-54d5-49c1-a329-9ab0ccadfc42" style="detail_number_price" mode="Transparent" x="331" y="0" width="80" height="40" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="2">
+						<pen lineWidth="0.0"/>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0" lineColor="#000000"/>
+						<rightPen lineWidth="0.0" lineColor="#E3E3E3"/>
+					</box>
+					<textElement textAlignment="Right" markup="styled">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{price}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="cc34998d-42ea-45f9-9540-698968ef2d7a" style="detail_number" mode="Transparent" x="0" y="0" width="42" height="40" backcolor="#F0F0F0"/>
+					<box topPadding="1" bottomPadding="2">
+						<pen lineWidth="0.0"/>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0" lineColor="#000000"/>
+						<rightPen lineWidth="0.0" lineColor="#E3E3E3"/>
+					</box>
+					<textElement textAlignment="Center">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{NO}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement uuid="7445055a-3749-4ced-b92b-cdabce715a6c" style="detail_text" mode="Transparent" x="241" y="0" width="90" height="40" isPrintWhenDetailOverflows="true" backcolor="#F0F0F0"/>
+					<box topPadding="2" bottomPadding="2">
+						<pen lineWidth="0.0"/>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0" lineColor="#000000"/>
+						<rightPen lineWidth="0.0" lineColor="#E3E3E3"/>
+					</box>
+					<textElement textAlignment="Right" markup="styled">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{qty_um}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement uuid="cac49a2f-d2ae-427d-80f4-1e93fc74db8e" style="detail_number_amount" mode="Transparent" x="486" y="0" width="85" height="40" isPrintWhenDetailOverflows="true" backcolor="#F0F0F0"/>
+					<box topPadding="2" bottomPadding="2" rightPadding="0"/>
+					<textElement textAlignment="Right" markup="styled">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{amount}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement uuid="da714a2e-32f8-49c4-b6ee-96fc59112f4b" style="detail_number_tax" mode="Transparent" x="411" y="0" width="75" height="40" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="2">
+						<pen lineWidth="0.0"/>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0" lineColor="#000000"/>
+						<rightPen lineWidth="0.0" lineColor="#E3E3E3"/>
+					</box>
+					<textElement textAlignment="Right" markup="styled">
+						<paragraph leftIndent="3" rightIndent="3"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{tax}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement uuid="bfe560ab-2c1f-4841-94fa-5755ed18c658" key="detail_height" stretchType="RelativeToBandHeight" x="129" y="0" width="7" height="40"/>
+				<box topPadding="5" leftPadding="2" bottomPadding="5" rightPadding="2">
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement/>
+				<textFieldExpression><![CDATA[]]></textFieldExpression>
+			</textField>
+		</band>
+		<band height="30">
+			<printWhenExpression><![CDATA[Boolean.FALSE]]></printWhenExpression>
+		</band>
+	</detail>
+	<columnFooter>
+		<band>
+			<line>
+				<reportElement uuid="b085d765-26c7-4970-8d34-7e94ca7e10f5" key="horizontal_line_1" style="normal_color" x="0" y="-7" width="572" height="1" forecolor="#0033FF"/>
+				<graphicElement>
+					<pen lineWidth="1.5"/>
+				</graphicElement>
+			</line>
+		</band>
+	</columnFooter>
+	<pageFooter>
+		<band height="32">
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="5efd2a0d-b3e6-46e0-bb4c-366fe5687783" key="page_footer_height" stretchType="RelativeToBandHeight" mode="Transparent" x="240" y="0" width="7" height="23"/>
+				<box>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement/>
+				<textFieldExpression><![CDATA[]]></textFieldExpression>
+			</textField>
+			<frame>
+				<reportElement uuid="975832c4-da64-410c-9fa2-69625611697c" x="0" y="3" width="572" height="20"/>
+				<rectangle radius="10">
+					<reportElement uuid="fe2bcb12-3169-4216-8764-b0c277c3aeba" style="special_color" x="0" y="0" width="572" height="20"/>
+				</rectangle>
+				<rectangle>
+					<reportElement uuid="fd0357ce-f9a9-4e5d-ab2e-acca24a72365" style="special_color" x="0" y="10" width="572" height="10"/>
+				</rectangle>
+			</frame>
+			<elementGroup>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="false">
+					<reportElement uuid="32d0a8f2-47a5-4a1a-9255-c124318d802d" key="page_number_1" style="page_number" positionType="Float" mode="Transparent" x="0" y="3" width="303" height="20" isPrintWhenDetailOverflows="true"/>
+					<textElement textAlignment="Right"/>
+					<textFieldExpression><![CDATA["Page " + String.valueOf($V{PAGE_NUMBER}) + " of"]]></textFieldExpression>
+				</textField>
+				<textField evaluationTime="Report" isBlankWhenNull="false">
+					<reportElement uuid="ba25c2da-1969-4228-ab59-407e35bf38da" key="page_number_2" style="page_number" positionType="Float" mode="Transparent" x="304" y="3" width="268" height="20" isPrintWhenDetailOverflows="true"/>
+					<textElement/>
+					<textFieldExpression><![CDATA[" " + String.valueOf($V{PAGE_NUMBER})]]></textFieldExpression>
+				</textField>
+			</elementGroup>
+			<textField evaluationTime="Report" isBlankWhenNull="false">
+				<reportElement uuid="d0307f85-bd5d-4b73-bc3e-bd7a538dbdd3" key="footer_info" positionType="Float" mode="Transparent" x="247" y="23" width="325" height="9" isPrintWhenDetailOverflows="true" forecolor="#A3A3A3"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{footer_info_sb}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

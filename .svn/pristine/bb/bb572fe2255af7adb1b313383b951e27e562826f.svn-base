@@ -1,0 +1,132 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.swingutils;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseEvent;
+
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JPanel;
+import javax.swing.JTable;
+import javax.swing.UIManager;
+import javax.swing.table.TableColumnModel;
+
+/**
+ *
+ * @author Andrei
+ */
+public class ButtonsClients extends EditDeleteButtonCell {
+
+    JButton renderPreviewButton;
+    JButton previewButton;
+    String toolTip3 = "View the record";
+
+    public ButtonsClients(SBJTable table, int column) {
+        super(table, column);
+
+        renderPreviewButton = new JButton(new ImageIcon("./images/buttons/Person_view.png"));
+        renderPreviewButton.setFocusPainted(false);
+        renderPreviewButton.setPreferredSize(new Dimension(20, 17));
+        renderPreviewButton.setToolTipText(toolTip3);
+        renderPreviewButton.setOpaque(false);
+        renderPreviewButton.setBorder(null);
+        renderPreviewButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        renderPreviewButton.setContentAreaFilled(false);
+
+        renderPanel = new JPanel() {
+
+            public String getToolTipText(MouseEvent e) {
+                if (renderEditButton.getBounds().contains(e.getPoint())) {
+                    return renderEditButton.getToolTipText();
+                }
+                if (renderDeleteButton.getBounds().contains(e.getPoint())) {
+                    return renderDeleteButton.getToolTipText();
+                }
+                if (renderPreviewButton.getBounds().contains(e.getPoint())) {
+                    return renderPreviewButton.getToolTipText();
+                }
+                return "";
+            }
+        };
+        renderPanel.setLayout(new GridBagLayout());
+
+        //HORIZONTAL_ALIGNMENT)
+        renderPanel.add(renderDeleteButton, new GridBagConstraints(2, 0, 1, 1, 0.0, 0, GridBagConstraints.CENTER, 0, new Insets(0, 1, 0, 2), 0, 0));
+        renderPanel.add(renderEditButton, new GridBagConstraints(0, 0, 1, 1, 0.0, 0, GridBagConstraints.CENTER, 0, new Insets(0, 2, 0, 1), 0, 0));
+        renderPanel.add(renderPreviewButton, new GridBagConstraints(1, 0, 1, 1, 0.0, 0, GridBagConstraints.CENTER, 0, new Insets(0, 1, 0, 2), 0, 0));
+
+        previewButton = new JButton(new ImageIcon("./images/buttons/Person_view.png"));
+        previewButton.addActionListener(this);
+        previewButton.setFocusPainted(false);
+        previewButton.setPreferredSize(new Dimension(20, 17));
+        previewButton.setOpaque(false);
+        previewButton.setBorder(null);
+        previewButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        previewButton.setContentAreaFilled(false);
+
+        //HORIZONTAL_ALIGNMENT
+        editPanel.removeAll();
+        editPanel.add(deleteButton, new GridBagConstraints(2, 0, 1, 1, 0.0, 0, GridBagConstraints.CENTER, 0, new Insets(0, 1, 0, 2), 0, 0));
+        editPanel.add(editButton, new GridBagConstraints(0, 0, 1, 1, 0.0, 0, GridBagConstraints.CENTER, 0, new Insets(0, 2, 0, 1), 0, 0));
+        editPanel.add(previewButton, new GridBagConstraints(1, 0, 1, 1, 0.0, 0, GridBagConstraints.CENTER, 0, new Insets(0, 1, 0, 2), 0, 0));
+
+
+        TableColumnModel columnModel = table.getColumnModel();
+        columnModel.getColumn(column).setCellRenderer(this);
+        columnModel.getColumn(column).setCellEditor(this);
+    }
+
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        toolTip1 = "Edit Client";
+        toolTip2 = "Delete Client";
+        toolTip3 = "View Client";
+        renderEditButton.setToolTipText(toolTip1);
+        renderDeleteButton.setToolTipText(toolTip2);
+        renderPreviewButton.setToolTipText(toolTip3);
+        editButton.setToolTipText(toolTip1);
+        deleteButton.setToolTipText(toolTip2);        
+        previewButton.setToolTipText(toolTip3);
+        if (isSelected) {
+            renderPanel.setForeground(table.getSelectionForeground());
+            renderPanel.setBackground(table.getSelectionBackground());
+        } else {
+            if (UIManager.get("Table.evenRowColor") instanceof Color && UIManager.get("Table.evenRowColor") instanceof Color) {
+                Color rc = row % 2 == 0 ? (Color) UIManager.get("Table.evenRowColor") : (Color) UIManager.get("Table.oddRowColor");
+                renderPanel.setForeground(rc);
+                renderPanel.setBackground(rc);
+            } else {
+                renderPanel.setForeground(table.getForeground());
+                renderPanel.setBackground(table.getBackground());
+            }
+        }        
+        return renderPanel;
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        fireEditingStopped();
+        if (e.getSource().equals(editButton)) {
+            table.actionEdit();
+        }
+        if (e.getSource().equals(deleteButton)) {
+            table.actionDelete();
+        }
+        if (e.getSource().equals(previewButton)) {
+            table.actionPreview();
+        }
+    }
+
+    public JButton getPreviewButton() {
+        return previewButton;
+    }
+}

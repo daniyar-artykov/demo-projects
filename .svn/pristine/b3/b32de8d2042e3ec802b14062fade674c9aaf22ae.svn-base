@@ -1,0 +1,93 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.util;
+
+import com.sun.org.apache.xalan.internal.xsltc.dom.AdaptiveResultTreeImpl;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.util.Map;
+import javax.xml.ws.Response;
+import sleekbill.Messages;
+import sleekbill.util.paypal.core.PayPal;
+import sleekbill.util.paypal.core.PayPal.Environment;
+import sleekbill.util.paypal.fields.PayerInformation;
+import sleekbill.util.paypal.profile.BaseProfile;
+import sleekbill.util.paypal.profile.Profile;
+import sleekbill.util.paypal.request.AddressVerify;
+
+/**
+ *
+ * @author Andrei
+ */
+public class PayPalUtilities {
+
+    public static String getLink(String mail, String currencyCode, BigDecimal amount, String item) {
+        String template = "https://www.paypal.com/cgi-bin/webscr?business=placeholder_mail&cmd=_xclick&currency_code=placeholder_currency&amount=placeholder_amount&item_name=placeholder_item";
+
+        try {
+            template = template.replace("placeholder_mail", mail);
+            template = template.replace("placeholder_currency", currencyCode);
+            template = template.replace("placeholder_amount", amount.toString());
+            template = template.replace("placeholder_item", URLEncoder.encode(item, "UTF-8"));//if this works ... perfect !!!
+
+        } catch (Exception ex) {
+            template = template.replace("placeholder_item", item);//otherwise ... keep it simple !!!
+            ex.printStackTrace();
+        }
+
+        return template;
+    }
+    
+    public static boolean isEmailValid(String email) {
+//        String falseResponse = "This\\x20recipient\\x20is\\x20currently\\x20unable\\x20to\\x20receive\\x20money\\x2e";
+//        try {
+//            Document doc = Jsoup.connect("https://www.paypal.com/cgi-bin/webscr?business=" + email + "&cmd=_xclick&currency_code=USD&amount=0.00&item_name=TEST").get();
+//
+//            return !doc.toString().contains(falseResponse);
+//
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//        }
+//        {
+//            Profile user = new BaseProfile.Builder("office_api1.smartbill.ro",
+//                    "NLY65VP3VKNQPA5E").signature("AFcWxV21C7fd0v3bYYYRCpSSRl31As9AqiLSyP-tlRz.fISFoSWKSIMN").build();
+//            PayPal pp = new PayPal(user, Environment.SANDBOX);
+//
+//            AddressVerify av = new AddressVerify(email, "street", "");
+//
+//            pp.setResponse(av);
+//            Map<String, String> response = av.getNVPResponse();
+//
+//            StringBuilder sb = new StringBuilder();
+//            for (String key : response.keySet()) {
+//                String value = response.get(key);
+//                sb.append("\n" + key + " = " + value);
+//            }
+//            Messages.showInformationMessage(null, sb.toString(), "SANDBOX: " + email);
+//        }
+
+        {
+            Profile user = new BaseProfile.Builder("office_api1.smartbill.ro",
+                    "NLY65VP3VKNQPA5E").signature("AFcWxV21C7fd0v3bYYYRCpSSRl31As9AqiLSyP-tlRz.fISFoSWKSIMN").build();
+            PayPal pp = new PayPal(user, Environment.LIVE);
+
+            AddressVerify av = new AddressVerify(email, "street", "12345");
+
+            pp.setResponse(av);
+            Map<String, String> response = av.getNVPResponse();
+
+            StringBuilder sb = new StringBuilder();
+            for (String key : response.keySet()) {
+                String value = response.get(key);
+                sb.append("\n" + key + " = " + value);
+            }
+            Messages.showInformationMessage(null, sb.toString(), "LIVE: " + email);
+        }
+        int x = 0;
+        return true;
+
+    }
+}

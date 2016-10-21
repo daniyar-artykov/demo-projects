@@ -1,0 +1,661 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill;
+
+/**
+ *
+ * @author Andrei
+ */
+import de.muntjak.tinylookandfeel.TinyLookAndFeel;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Frame;
+import java.awt.event.KeyEvent;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStreamReader;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.security.cert.CertificateException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
+import javax.swing.InputMap;
+import javax.swing.JFrame;
+import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.plaf.ColorUIResource;
+import javax.swing.text.DefaultEditorKit;
+
+import sleekbill.ApplicationInstanceManager.ApplicationInstanceListener;
+import sleekbill.beans.Invoice;
+import sleekbill.db.DBConnection;
+import sleekbill.db.SBConnection;
+import sleekbill.frames.JDialogUpdate;
+import sleekbill.frames.MainFrame;
+import sleekbill.frames.tray.india.JDialogNotification4;
+import sleekbill.frames.tray.us.JDialogNotification1;
+import sleekbill.frames.tray.us.JDialogNotification2;
+import sleekbill.frames.tray.us.JDialogNotification3;
+import sleekbill.jasper.ReportGenerator;
+import sleekbill.swingutils.JDialogSplashScreen;
+import sleekbill.systray.SysTray;
+import sleekbill.utils.SBDesktop;
+
+public class Main {
+
+    public static MainFrame mjf;
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String[] args) {
+
+        createInitialFolder();
+        applySSLHack();
+
+        try {
+            System.out.println("java: " + System.getProperty("java.version"));
+
+            if (args == null || args.length == 0 || (!args[0].equals("/s") && !args[0].equals("/n"))) {
+                if (!ApplicationInstanceManager.registerInstance()) {
+                    // instance already running.
+                    System.out.println("Another instance of this application is already running.  Exiting.");
+                    System.exit(0);
+                }
+
+                ApplicationInstanceManager.setApplicationInstanceListener(new ApplicationInstanceListener() {
+                    @Override
+                    public void newInstanceCreated() {
+                        System.out.println("New instance detected...");
+                        if (Common.getMainFrame() != null && Common.getMainFrame().isShowing()) {
+                            Common.getMainFrame().toFront();
+                        } else if (Common.systray != null) {
+                            Common.systray.startSB();
+                            return;
+                        }
+                    }
+                });
+            }
+
+            Locale.setDefault(Locale.US);
+
+            if (!new File(Common.COMPANIES_PATH).canWrite()) {
+                if (Messages.showQuestionMessage(null,
+                        "You don't have write permissions for the directory where Sleek Bill is installed."
+                        + "\nTherefore, it is very likely that the program will not work." + "\n("
+                        + new File(".").getCanonicalPath() + ")" + "\nDo you wish to proceed?", "Warning", new Object[]{
+                            "Ignore", "Exit"}, "Exit") == 1) {
+                    System.exit(1);
+                }
+            }
+
+            Vector<Company> comp = Company.getCompaniesList();
+            Common.companies = comp;
+
+            final boolean isConfigured;
+            if (comp.size() == 0) {
+                isConfigured = false;
+            } else {
+                isConfigured = true;
+            }
+
+            Common.REGISTRY_KEY = "\"HKLM\\Software\\Intelligent IT\\Sleek Bill\"";
+            Common.AUTO_RUN_REGISTRY_KEY = "\"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\"";
+
+            //systray
+            if (args != null && args.length > 0 && args[0].equals("/s")) {
+
+                //TODO decomentat cand va merge vkcheck
+                long it = Common.getInstallationTime();
+                long now = System.currentTimeMillis();
+                long days = (now - it) / (1000 * 60 * 60 * 24);
+                if (Math.abs(days) < 7) {
+                    System.exit(0);
+                    // enable after 7 days
+                }
+                int r = 0;
+                for (Company c : Common.companies) {
+                    try {
+                        SBConnection newConn = new SBConnection(DBConnection.getConnection(Common.user, c.getName()));
+                        r = Common.vKCheckAll(newConn);
+                        newConn.getConnection().close();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        continue;
+                    }
+                    if (r < 0) {
+                        // uninstall
+                        if (Common.IS_WINDOWS) {
+                            try {
+                                Runtime.getRuntime().exec("reg delete " + Common.AUTO_RUN_REGISTRY_KEY + " /v SleekBillSys /f");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        System.exit(0);
+                    }
+                }
+                //TODO decomentat
+                final int d = r;
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        Common.systray = new SysTray(d, isConfigured);
+                    }
+                });
+
+                return;
+            }
+
+            try {
+                //check timestamp
+                if (!Common.IS_LINUX_OR_MAC) {
+                    Process process = Runtime.getRuntime().exec("reg query " + Common.REGISTRY_KEY + " /v int");
+                    BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                    String line = "";
+                    while ((line = br.readLine()) != null) {
+                        //                    System.out.println(""+line);
+                        if (line.indexOf("int") < 0) {
+                            continue;
+                        }
+                        break;
+                    }
+                    br.close();
+                    Pattern p = Pattern.compile("\\d{1,}");
+                    Matcher m = p.matcher(line != null ? line : "");
+                    if (m.find()) {
+                        //                    System.out.println(""+m.group());
+                        line = m.group();
+                    } else {
+                        String regAdd = "reg add " + Common.REGISTRY_KEY + " /v int /t REG_SZ /d " + System.currentTimeMillis() + " /f";
+                        Runtime.getRuntime().exec(regAdd);
+                        //                    regAdd = "reg add " + Common.REGISTRY_KEY + " /v exePath /t REG_SZ /d " + new File(".").getCanonicalPath() + " /f";
+                        //                    Runtime.getRuntime().exec(regAdd);
+                    }
+
+                    String cd = new File(".").getCanonicalPath();
+                    String installPath = Common.getInstallPath();
+//					if(Common.getInstallPath()==null || !cd.toLowerCase().equals(Common.getInstallPath().toLowerCase())){
+                    if (installPath == null || !cd.toLowerCase().equals(installPath.toLowerCase())) {
+                        String regAdd = "reg add " + Common.REGISTRY_KEY + " /v InstallPath /t REG_SZ /d " + "\"" + cd + "\"" + " /f";
+                        Runtime.getRuntime().exec(regAdd);
+                        System.err.println("updated registry InstallPath to " + cd);
+                    }
+
+                    String installedVersion = Common.getInstallVersion();
+                    String version = Common.VERSION.substring(Common.VERSION.indexOf(".") + 1);
+                    if (installedVersion == null || !version.toLowerCase().equals(installedVersion.toLowerCase())) {
+                        String regAdd = "reg add " + Common.REGISTRY_KEY + " /v Version /t REG_SZ /d " + "\"" + version + "\"" + " /f";
+                        Runtime.getRuntime().exec(regAdd);
+                        System.err.println("updated registry Version to " + cd);
+                    }
+
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            //notification
+            if (!Common.IS_INDIA && args != null && args.length > 0 && args[0].equals("/n")) {
+
+                String notification1 = Common.sbProperties.get(Config.NOTIFICATION1) == null ? "false" : Common.sbProperties.get(Config.NOTIFICATION1).toString();
+                String notification2 = Common.sbProperties.get(Config.NOTIFICATION2) == null ? "false" : Common.sbProperties.get(Config.NOTIFICATION2).toString();
+                String notification3 = Common.sbProperties.get(Config.NOTIFICATION3) == null ? "false" : Common.sbProperties.get(Config.NOTIFICATION3).toString();
+                int daysBetween = Common.getDaysBetween(new Date(Common.getInstallationTime()), new Date(System.currentTimeMillis()));
+                int daysUntilExpire = 31 - daysBetween;
+
+                boolean closeAfter = true;
+                if (notification1.equals("false") && Common.companies.size() == 0) {
+                    Common.sbProperties.setProperty(Config.NOTIFICATION1, "true");
+                    closeAfter = false;
+                    Thread.sleep(300000);
+                    new JDialogNotification1(null, true).setVisible(true);
+                } else {
+                    for (Company c : Common.companies) {
+                        try {
+                            SBConnection newConn = new SBConnection(DBConnection.getConnection(Common.user, c.getName()));
+                            daysBetween = Common.vKCheckAll(newConn);
+                            daysUntilExpire = 31 - daysBetween;
+                            newConn.getConnection().close();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            continue;
+                        }
+                        if (notification3.equals("false") && (daysUntilExpire == 7 || daysUntilExpire == 1)) {
+                            Thread.sleep(300000);
+                            new JDialogNotification3(null, true).setVisible(true);
+                            break;
+                        } else if (notification2.equals("false") && daysBetween % 7 == 0) {
+                            closeAfter = false;
+                            Thread.sleep(300000);
+                            new JDialogNotification2(null, true).setVisible(true);
+                            break;
+                        }
+                    }
+                }
+
+                Common.saveProperties();
+                if (closeAfter) {
+                    System.exit(-1);
+                }
+            }
+
+            if (Common.IS_INDIA && args != null && args.length > 0 && args[0].equals("/n")) {
+                Common.checkOnlineXML(Common.companies);
+                int daysBetween = Common.getDaysBetween(new Date(Common.getInstallationTime()), new Date(System.currentTimeMillis()));
+//				SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
+//				String s = "Data instalarii: " + sdf.format(new Date(Common.getInstallationTime()));
+//				s+= "\n" + "Data curenta: " + sdf.format(new Date(System.currentTimeMillis()));
+//				s+= "\n" + "Zile intre: " + daysBetween;
+//				Messages.showErrorMessage(null, s, "Info");
+                Map<Integer, Company> companies = new HashMap<Integer, Company>();
+                Thread.sleep(300000);
+                for (Company c : Common.companies) {
+                    try {
+                        SBConnection newConn = new SBConnection(DBConnection.getConnection(Common.user, c.getName()));
+                        String version = new Config().get(Config.INDIA, newConn.getConnection());
+
+                        Integer level = 0;
+                        if (version.equals("")) {
+                            level = 1;
+                        } else if (version.equals("free")) {
+                            level = 2;
+                        } else if (version.equals("paid")) {
+                            level = 3;
+                        }
+                        companies.put(level, c);
+                        newConn.getConnection().close();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        continue;
+                    }
+                }
+
+                int level = 0;
+                if (companies.containsKey(1)) {
+                    level = 1;
+                }
+                if (companies.containsKey(2)) {
+                    level = 2;
+                }
+                if (companies.containsKey(3)) {
+                    level = 3;
+                }
+
+                if (level == 0) {//aici trebuie sa intre daca nu exista firme
+                    if (daysBetween == 1 || daysBetween == 6) {
+                        //aici afisam notifier fara firma configurata
+                        new JDialogNotification4(null, true, new ImageIcon("./images/notifiers/Trial2-no-company.jpg"), false, "", "").setVisible(true);
+                    }
+                } else if (level == 1) {//aici ajunge doar daca exista firme in trial
+                    Company c = companies.get(level);
+                    SBConnection newConn = new SBConnection(DBConnection.getConnection(Common.user, c.getName()));
+                    if (0 == Invoice.getCount(newConn) && (daysBetween == 10 || daysBetween == 14)) {
+                        //aici afisam daca nu are facturi
+                        new JDialogNotification4(null, true, new ImageIcon("./images/notifiers/Trial3-no-invoice.jpg"), false, "", "").setVisible(true);
+                    } else if (daysBetween == 19 || daysBetween == 23 || daysBetween == 27 || daysBetween == 30) {
+                        if (daysBetween == 19 || daysBetween == 27) {
+                            //aici afisam notifier trial 19,27
+                            new JDialogNotification4(null, true, new ImageIcon("./images/notifiers/1.19-27-trial.jpg"), true, "notifier1", "Notifier").setVisible(true);
+                        } else if (daysBetween == 23) {
+                            //aici afisam notifier trial 23
+                            new JDialogNotification4(null, true, new ImageIcon("./images/notifiers/2.23-trial.jpg"), false, "", "").setVisible(true);
+                        } else if (daysBetween == 30) {
+                            //aici afisam notifier trial 30
+                            new JDialogNotification4(null, true, new ImageIcon("./images/notifiers/3.30-trial.jpg"), false, "", "").setVisible(true);
+                        }
+                    }
+                } else if (level == 2) {//aici ajunge daca cea mai smechera firma e una free
+                    if (!Common.freeCustomImage.isEmpty() && daysBetween % 6 == 0 && daysBetween > 0) {
+                        //aici afisam notificare custom free
+                        new JDialogNotification4(null, true, new ImageIcon(Common.freeCustomImage), Common.freeCustomImageLink).setVisible(true);
+                    } else if (daysBetween % 6 == 0 && daysBetween > 0) {
+                        //aici afisam notificare din 6 in 6 free
+                        if (daysBetween % 12 == 0 && daysBetween > 0) {
+                            new JDialogNotification4(null, true, new ImageIcon("./images/notifiers/free-2b.jpg"), true, "notifier-free-black", "NotifierFree").setVisible(true);
+                        } else if (daysBetween % 6 == 0 && daysBetween > 0) {
+                            new JDialogNotification4(null, true, new ImageIcon("./images/notifiers/free-1.jpg"), true, "notofier-free-blue", "NotifierFree").setVisible(true);
+                        }
+                    }
+                } else if (level == 3) {//aici ajunge daca exista o firma platita;
+                    if (!Common.premiumCustomImage.isEmpty()) {
+                        //aici afisam notificare custom premium
+                        new JDialogNotification4(null, true, new ImageIcon(Common.premiumCustomImage), Common.premiumCustomImageLink).setVisible(true);
+                    }
+                }
+
+                if (!Common.NOTIFIED) {
+                    System.exit(-1);
+                }
+            }
+
+            if (Common.sbProperties.get(Config.VERSION) == null) {
+                Common.sbProperties.setProperty(Config.VERSION, new Config().get(Config.VERSION));
+                Common.saveProperties();
+            }
+
+            JDialogSplashScreen splash = new JDialogSplashScreen();
+            splash.setBarMaximum(6);
+            splash.updateBar("Loading Sleek Bill. Please wait.");
+
+            //update userdata.db
+            SBConnection conn = new SBConnection(DBConnection.getConnection(Common.user, DBConnection.DEFAULT_DBKEY));
+            Updates.updateDB(conn, new Company(DBConnection.DEFAULT_DBKEY, "", "", false, 0, null, 0, ""));
+            conn.getConnection().close();
+
+            if (!new File(Common.COMPANIES_PATH).canWrite()) {
+                if (Messages.showQuestionMessage(null,
+                        "You don't have write permissions for the directory where Sleek Bill is installed."
+                        + "\nTherefore, it is very likely that the program will not work." + "\n("
+                        + new File(".").getCanonicalPath() + ")" + "\nDo you wish to proceed?", "Warning", new Object[]{
+                            "Ignore", "Exit"}, "Exit") == 1) {
+                    System.exit(1);
+                }
+            }
+
+            customizeUI();
+            if (Common.IS_LINUX_OR_MAC) {
+                java.awt.EventQueue.invokeLater(new Runnable() {
+                    public void run() {
+
+                        try {
+                            UIManager.setLookAndFeel(new TinyLookAndFeel());
+                            if (Common.IS_MAC) {
+                                InputMap im = (InputMap) UIManager.get("TextField.focusInputMap");
+                                im.put(KeyStroke.getKeyStroke(KeyEvent.VK_C, KeyEvent.META_DOWN_MASK), DefaultEditorKit.copyAction);
+                                im.put(KeyStroke.getKeyStroke(KeyEvent.VK_V, KeyEvent.META_DOWN_MASK), DefaultEditorKit.pasteAction);
+                                im.put(KeyStroke.getKeyStroke(KeyEvent.VK_X, KeyEvent.META_DOWN_MASK), DefaultEditorKit.cutAction);
+
+                                InputMap im2 = (InputMap) UIManager.get("TextArea.focusInputMap");
+                                im2.put(KeyStroke.getKeyStroke(KeyEvent.VK_C, KeyEvent.META_DOWN_MASK), DefaultEditorKit.copyAction);
+                                im2.put(KeyStroke.getKeyStroke(KeyEvent.VK_V, KeyEvent.META_DOWN_MASK), DefaultEditorKit.pasteAction);
+                                im2.put(KeyStroke.getKeyStroke(KeyEvent.VK_X, KeyEvent.META_DOWN_MASK), DefaultEditorKit.cutAction);
+                            }
+
+                        } catch (Exception e) {
+                        }
+                    }
+                });
+
+            } else {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            }
+
+            // load jasper
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    ReportGenerator.loadBlank();
+                }
+            });
+
+            splash.updateBar("Checking for new version");
+
+            try {
+                Common.checkOnlineXML(Common.companies);
+//				Common.updateCheckResponse = "http://www.program-facturi.ro/media/installere/2016/standard/164Instalare%20Smart%20Bill%20Standard%202016.exe";
+
+                boolean wasVersionInstalled = Common.wasVersionInstalled(Common.lastVersion.getVersion());
+                if (wasVersionInstalled || Common.updateCheckResponse.isEmpty()) {
+                    Common.updateCheckResponse = Common.patchCheckResponse;
+                    Common.updateType = Common.PATCH;
+                }
+
+                if (Common.updateCheckResponse.isEmpty()) {
+                    splash.updateBar("There are no updates available.");
+                } else {
+                    splash.updateBar("There are updates available.");
+                    if (Common.isClient()) {
+                        if (Common.IS_LINUX_OR_MAC) {
+                            if (Messages.showQuestionMessage(null, "There is a new version of Sleek Bill available."
+                                    + "\nWould you like to download it now?"
+                                    + "\nPlease replace the existing file with the new one", "Information") == Messages.YES_OPTION) {
+                                if (java.awt.Desktop.isDesktopSupported()) {
+                                    SBDesktop.browse(new java.net.URI(Common.updateCheckResponse));
+                                    System.exit(0);
+                                }
+                            }
+                        } else {
+                            new JDialogUpdate(null, true).setVisible(true);
+                        }
+                    }
+                }
+                Thread.sleep(500);
+            } catch (Exception e) {
+                splash.updateBar(e.getMessage(), Color.RED);
+            }
+
+//			splash.updateBar("fac ceva treaba...");
+//                Thread.sleep(1000);
+//                splash.updateBar("fac ceva treaba...2");
+//                Thread.sleep(1000);
+//                splash.updateBar("fac ceva treaba...3");
+//                Thread.sleep(1000);
+//                splash.updateBar("fac ceva treaba...4");
+//                Thread.sleep(1000);
+//                splash.updateBar("fac ceva treaba...5");
+//                Thread.sleep(1000);
+//                splash.updateBar("fac ceva treaba...6");
+//                Thread.sleep(1000);
+//                splash.dispose();
+//if(args == null || args.length == 0 || !args[0].equals("client")){
+//                if (Common.isServer() && Versiuni.isAvailable(Facilitate.RETEA)) {
+//                    splash.updateBar("Pornire server");
+//                    try {
+//                        Server.start();
+//                        splash.updateBar("Serverul a fost pornit");
+//                    } catch (java.net.SocketException be) {
+//                        Messages.showErrorMessage(null, "Server-ul nu a putut fi pornit. \nEste posibil ca portul " + Common.sbProps.getProperty("port") +
+//                            " sa fie deja folosit! \nSchimbati portul sau inchideti programul care foloseste portul respectiv.", "Eroare");
+//                    } catch (Exception ex) {
+//                    	ex.printStackTrace();
+//                        new JDialogError(null, ex);
+//                    }
+//                } else if (Common.isClient()) {
+//                    if (new Config().get("server").equals("")) {
+//                        new JDialogClientConfig(null, true).setVisible(true);
+//                    }
+//                } else {
+//                    splash.updateBar("Sleek Bill se incarca. Va rugam asteptati cateva momente.");
+//                }
+//}	
+//                if(args == null || args.length == 0 || !args[0].equals("client")){                
+//	                SleekBillService sqs = new SleekBillService();
+//	                try {
+//	    				sqs.server();
+//	    			} catch (IOException e) {
+//	    				e.printStackTrace();
+//	    			}
+//                }
+            splash.updateBar("done");
+
+            splash.dispose();
+            mjf = new MainFrame();
+            Common.mainFrame = mjf;
+
+            SwingUtilities.updateComponentTreeUI(mjf);
+
+            mjf.setExtendedState(JFrame.MAXIMIZED_BOTH);
+            mjf.setVisible(true);
+//            JDialogReleaseNote rn = new JDialogReleaseNote(mjf, true, Common.connection);
+//            rn.setVisible(true);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private static void instanceDialogsReflection(final Class[] classArray,
+            final JDialogSplashScreen splash) {
+        if (classArray != null) {
+            for (int i = 0; i < classArray.length; i++) {
+                Class<?> c = classArray[i];
+                Class[] partypes = new Class[2];
+                partypes[0] = Frame.class;
+                partypes[1] = Boolean.TYPE;
+                Constructor constructor = null;
+                try {
+                    constructor = c.getDeclaredConstructor(partypes);
+                } catch (Exception ex) {
+                }
+                Object arglist[] = new Object[2];
+                arglist[0] = null;
+                arglist[1] = true;
+                try {
+                    if (constructor != null) {
+                        constructor.newInstance(arglist);
+                        splash.updateBar("Sleek Bill se incarca. Va rugam asteptati cateva momente.");
+                    }
+                } catch (IllegalArgumentException ex) {
+                } catch (InvocationTargetException ex) {
+                } catch (InstantiationException ex) {
+                } catch (IllegalAccessException ex) {
+                } catch (Exception ex) {
+                }
+            }
+        }
+    }
+
+    public static void customizeUI() {
+
+        UIManager.put("OptionPane.okButtonText", "Ok");
+        UIManager.put("OptionPane.yesButtonText", "Yes");
+        UIManager.put("OptionPane.noButtonText", "No");
+        UIManager.put("OptionPane.cancelButtonText", "Cancel");
+        UIManager.put("FileChooser.openButtonText", "Open");
+        UIManager.put("FileChooser.saveButtonText", "Save");
+        UIManager.put("FileChooser.cancelButtonText", "Cancel");
+
+        Color blue = new Color(0x23, 0x82, 0xa5);
+
+        //Color blue_tabel = new Color(0x00, 0x66, 0x99);
+        Color blue_tabel = new Color(0, 102, 153);
+
+        Font font = new Font("Verdana", 0, 10);
+        Font menu_font = new Font("Verdana", 0, 12);
+        Font fontb = new Font("Verdana", Font.BOLD, 11);
+
+        UIManager.put("Button.background", Color.white);
+        UIManager.put("TextField.foreground", blue);
+        UIManager.put("Button.focus", new ColorUIResource(new Color(0, 0, 0, 0))); //dezactivare focus painted pentru butoane
+//        UIManager.put("TextField.inactiveBackground", Color.white);
+        UIManager.put("TextArea.foreground", blue);
+        UIManager.put("Panel.background", Color.white);
+        UIManager.put("Menu.background", UIManager.getColor("Menu.background"));
+        UIManager.put("MenuBar.background", UIManager.getColor("Menu.background"));
+        UIManager.put("MenuItem.background", UIManager.getColor("Menu.background"));
+        UIManager.put("Menu.selectionBackground", new Color(17, 157, 229));
+        UIManager.put("MenuItem.selectionBackground", new Color(17, 157, 229));
+        UIManager.put("Menu.submenuPopupOffsetX", 0);
+
+        UIManager.put("ComboBox.background", Color.white);
+        UIManager.put("ComboBox.foreground", blue);
+        UIManager.put("ComboBox.selectionBackground", new Color(17, 157, 229));
+        UIManager.put("CheckBox.background", Color.white);
+        UIManager.put("OptionPane.background", Color.white);
+        UIManager.put("RadioButton.background", Color.white);
+        UIManager.put("List.background", Color.white);
+        UIManager.put("FormattedTextField.foreground", blue);
+        UIManager.put("FormattedTextField.background", Color.white);
+
+        UIManager.put("TitledBorder.font", font);
+        UIManager.put("Table.font", font);
+        UIManager.put("ToolTip.font", font);
+        UIManager.put("Label.font", font);
+        UIManager.put("TextField.font", font);
+        UIManager.put("TextArea.font", font);
+        UIManager.put("CheckBox.font", font);
+        UIManager.put("ComboBox.font", font);
+        UIManager.put("RadioButton.font", font);
+        UIManager.put("FormattedTextField.font", font);
+        UIManager.put("MenuBar.font", menu_font);
+        UIManager.put("MenuItem.font", menu_font);
+        UIManager.put("Menu.font", menu_font);
+        UIManager.put("Button.font", font);
+        UIManager.put("List.font", font);
+
+        UIManager.put("TableHeader.background", blue_tabel);
+        UIManager.put("ScrollPane.background", Color.white);
+
+        //UIManager.put("TableHeader.font", font);       //nu merge asa http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6521138 ?
+        UIManager.put("TableHeader.foreground", Color.WHITE);
+        //de pus si height
+
+        UIManager.put("Table.evenRowColor", Color.WHITE);
+        UIManager.put("Table.oddRowColor", new Color(0xE7, 0xED, 0xF9));
+
+        UIManager.put("TabbedPane.background", new Color(240, 240, 240));
+        UIManager.put("TableHeader.cellBorder", BorderFactory.createEmptyBorder());
+
+        UIManager.put("TitledBorder.titleColor", Color.BLACK);
+        UIManager.put("Table.selectionBackground", new Color(190, 218, 255));
+
+        UIManager.put("Table.selectionForeground", Color.BLACK);
+        UIManager.put("TextField.alertColor", Color.PINK);
+        UIManager.put("TextField.alertForegroundColor", Color.BLACK);
+
+        UIManager.put("TextArea.inactiveBackground", UIManager.getColor("TextField.inactiveBackground"));
+
+        //BorderFactory.createLoweredBevelBorder()
+    }
+
+    public static void createInitialFolder() {
+        if (!new File(Common.COMPANIES_PATH).isDirectory()) {
+            new File(Common.COMPANIES_PATH).mkdirs();
+        }
+    }
+
+    private static void applySSLHack() {
+        try {
+            // Create a trust manager that does not validate certificate chains
+            TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
+                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                    return null;
+                }
+
+                @Override
+                public void checkClientTrusted(java.security.cert.X509Certificate[] xcs, String string) throws CertificateException {
+                }
+
+                @Override
+                public void checkServerTrusted(java.security.cert.X509Certificate[] xcs, String string) throws CertificateException {
+                }
+            }
+            };
+
+            // Install the all-trusting trust manager
+            SSLContext sc = SSLContext.getInstance("SSL");
+            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+
+            // Create all-trusting host name verifier
+            HostnameVerifier allHostsValid = new HostnameVerifier() {
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }
+            };
+
+            // Install the all-trusting host verifier
+            HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+}

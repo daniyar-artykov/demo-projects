@@ -1,0 +1,754 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames;
+
+import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.sql.SQLException;
+
+import javax.swing.ImageIcon;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+
+import sleekbill.Common;
+import sleekbill.Config;
+import sleekbill.Messages;
+import sleekbill.beans.Flag;
+import sleekbill.beans.Product;
+import sleekbill.beans.SBDaoException;
+import sleekbill.beans.Stock;
+import sleekbill.beans.Tax;
+import sleekbill.entities.TaxEntity;
+import sleekbill.frames.autosuggesterdata.SBACTaxes;
+import sleekbill.frames.autosuggesterdata.SBACUoM;
+import sleekbill.frames.autosuggesterdata.actionlisteners.EditTaxActionListener;
+import sleekbill.swingutils.autosuggesters.AddNewActionListener;
+import sleekbill.swingutils.autosuggesters.AutosuggesterItem;
+import sleekbill.util.SBSwingUtils;
+
+/**
+ *
+ * @author Andrei
+ */
+public class JDialogProductData extends javax.swing.JDialog {
+    
+    SBACTaxes asData = new SBACTaxes();
+	SBACUoM asData2 = new SBACUoM(Common.connection);
+    boolean bEdit = false;
+    boolean isDirty = false;
+    public Product product;
+    JDialogProductData main = this;
+    String name = "";
+	int precision = Common.PRECISION;
+
+    /**
+     * Creates new form JDialogProductData
+     */
+	
+	public JDialogProductData(java.awt.Dialog parent, final boolean modal){
+		this(parent, modal, "");
+	}
+	
+    public JDialogProductData(java.awt.Dialog parent, final boolean modal, String productName) {
+        super(parent, modal);
+        initComponents();
+		
+		try {
+			precision = Flag.getLast(Common.connection.getConnection()).getDecimals();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+        setLocationRelativeTo(parent);
+        product = new Product();
+        jTextFieldProductName.requestFocus();
+		jTextFieldProductName.setText(productName);
+        
+        SBSwingUtils.applyFocusBorder(this);
+        SBSwingUtils.addContextMenuToChildren(this);
+        SBSwingUtils.setDecimalField(jTextFieldUnitPrice, precision);
+        
+        setupAddNewListener();
+        setAutosuggestersDimmension();
+        jButtonCancel.setVisible(false);
+        jLabel1.setText(jLabel1.getText() + " (" + Common.companyDetails.getCurrency().getCurrencySymbol() + ")");
+        
+        try {
+            TaxEntity taxDefault = Tax.getDefault(Common.connection.getConnection());
+            
+            if (taxDefault != null) {
+                sBACPanelTaxes.setSelectedItem(
+                        new AutosuggesterItem(taxDefault.getId(), taxDefault.getTaxName() + " %", taxDefault.getTaxPercentage() + "", taxDefault),
+                        taxDefault.getTaxPercentage() + "");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        
+        checkMandatory();
+        setupMandatory();
+        
+        SBSwingUtils.setDecimalField(jTextFieldQuantity, precision);
+        if(!Common.keepStocks())
+        {
+            jTextFieldQuantity.setVisible(false);
+            jLabel6.setVisible(false);
+            setPreferredSize(new Dimension(700, 330));
+            setMinimumSize(new Dimension(700, 330));
+        }
+        sBACPanelTaxes.setEditActionListener(new EditTaxActionListener(sBACPanelTaxes, main));
+		SBSwingUtils.removeTabInTextArea(jTextAreaDescription);
+        pack();	
+    }
+    
+    public JDialogProductData(java.awt.Dialog parent, final boolean modal, boolean bEdit, Product product) {
+        super(parent, modal);
+        initComponents();
+		
+		try {
+			precision = Flag.getLast(Common.connection.getConnection()).getDecimals();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		
+        setLocationRelativeTo(parent);
+        this.bEdit = bEdit;
+        this.product = product;
+        if (this.bEdit) {
+            setTitle("Edit Product/Service");
+        } else {
+            enableFields(false);
+            setTitle("View Product/Service");
+            jButtonSave.setText("Edit");
+        }
+        
+        if (product == null) {
+            product = new Product();
+        }
+        
+        name = product.getName();
+        
+        
+        
+        SBSwingUtils.applyFocusBorder(this);
+        SBSwingUtils.addContextMenuToChildren(this);
+        SBSwingUtils.setDecimalField(jTextFieldUnitPrice, precision);
+        
+        fillFields();
+        setupAddNewListener();
+        setAutosuggestersDimmension();
+        jButtonCancel.setVisible(false);
+        jLabel1.setText(jLabel1.getText() + " (" + Common.companyDetails.getCurrency().getCurrencySymbol() + ")");
+        
+        checkMandatory();
+        setupMandatory();
+ 
+        SBSwingUtils.setDecimalField(jTextFieldQuantity, precision);
+        if(!Common.keepStocks())
+        {
+            jTextFieldQuantity.setVisible(false);
+            jLabel6.setVisible(false);
+            setPreferredSize(new Dimension(700, 330));
+            setMinimumSize(new Dimension(700, 330));
+        }
+        sBACPanelTaxes.setEditActionListener(new EditTaxActionListener(sBACPanelTaxes, main));
+		SBSwingUtils.removeTabInTextArea(jTextAreaDescription);
+        pack();
+    }
+    
+    private void setAutosuggestersDimmension() {
+        Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+        if (dim.height == 768) {
+            sBACPanelTaxes.setMaximumPopupSize(new Dimension(600, 300));
+            return;
+        }        
+        sBACPanelTaxes.setMaximumPopupSize(new Dimension(600, (dim.height - 100) / 2));
+        
+    }
+    
+    private void setupAddNewListener() {
+        sBACPanelTaxes.setAddNewActionListener(new AddNewActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                AutosuggesterItem aux = sBACPanelTaxes.getSbTextField().getSelectedItem();
+                JDialogTaxes taxes = new JDialogTaxes(main, true);
+                taxes.setVisible(true);
+                
+                if (taxes.lastTax != null) {
+                    AutosuggesterItem item = new AutosuggesterItem(taxes.lastTax.getId(), null, null, null);
+                    sBACPanelTaxes.setSelectedItem(item, taxes.lastTax.getTaxPercentage().toString());
+                } else if (aux != null) {
+                    Tax tax = (Tax) aux.getObj();
+                    
+                    if (tax != null && tax.getTaxPercentage() != null) {
+                        sBACPanelTaxes.setSelectedItem(aux, tax.getTaxPercentage().toString());
+                    }
+                } else {
+                    sBACPanelTaxes.getSbTextField().setText("");
+                }
+                
+                
+            }
+        });
+    }
+    
+    private void checkMandatory() {
+        boolean bEnable = true;
+        try {
+            new BigDecimal(jTextFieldUnitPrice.getText());
+        } catch (NumberFormatException e) {
+            bEnable = false;
+        }
+        bEnable = bEnable & !jTextFieldProductName.getText().isEmpty() & sBACPanelTaxes.getSbTextField().getSelectedItem() != null;
+        
+        if (jButtonSave.getText().equals("Edit")) {
+            bEnable = true;
+        }
+        
+        jButtonSave.setEnabled(bEnable);
+    }
+    
+    private void setupMandatory() {
+        jTextFieldProductName.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+            
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+            
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+        });
+        
+        jTextFieldUnitPrice.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+            
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+            
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+        });
+        
+        sBACPanelTaxes.getSbTextField().getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+            
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+            
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                checkMandatory();
+            }
+        });
+        
+        sBACPanelTaxes.getSbTextField().addKeyListener(new KeyListener() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+                checkMandatory();
+            }
+            
+            @Override
+            public void keyPressed(KeyEvent e) {
+                checkMandatory();
+            }
+            
+            @Override
+            public void keyReleased(KeyEvent e) {
+                checkMandatory();
+            }
+        });
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
+
+        jPanel1 = new javax.swing.JPanel();
+        jPanel2 = new javax.swing.JPanel();
+        jPanel3 = new javax.swing.JPanel();
+        jLabel4 = new javax.swing.JLabel();
+        jPanelButtons = new javax.swing.JPanel();
+        jButtonSave = new javax.swing.JButton();
+        jButtonCancel = new javax.swing.JButton();
+        jPanelFields = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        jTextFieldProductName = new javax.swing.JTextField();
+        jTextFieldUnitPrice = new javax.swing.JTextField();
+        jLabel3 = new javax.swing.JLabel();
+        sBACPanelTaxes = new sleekbill.swingutils.autosuggesters.SBACPanelTextField(asData, true, true, true);
+        jLabel5 = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
+        jTextFieldQuantity = new javax.swing.JTextField();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jTextAreaDescription = new sleekbill.swingutils.JTABackground();
+        jLabel7 = new javax.swing.JLabel();
+        sBACPanelUoM = new sleekbill.swingutils.autosuggesters.SBACPanelTextField(asData2, false, false, false);
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setTitle("Add Product/Service");
+        setMaximumSize(new java.awt.Dimension(850, 330));
+        setMinimumSize(new java.awt.Dimension(850, 330));
+        setPreferredSize(new java.awt.Dimension(850, 330));
+        getContentPane().setLayout(new java.awt.GridBagLayout());
+
+        jPanel1.setBackground(new java.awt.Color(229, 235, 242));
+        jPanel1.setLayout(new java.awt.GridBagLayout());
+
+        jPanel2.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(195, 210, 219), 1, true));
+        jPanel2.setLayout(new java.awt.GridBagLayout());
+
+        jPanel3.setBackground(new java.awt.Color(253, 253, 253));
+        jPanel3.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(203, 209, 213)));
+        jPanel3.setLayout(new java.awt.GridBagLayout());
+
+        jLabel4.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        jLabel4.setText("Product/Service");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel3.add(jLabel4, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        jPanel2.add(jPanel3, gridBagConstraints);
+
+        jPanelButtons.setBackground(new java.awt.Color(246, 246, 246));
+        jPanelButtons.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(203, 209, 213)));
+        jPanelButtons.setLayout(new java.awt.GridBagLayout());
+
+        jButtonSave.setIcon(new ImageIcon("./images/buttons/ico_check.png"));
+        jButtonSave.setText("Save");
+        jButtonSave.setName("bSave"); // NOI18N
+        jButtonSave.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jButtonSaveMouseClicked(evt);
+            }
+        });
+        jButtonSave.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonSaveActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelButtons.add(jButtonSave, gridBagConstraints);
+
+        jButtonCancel.setText("Cancel");
+        jButtonCancel.setName("bCancel"); // NOI18N
+        jButtonCancel.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonCancelActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelButtons.add(jButtonCancel, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        jPanel2.add(jPanelButtons, gridBagConstraints);
+
+        jPanelFields.setBorder(javax.swing.BorderFactory.createMatteBorder(0, 1, 0, 1, new java.awt.Color(203, 209, 213)));
+        jPanelFields.setLayout(new java.awt.GridBagLayout());
+
+        jLabel1.setText("Unit Price");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelFields.add(jLabel1, gridBagConstraints);
+
+        jLabel2.setText("Description");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelFields.add(jLabel2, gridBagConstraints);
+
+        jTextFieldProductName.setName("tfProductName"); // NOI18N
+        jTextFieldProductName.setPreferredSize(new java.awt.Dimension(300, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridwidth = 7;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelFields.add(jTextFieldProductName, gridBagConstraints);
+
+        jTextFieldUnitPrice.setMinimumSize(new java.awt.Dimension(125, 20));
+        jTextFieldUnitPrice.setName("tfPrice"); // NOI18N
+        jTextFieldUnitPrice.setPreferredSize(new java.awt.Dimension(125, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelFields.add(jTextFieldUnitPrice, gridBagConstraints);
+
+        jLabel3.setText("Tax");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 6;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelFields.add(jLabel3, gridBagConstraints);
+
+        sBACPanelTaxes.setMinimumSize(new java.awt.Dimension(125, 20));
+        sBACPanelTaxes.setName("tfTax"); // NOI18N
+        sBACPanelTaxes.setPreferredSize(new java.awt.Dimension(125, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 7;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelFields.add(sBACPanelTaxes, gridBagConstraints);
+
+        jLabel5.setText("Product Name");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelFields.add(jLabel5, gridBagConstraints);
+
+        jLabel6.setText("Quantity");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 4;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelFields.add(jLabel6, gridBagConstraints);
+
+        jTextFieldQuantity.setMinimumSize(new java.awt.Dimension(125, 20));
+        jTextFieldQuantity.setPreferredSize(new java.awt.Dimension(125, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 5;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelFields.add(jTextFieldQuantity, gridBagConstraints);
+
+        jScrollPane1.setBorder(null);
+        jScrollPane1.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        jTextAreaDescription.setColumns(30);
+        jTextAreaDescription.setFont(new java.awt.Font("Tahoma", 0, 11)); // NOI18N
+        jTextAreaDescription.setLineWrap(true);
+        jTextAreaDescription.setRows(5);
+        jTextAreaDescription.setWrapStyleWord(true);
+        jTextAreaDescription.setName("taNotes1"); // NOI18N
+        jScrollPane1.setViewportView(jTextAreaDescription);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridwidth = 7;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelFields.add(jScrollPane1, gridBagConstraints);
+
+        jLabel7.setText("UoM");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelFields.add(jLabel7, gridBagConstraints);
+
+        sBACPanelUoM.setMinimumSize(new java.awt.Dimension(125, 20));
+        sBACPanelUoM.setName("tfTax"); // NOI18N
+        sBACPanelUoM.setPreferredSize(new java.awt.Dimension(125, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelFields.add(sBACPanelUoM, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        jPanel2.add(jPanelFields, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(15, 15, 15, 15);
+        jPanel1.add(jPanel2, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        getContentPane().add(jPanel1, gridBagConstraints);
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
+        dispose();
+    }//GEN-LAST:event_jButtonCancelActionPerformed
+    
+    private void jButtonSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSaveActionPerformed
+        if (jButtonSave.getText().equals("Edit")) {
+            jButtonSave.setText("Save");
+            setTitle("Edit Product/Service");
+            enableFields(true);
+            bEdit = true;
+            return;
+        }
+        
+        if (jTextFieldProductName.getText().isEmpty()) {
+            Messages.showErrorMessage(this, "Please supply a valid \"Product Name\"!", "Error");
+            return;
+        }
+        
+        product.setDescription(jTextAreaDescription.getText());
+		product.setMeasuringUnit(sBACPanelUoM.getText());
+        product.setName(jTextFieldProductName.getText());
+        BigDecimal price = BigDecimal.ZERO;
+        try {
+            price = new BigDecimal(jTextFieldUnitPrice.getText());
+        } catch (NumberFormatException e) {
+            Messages.showErrorMessage(this, "Please supply a valid \"Unit Price\"!", "Error");
+            return;
+        }
+        product.setPrice(price);
+        
+        AutosuggesterItem selectedTax = sBACPanelTaxes.getSbTextField().getSelectedItem();
+        if (selectedTax != null) {
+            TaxEntity aux = (TaxEntity) selectedTax.getObj();
+            product.setTax(aux);
+        } else {
+            Messages.showErrorMessage(this, "Please select a Tax!", "Error");
+            return;
+        }
+        
+        try {
+            isDirty = true;
+            if (bEdit) {
+                try {
+                    if (!name.equals(product.getName()) && Product.getUndeletedByName(Common.connection.getConnection(), product.getName()) != null) {
+                        Messages.showErrorMessage(this, "A product/service with the same name already exists! Please supply a unique name for your product/service", "Error");
+                        return;
+                    }
+                } catch (SBDaoException ex) {
+                    ex.printStackTrace();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+                product.update();
+                updateStock(product);
+                dispose();
+                return;
+            }
+            try {
+                if (Product.getUndeletedByName(Common.connection.getConnection(), product.getName()) != null) {
+                    Messages.showErrorMessage(this, "A product/service with the same name already exists! Please supply a unique name for your product/service", "Error");
+                    return;
+                }
+            } catch (SBDaoException ex) {
+                ex.printStackTrace();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            product.create();
+            updateStock(product);
+            dispose();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }//GEN-LAST:event_jButtonSaveActionPerformed
+    
+    private void jButtonSaveMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButtonSaveMouseClicked
+        if (!jButtonSave.isEnabled()) {
+            if (jTextFieldProductName.getText().isEmpty()) {
+                Messages.showErrorMessage(this, "Please supply a valid \"Product Name\"!", "Error");
+                return;
+            }
+            
+            BigDecimal price = BigDecimal.ZERO;
+            try {
+                price = new BigDecimal(jTextFieldUnitPrice.getText());
+            } catch (NumberFormatException e) {
+                Messages.showErrorMessage(this, "Please supply a valid \"Unit Price\"!", "Error");
+                return;
+            }
+            
+            AutosuggesterItem selectedTax = sBACPanelTaxes.getSbTextField().getSelectedItem();
+            if (selectedTax != null) {
+                TaxEntity aux = (TaxEntity) selectedTax.getObj();
+                product.setTax(aux);
+            } else {
+                Messages.showErrorMessage(this, "Please select a Tax!", "Error");
+                return;
+            }
+        }
+    }//GEN-LAST:event_jButtonSaveMouseClicked
+    
+    private void enableFields(boolean bEnable) {
+        jTextFieldProductName.setEditable(bEnable);
+        jTextFieldUnitPrice.setEditable(bEnable);
+        sBACPanelTaxes.getSbTextField().setEditable(bEnable);
+        sBACPanelTaxes.getButton().setEnabled(bEnable);
+		sBACPanelUoM.getSbTextField().setEditable(bEnable);
+        sBACPanelUoM.getButton().setEnabled(bEnable);
+        jTextAreaDescription.setEditable(bEnable);
+        jTextFieldQuantity.setEditable(bEnable);
+    }
+    
+    private void fillFields() {
+        jTextFieldProductName.setText(product.getName());
+        jTextFieldUnitPrice.setText(product.getPrice().setScale(precision, RoundingMode.HALF_UP).toString());
+        jTextAreaDescription.setText(product.getDescription());
+		sBACPanelUoM.setText(product.getMeasuringUnit());
+        try {
+            Stock stock = Stock.getByProductId(Common.connection.getConnection(), product.getId());
+            if(stock != null && stock.getQuantity() != null){
+                jTextFieldQuantity.setText(stock.getQuantity().setScale(precision, RoundingMode.HALF_UP).toString());
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        
+        AutosuggesterItem item = new AutosuggesterItem(product.getTax().getId(), null, null, null);
+        sBACPanelTaxes.setSelectedItem(item, product.getTax().getTaxPercentage().toString());
+    }
+    
+    public Product getProduct() {
+        return product;
+    }
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(JDialogProductData.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(JDialogProductData.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(JDialogProductData.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(JDialogProductData.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the dialog */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                JDialogProductData dialog = new JDialogProductData(new javax.swing.JDialog(), true);
+                dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+                    @Override
+                    public void windowClosing(java.awt.event.WindowEvent e) {
+                        System.exit(0);
+                    }
+                });
+                dialog.setVisible(true);
+            }
+        });
+    }
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButtonCancel;
+    private javax.swing.JButton jButtonSave;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanelButtons;
+    private javax.swing.JPanel jPanelFields;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JTextArea jTextAreaDescription;
+    private javax.swing.JTextField jTextFieldProductName;
+    private javax.swing.JTextField jTextFieldQuantity;
+    private javax.swing.JTextField jTextFieldUnitPrice;
+    private sleekbill.swingutils.autosuggesters.SBACPanelTextField sBACPanelTaxes;
+    private sleekbill.swingutils.autosuggesters.SBACPanelTextField sBACPanelUoM;
+    // End of variables declaration//GEN-END:variables
+
+    private void updateStock(Product product) {
+        try {
+            Stock stock = Stock.getByProductId(Common.connection.getConnection(), product.getId());
+                if(stock == null){
+                    stock = new Stock();
+                    stock.setProduct(product);
+                    stock.setQuantity(jTextFieldQuantity.getText().isEmpty()?null:new BigDecimal(jTextFieldQuantity.getText()));
+                    stock.create();
+                }
+                else{
+                    stock.setProduct(product);
+                    stock.setQuantity(jTextFieldQuantity.getText().isEmpty()?null:new BigDecimal(jTextFieldQuantity.getText()));
+                    stock.update();
+                }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+}

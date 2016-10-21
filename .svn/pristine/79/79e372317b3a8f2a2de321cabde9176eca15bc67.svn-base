@@ -1,0 +1,162 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.beans;
+
+import java.sql.SQLException;
+
+import sleekbill.Common;
+import sleekbill.entities.ConfigEntity;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.stmt.PreparedQuery;
+import com.j256.ormlite.stmt.SelectArg;
+
+/**
+ *
+ * @author Andrei
+ */
+public class Config extends ConfigEntity {
+
+    private Dao<ConfigEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+
+    public Config(ConfigEntity configEntity) {
+        this.id = configEntity.getId();
+        this.configId = configEntity.getConfigId();
+        this.key = configEntity.getKey();
+        this.value = configEntity.getValue();
+    }
+
+    public Config() {
+        this(0);
+    }
+
+    public Config(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager
+                        .createDao(mainConnection, ConfigEntity.class);
+
+                if (id != null && id != 0) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void refreshDao() {
+        try {
+            mainDao = DaoManager
+                    .createDao(Common.connection.getConnection(), ConfigEntity.class);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void create() throws Exception {
+        mainDao.create(this);
+    }
+
+    public ConfigEntity read(Integer id) throws Exception {
+        return mainDao.queryForId(id);
+    }
+
+    public void update() throws Exception {
+        mainDao.update(this);
+    }
+
+    public void delete() throws Exception {
+        mainDao.delete(this);
+    }
+
+    public Dao<ConfigEntity, Integer> getMainDao() {
+        return mainDao;
+    }
+
+    public void setMainDao(Dao<ConfigEntity, Integer> mainDao) {
+        this.mainDao = mainDao;
+    }
+
+    public static int getMaxConfigId(JdbcConnectionSource connectionSource) throws SQLException {
+    	Dao<ConfigEntity, Integer> configDao = DaoManager.createDao(connectionSource, ConfigEntity.class);
+    	PreparedQuery<ConfigEntity> pq = configDao.queryBuilder().orderBy(CONFIG_ID, false).limit(1L).prepare();
+    	ConfigEntity c = configDao.queryForFirst(pq);
+    	if(c != null) {
+    		return c.getConfigId();
+    	}
+    	return 1;
+    }
+
+    public static String getValue(JdbcConnectionSource connectionSource, int configId, String key) throws SQLException {
+        SelectArg selectArg = new SelectArg();
+    	Dao<ConfigEntity, Integer> configDao = DaoManager.createDao(connectionSource, ConfigEntity.class);
+    	PreparedQuery<ConfigEntity> pq = configDao.queryBuilder().where().eq(CONFIG_ID, configId).and().eq(KEY, selectArg).prepare();
+        selectArg.setValue(key);
+    	ConfigEntity c = configDao.queryForFirst(pq);
+    	if(c != null) {
+    		return c.getValue();
+    	}
+    	return null;
+    }
+    
+    public static void insertOrReplace(JdbcConnectionSource connectionSource, String key, String value) throws SQLException {
+        SelectArg selectArg = new SelectArg();
+    	Dao<ConfigEntity, Integer> configDao = DaoManager.createDao(connectionSource, ConfigEntity.class);
+    	int configId = getMaxConfigId(connectionSource);
+    	PreparedQuery<ConfigEntity> pq = configDao.queryBuilder().where().eq(CONFIG_ID, configId).and().eq(KEY, selectArg).prepare();
+        selectArg.setValue(key);
+    	ConfigEntity c = configDao.queryForFirst(pq);
+    	if(c != null) {
+    		 c.setValue(value);
+    		 configDao.update(c);
+    	} else {
+    		c = new ConfigEntity(configId, key, value);
+    		configDao.create(c);
+    	}
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 41 * hash + this.id;
+        hash = 41 * hash + (this.configId != null ? this.configId.hashCode() : 0);
+        hash = 41 * hash + (this.key != null ? this.key.hashCode() : 0);
+        hash = 41 * hash + (this.value != null ? this.value.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Config other = (Config) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (this.configId != other.configId && (this.configId == null || !this.configId.equals(other.configId))) {
+            return false;
+        }
+        if ((this.key == null) ? (other.key != null) : !this.key.equals(other.key)) {
+            return false;
+        }
+        if ((this.value == null) ? (other.value != null) : !this.value.equals(other.value)) {
+            return false;
+        }
+        return true;
+    }
+}

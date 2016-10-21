@@ -1,0 +1,31 @@
+package sleekbill.swingutils;
+
+import java.awt.Component;
+
+import javax.swing.JTable;
+import javax.swing.table.TableCellRenderer;
+
+public class SBTableUtilities {
+	
+	public static int getPreferredRowHeight(JTable table, int row, int minimumHeight) {
+		int pref = minimumHeight;
+		for (int column = 0; column < table.getColumnCount(); column++) {
+			TableCellRenderer renderer = table.getCellRenderer(row, column);
+			Component comp = table.prepareRenderer(renderer, row, column);
+			pref = Math.max(pref, comp.getPreferredSize().height);
+		}
+		return pref > 0 ? pref : table.getRowHeight();
+	}
+
+	public static void setPreferredRowHeight(JTable table, int row, int minimumHeight) {
+		int prefHeight = getPreferredRowHeight(table, row, minimumHeight);
+		table.setRowHeight(row, prefHeight);
+	}
+
+	public static void setPreferredRowHeights(JTable table, int minimumHeight) {
+		// care about visible rows only
+		for (int row = 0; row < table.getRowCount(); row++) {
+			setPreferredRowHeight(table, row, minimumHeight);
+		}
+	}
+}

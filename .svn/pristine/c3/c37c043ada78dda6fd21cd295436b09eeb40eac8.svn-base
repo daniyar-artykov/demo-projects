@@ -1,0 +1,98 @@
+package sleekbill.swingutils;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.util.Calendar;
+import java.util.Date;
+import javax.swing.JLabel;
+import javax.swing.JTable;
+import javax.swing.SwingConstants;
+import javax.swing.UIManager;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.TableCellRenderer;
+
+/**
+ *
+ * @author daniyar.artykov
+ */
+public class FiscYearCellRenderer extends JLabel implements TableCellRenderer {
+
+    private Date issueDate;
+    private int  pastYears;
+
+    public FiscYearCellRenderer(Date issueDate) {
+        this(issueDate, 2);
+    }
+
+    public FiscYearCellRenderer(Date issueDate, int pastYears) {
+        this.issueDate = issueDate;
+        this.pastYears = pastYears;
+    }
+    
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, 
+            boolean isSelected, boolean hasFocus, int row, int column) {
+        setBorder(new EmptyBorder(1, 2, 1, 2));
+        if (isSelected) {
+            setForeground(table.getSelectionForeground());
+            setBackground(table.getSelectionBackground());
+        } else if (UIManager.get("Table.evenRowColor") instanceof Color 
+                && UIManager.get("Table.evenRowColor") instanceof Color) {
+            Color rc = row % 2 == 0 
+                    ? (Color) UIManager.get("Table.evenRowColor") 
+                    : (Color) UIManager.get("Table.oddRowColor");
+            setForeground(rc);
+            setBackground(rc);
+        } else {
+            setForeground(table.getForeground());
+            setBackground(table.getBackground());
+        }
+        Calendar c = Calendar.getInstance();
+        String fiscYear = getFiscYear(this.issueDate, 
+                c.get(Calendar.YEAR) - this.pastYears);
+        setText(fiscYear);
+        setForeground(Color.BLACK);
+        setToolTipText(fiscYear);
+        setOpaque(true);
+        setHorizontalAlignment(SwingConstants.CENTER);
+        
+        return this;
+    }
+
+    private String getFiscYear(Date date, int year) {
+        Calendar c = Calendar.getInstance();
+        if(year >= c.get(Calendar.YEAR)) {
+            return "";
+        }
+        
+        // from 1 April to 31 March
+        Calendar min = Calendar.getInstance();
+        min.set(year, Calendar.APRIL, 1);
+        
+        Calendar max = Calendar.getInstance();
+        max.set(year + 1, Calendar.MARCH, 31);
+        
+        if(date.after(min.getTime()) && date.before(max.getTime())) {
+            return (year + "-" + (year + 1));
+        }
+        
+        return getFiscYear(date, year + 1);
+    }
+    
+    public Date getIssueDate() {
+        return issueDate;
+    }
+
+    public void setIssueDate(Date issueDate) {
+        this.issueDate = issueDate;
+    }
+
+    public int getPastYears() {
+        return pastYears;
+    }
+
+    public void setPastYears(int pastYears) {
+        this.pastYears = pastYears;
+    }
+    
+}

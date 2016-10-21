@@ -1,0 +1,159 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames.records;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.List;
+
+import sleekbill.beans.Product;
+import sleekbill.beans.Tax;
+import sleekbill.entities.TaxEntity;
+
+/**
+ *
+ * @author Andrei
+ */
+public class InvoiceProductRecord extends Record {
+
+    String productName;
+    Product product;
+    BigDecimal quantity;
+    BigDecimal price;
+    BigDecimal value;
+    BigDecimal taxValue;
+	BigDecimal discount;
+	String measuringUnit;
+    Tax tax;
+    String description;
+	List<TaxEntity> combinedTaxes = null;
+
+    public InvoiceProductRecord(Integer id, Product product, String productName, String description, String quantity, BigDecimal price, BigDecimal value,
+            BigDecimal taxValue, Tax tax, BigDecimal discount, List<TaxEntity> combined, String um, int precision) {
+        this.id = id;
+        this.data = new Object[]{"", productName, description, um, quantity, price.setScale(precision, RoundingMode.HALF_UP), value.setScale(precision, RoundingMode.HALF_UP), removeTrailingZeros(discount.toString())+"%", taxValue.setScale(precision, RoundingMode.HALF_UP), ""};
+        this.product = product;
+        this.quantity = new BigDecimal(quantity);
+        this.price = price;
+        this.value = value;
+        this.taxValue = taxValue;
+        this.tax = tax;
+        this.productName = productName;
+        this.description = description;
+		this.measuringUnit = um;
+		this.combinedTaxes = combined;
+		this.discount = discount;
+    }
+
+    public BigDecimal getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(BigDecimal quantity) {
+        this.quantity = quantity;
+    }
+
+    public BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
+    }
+
+    public BigDecimal getValue() {
+        return value;
+    }
+
+    public void setValue(BigDecimal value) {
+        this.value = value;
+    }
+
+    public BigDecimal getTaxValue() {
+        return taxValue;
+    }
+
+    public void setTaxValue(BigDecimal taxValue) {
+        this.taxValue = taxValue;
+    }
+
+    public Product getProduct() {
+        return product;
+    }
+
+    public void setProduct(Product product) {
+        this.product = product;
+    }
+
+    public Tax getTax() {
+        return tax;
+    }
+
+    public void setTax(Tax tax) {
+        this.tax = tax;
+    }
+
+    public String getProductName() {
+        return productName;
+    }
+
+    public void setProductName(String productName) {
+        this.productName = productName;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+	public List<TaxEntity> getCombinedTaxes() {
+		return combinedTaxes;
+	}
+
+	public void setCombinedTaxes(List<TaxEntity> combinedTaxes) {
+		this.combinedTaxes = combinedTaxes;
+	}
+
+	public BigDecimal getDiscount() {
+		return discount;
+	}
+
+	public void setDiscount(BigDecimal discount) {
+		this.discount = discount;
+	}
+
+	public String getMeasuringUnit() {
+		return measuringUnit;
+	}
+
+	public void setMeasuringUnit(String measuringUnit) {
+		this.measuringUnit = measuringUnit;
+	}
+	
+	public java.lang.String removeTrailingZeros(java.lang.String str) {
+		if (str == null) {
+			return null;
+		}
+		if(!str.contains(".")){
+			return str;
+		}
+		char[] chars = str.toCharArray();
+		int length, index;
+		length = str.length();
+		index = length - 1;
+		for (; index >= 0; index--) {
+			if (chars[index] != '0' || chars[index] == '.') {
+				break;
+			}
+		}
+		if(chars[index] == '.'){
+			index -= 1;
+		}
+		return (index == length - 1) ? str : str.substring(0, index + 1);
+	}
+}

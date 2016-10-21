@@ -1,0 +1,191 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.updatedata;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ *
+ * @author Andrei
+ */
+public class CurrencyList {
+
+    public ArrayList<String[]> currencies = new ArrayList<String[]>();
+
+    public CurrencyList() {
+
+        //ISO;Symbol;Money;Name
+
+        currencies.add(new String[]{"AED", "د.إ", "درهم", "UAE Dirham"});
+        currencies.add(new String[]{"AFN", "؋", "افغانۍ", "Afghani"});
+        currencies.add(new String[]{"ALL", "L", "Leku", "Lek"});
+        currencies.add(new String[]{"AMD", "դր.", "Դրամ", "Armenian Dram"});
+        currencies.add(new String[]{"ANG", "NAƒ", "Gulden", "Netherlands Antillian Guilder"});
+        currencies.add(new String[]{"AOA", "Kz", "Kwanza", "Kwanza"});
+        currencies.add(new String[]{"ARS", "$", "Peso", "Argentine Peso"});
+        currencies.add(new String[]{"AUD", "$", "Dollar", "Australian Dollar"});
+        currencies.add(new String[]{"AWG", "Afl.", "Florijn", "Aruban Guilder"});
+        currencies.add(new String[]{"AZN", "ман", "Manatı", "Azerbaijanian Manat"});
+        currencies.add(new String[]{"BAM", "KM", "Marka", "Convertible Marks"});
+        currencies.add(new String[]{"BBD", "Bds$", "Dollar", "Barbados Dollar"});
+        currencies.add(new String[]{"BDT", "৳", "টাকা", "Taka"});
+        currencies.add(new String[]{"BGN", "лв", "лев", "Bulgarian Lev"});
+        currencies.add(new String[]{"BHD", ".د.ب", "دينار", "Bahraini Dinar"});
+        currencies.add(new String[]{"BIF", "FBu", "Franc", "Burundi Franc"});
+        currencies.add(new String[]{"BMD", "BD$", "Dollar", "Bermudian Dollar"});
+        currencies.add(new String[]{"BND", "B$", "Ringgit", "Brunei Dollar"});
+        currencies.add(new String[]{"BOB", "Bs.", "Boliviano", "Boliviano"});
+        currencies.add(new String[]{"BRL", "R$", "Real", "Brazilian Real"});
+        currencies.add(new String[]{"BSD", "B$", "Dollar", "Bahamian Dollar"});
+        currencies.add(new String[]{"BTN", "Nu.", "དངུལ་ཀྲམ", "Ngultrum"});
+        currencies.add(new String[]{"BWP", "P", "Pula", "Pula"});
+        currencies.add(new String[]{"BYR", "Br", "Рубель", "Belarussian Ruble"});
+        currencies.add(new String[]{"BZD", "BZ$", "Dollar", "Belize Dollar"});
+        currencies.add(new String[]{"CAD", "$", "Dollar", "Canadian Dollar"});
+        currencies.add(new String[]{"CDF", "F", "Franc", "Congolese Franc"});
+        currencies.add(new String[]{"CHF", "Fr.", "Franc", "Swiss Franc"});
+        currencies.add(new String[]{"CLP", "$", "Peso", "Chilean Peso"});
+        currencies.add(new String[]{"CNY", "¥", "人民币", "Chinese Yuan"});
+        currencies.add(new String[]{"COP", "Col$", "Peso", "Colombian Peso"});
+        currencies.add(new String[]{"CRC", "₡", "Colón", "Costa Rican Colon"});
+        currencies.add(new String[]{"CUP", "$", "Peso", "Cuban Peso"});
+        currencies.add(new String[]{"CVE", "Esc", "Escudo", "Cape Verde Escudo"});
+        currencies.add(new String[]{"CZK", "Kč", "Koruna", "Czech Koruna"});
+        currencies.add(new String[]{"DJF", "Fdj", "الفرنك", "Djibouti Franc"});
+        currencies.add(new String[]{"DKK", "Kr", "Krone", "Danish Krone"});
+        currencies.add(new String[]{"DOP", "RD$", "Peso", "Dominican Peso"});
+        currencies.add(new String[]{"DZD", "دج", "دينار", "Algerian Dinar"});
+        currencies.add(new String[]{"EEK", "KR", "Kroon", "Kroon"});
+        currencies.add(new String[]{"EGP", "£", "الجنيه", "Egyptian Pound"});
+        currencies.add(new String[]{"ERN", "Nfk", "Nakfa", "Nakfa"});
+        currencies.add(new String[]{"ETB", "Br", "Birr", "Ethiopian Birr"});
+        currencies.add(new String[]{"EUR", "€", "Euro", "Euro"});
+        currencies.add(new String[]{"FJD", "FJ$", "Dollar", "Fiji Dollar"});
+        currencies.add(new String[]{"FKP", "£", "Pound", "Falkland Islands Pound"});
+        currencies.add(new String[]{"GBP", "£", "Pound", "Pound Sterling"});
+        currencies.add(new String[]{"GEL", "lari", "ლარი", "Lari"});
+        currencies.add(new String[]{"GHS", "GH₵", "Cedi", "Cedi"});
+        currencies.add(new String[]{"GIP", "£", "Pound", "Gibraltar Pound"});
+        currencies.add(new String[]{"GMD", "D", "Dalasi", "Dalasi"});
+        currencies.add(new String[]{"GNF", "FG", "Franc", "Guinea Franc"});
+        currencies.add(new String[]{"GTQ", "Q", "Quetzal", "Quetzal"});
+        currencies.add(new String[]{"GWP", "$", "Peso", "Guinea-Bissau Peso"});
+        currencies.add(new String[]{"GYD", "GY$", "Dollar", "Guyana Dollar"});
+        currencies.add(new String[]{"HKD", "HK$", "香港圓", "Hong Kong Dollar"});
+        currencies.add(new String[]{"HNL", "L", "Lempira", "Lempira"});
+        currencies.add(new String[]{"HRK", "kn", "Kuna", "Croatian Kuna"});
+        currencies.add(new String[]{"HTG", "G", "Gourde", "Gourde"});
+        currencies.add(new String[]{"HUF", "Ft", "Forint", "Hungary Forint"});
+        currencies.add(new String[]{"IDR", "Rp", "Rupiah", "Rupiah"});
+        currencies.add(new String[]{"ILS", "₪", "שקל", "Israeli Sheqel"});
+        currencies.add(new String[]{"INR", "Rs", "Rupee", "Indian Rupee"});
+        currencies.add(new String[]{"IQD", "ع.د", "دينار", "Iraqi Dinar"});
+        currencies.add(new String[]{"IRR", "﷼", "﷼", "Iranian Rial"});
+        currencies.add(new String[]{"ISK", "kr", "Króna", "Iceland Krona"});
+        currencies.add(new String[]{"JMD", "$", "Dollar", "Jamaican Dollar"});
+        currencies.add(new String[]{"JOD", "دينار", "دينار", "Jordanian Dinar"});
+        currencies.add(new String[]{"JPY", "¥", "日本円", "Japan Yen"});
+        currencies.add(new String[]{"KES", "KSh", "Shilling", "Kenyan Shilling"});
+        currencies.add(new String[]{"KGS", "сом", "сом", "Som"});
+        currencies.add(new String[]{"KHR", "riel", "Riel", "Riel"});
+        currencies.add(new String[]{"KMF", "Fr.", "Franc", "Comoro Franc"});
+        currencies.add(new String[]{"KPW", "₩", "원", "North Korean Won"});
+        currencies.add(new String[]{"KRW", "₩", "원", "Won"});
+        currencies.add(new String[]{"KWD", "د.ك", "دينار", "Kuwaiti Dinar"});
+        currencies.add(new String[]{"KYD", "$", "Dollar", "Cayman Islands Dollar"});
+        currencies.add(new String[]{"KZT", "〒", "Теңгесі", "Tenge"});
+        currencies.add(new String[]{"LAK", "₭", "ກີບ", "Kip"});
+        currencies.add(new String[]{"LBP", "ل.ل", "ليرة,", "Lebanese Pound"});
+        currencies.add(new String[]{"LKR", "Rs", "Rupee", "Sri Lanka Rupee"});
+        currencies.add(new String[]{"LRD", "L$", "Dollar", "Liberian Dollar"});
+        currencies.add(new String[]{"LSL", "L", "Loti", "Loti"});
+        currencies.add(new String[]{"LTL", "Lt", "Litas", "Lithuanian Litas"});
+        currencies.add(new String[]{"LVL", "Ls", "Lats", "Latvian Lats"});
+        currencies.add(new String[]{"LYD", "ل.د", "دينار", "Libyan Dinar"});
+        currencies.add(new String[]{"MAD", "د.م", "درهم", "Moroccan Dirham"});
+        currencies.add(new String[]{"MDL", "leu", "Leu", "Moldovan Leu"});
+        currencies.add(new String[]{"MGA", "FMG", "Ariary", "Malagasy Ariary"});
+        currencies.add(new String[]{"MKD", "ден", "Денар", "Denar"});
+        currencies.add(new String[]{"MMK", "K", "Kyat", "Kyat"});
+        currencies.add(new String[]{"MNT", "₮", "Төгрөг", "Tugrik"});
+        currencies.add(new String[]{"MOP", "MOP$", "澳門圓", "Pataca"});
+        currencies.add(new String[]{"MRO", "UM", "أوقية", "Ouguiya"});
+        currencies.add(new String[]{"MUR", "Rs", "Roupie", "Mauritius Rupee"});
+        currencies.add(new String[]{"MVR", "Rf", "Rufiyaa", "Rufiyaa"});
+        currencies.add(new String[]{"MWK", "MK", "Kwacha", "Kwacha"});
+        currencies.add(new String[]{"MXN", "$", "Peso", "Mexican Peso"});
+        currencies.add(new String[]{"MYR", "RM", "ريڠڬيت", "Malaysian Ringgit"});
+        currencies.add(new String[]{"MZN", "MTn", "Metical", "Metical"});
+        currencies.add(new String[]{"NAD", "N$", "Dollar", "Namibia Dollar"});
+        currencies.add(new String[]{"NGN", "₦", "Naira", "Naira"});
+        currencies.add(new String[]{"NIO", "C$", "Córdoba", "Cordoba Oro"});
+        currencies.add(new String[]{"NOK", "kr", "Krone", "Norwegian Krone"});
+        currencies.add(new String[]{"NPR", "NRs", "Rupee", "Nepalese Rupee"});
+        currencies.add(new String[]{"NZD", "$", "Dollar", "New Zealand Dollar"});
+        currencies.add(new String[]{"OMR", "ر.ع.", "ريال", "Rial Omani"});
+        currencies.add(new String[]{"PAB", "B./", "Balboa", "Balboa"});
+        currencies.add(new String[]{"PEN", "S/.", "Sol", "Nuevo Sol"});
+        currencies.add(new String[]{"PGK", "K", "Kina", "Kina"});
+        currencies.add(new String[]{"PHP", "₱", "Piso", "Philippine Peso"});
+        currencies.add(new String[]{"PKR", "Rs.", "Rupee", "Pakistan Rupee"});
+        currencies.add(new String[]{"PLN", "zł", "Złoty", "Zloty"});
+        currencies.add(new String[]{"PYG", "₲", "Guaraní", "Guarani"});
+        currencies.add(new String[]{"QAR", "ر.ق", "ريال", "Qatari Rial"});
+        currencies.add(new String[]{"RON", "L", "Leu", "New Leu"});
+        currencies.add(new String[]{"RSD", "дин.", "Динар", "Serbian Dinar"});
+        currencies.add(new String[]{"RUB", "руб", "Рубль", "Russian Ruble"});
+        currencies.add(new String[]{"RWF", "RF", "Franc", "Rwanda Franc"});
+        currencies.add(new String[]{"SAR", "ر.س", "ريال", "Saudi Riyal"});
+        currencies.add(new String[]{"SBD", "SI$", "Dollar", "Solomon Islands Dollar"});
+        currencies.add(new String[]{"SCR", "SR", "Roupie", "Seychelles Rupee"});
+        currencies.add(new String[]{"SDG", "£", "جنيه", "Sudanese Pound"});
+        currencies.add(new String[]{"SEK", "kr", "Krona", "Swedish Krona"});
+        currencies.add(new String[]{"SGD", "S$", "新加坡元", "Singapore Dollar"});
+        currencies.add(new String[]{"SHP", "£", "Pound", "Saint Helena Pound"});
+        currencies.add(new String[]{"SLL", "Le", "Leone", "Leone"});
+        currencies.add(new String[]{"SOS", "So.", "Shilin", "Somali Shilling"});
+        currencies.add(new String[]{"SRD", "$", "Dollar", "Surinam Dollar"});
+        currencies.add(new String[]{"STD", "Db", "Dobra", "Dobra"});
+        currencies.add(new String[]{"SVC", "₡", "Colón", "Salvadoran Colon"});
+        currencies.add(new String[]{"SYP", "S£", "الليرة", "Syrian Pound"});
+        currencies.add(new String[]{"SZL", "L", "Lilangeni", "Lilangeni"});
+        currencies.add(new String[]{"THB", "฿", "บาทไทย", "Baht"});
+        currencies.add(new String[]{"TJS", "Сом", "Сомонӣ", "Somoni"});
+        currencies.add(new String[]{"TMT", "m", "Манат", "Manat"});
+        currencies.add(new String[]{"TND", "د.ت", "دينار", "Tunisian Dinar"});
+        currencies.add(new String[]{"TOP", "T$", "Pa'anga", "Pa'anga"});
+        currencies.add(new String[]{"TRY", "TL", "Lirası", "Turkish Lira"});
+        currencies.add(new String[]{"TTD", "$", "Dollar", "Trinidad and Tobago Dollar"});
+        currencies.add(new String[]{"TWD", "$", "新臺幣", "Taiwan Dollar"});
+        currencies.add(new String[]{"TZS", "/=", "Shilingi", "Tanzanian Shilling"});
+        currencies.add(new String[]{"UAH", "₴", "Гривня", "Hryvnia"});
+        currencies.add(new String[]{"UGX", "USh", "Shilling", "Uganda Shilling"});
+        currencies.add(new String[]{"USD", "$", "Dollar", "US Dollar"});
+        currencies.add(new String[]{"UYU", "$", "Peso", "Peso Uruguayo"});
+        currencies.add(new String[]{"UZS", "сўм", "Сўм", "Uzbekistan Sum"});
+        currencies.add(new String[]{"VEF", "Bs.", "Bolívar", "Bolivar Fuerte"});
+        currencies.add(new String[]{"VND", "₫", "đồng", "Dong"});
+        currencies.add(new String[]{"VUV", "Vt", "Vatu", "Vatu"});
+        currencies.add(new String[]{"WST", "WS$", "Tālā", "Tala"});
+        currencies.add(new String[]{"XAF", "CFA", "Franc", "CFA Franc"});
+        currencies.add(new String[]{"XCD", "EC$", "Dollar", "East Caribbean Dollar"});
+        currencies.add(new String[]{"XOF", "CFA", "Franc", "West African CFA Franc"});
+        currencies.add(new String[]{"XPF", "F", "Franc", "CFP Franc"});
+        currencies.add(new String[]{"YER", "ريال", "ريال", "Yemeni Rial"});
+        currencies.add(new String[]{"ZAR", "R", "Rand", "Rand"});
+        currencies.add(new String[]{"ZMK", "ZK", "Kwacha", "Zambian Kwacha"});
+        currencies.add(new String[]{"ZWL", "$", "Dollar", "Zimbabwe Dollar"});
+    }
+
+    public String getSymbolByCode(String code) {
+        for (String[] currency : currencies) {
+            if (currency[0].equals(code)) {
+                return currency[1];
+            }
+        }
+        return "";
+    }
+}

@@ -1,0 +1,195 @@
+/*
+ * MultiLineCellEditor.java
+ *
+ * Created on December 14, 2007, 12:13 PM
+ */
+
+package sleekbill.swingutils;
+
+import java.awt.Component;
+import java.awt.Font;
+import java.awt.Insets;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+
+import javax.swing.AbstractCellEditor;
+import javax.swing.JTable;
+import javax.swing.JTextPane;
+import javax.swing.UIManager;
+import javax.swing.table.TableCellEditor;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.BoxView;
+import javax.swing.text.ComponentView;
+import javax.swing.text.Element;
+import javax.swing.text.IconView;
+import javax.swing.text.JTextComponent;
+import javax.swing.text.LabelView;
+import javax.swing.text.ParagraphView;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledEditorKit;
+import javax.swing.text.View;
+import javax.swing.text.ViewFactory;
+
+public class MultiLineCellEditor extends AbstractCellEditor implements TableCellEditor{
+    private SBJTable table;
+    JTextPane textPane;
+    int cr,cc;
+    int rh;
+    
+    public MultiLineCellEditor(SBJTable t){
+        if(!(t instanceof SBJTable)) return;
+        table=(SBJTable) t;
+        textPane= new JTextPane();
+
+        //textPane.setLineWrap(true);
+        //textPane.setWrapStyleWord(true);
+        Font f = UIManager.getFont("Table.font");
+        textPane.setOpaque(true);
+        textPane.setMargin(new Insets(6,2,2,2));
+        textPane.setEditorKit(new MyEditorKit());
+        
+        //  Set alignment to be centered for all paragraphs
+        if(table==null) return;
+        Style style1 = textPane.addStyle("selected", null);
+        StyleConstants.setForeground(style1, table.getSelectionForeground());
+        StyleConstants.setAlignment(style1, StyleConstants.ALIGN_LEFT);
+        StyleConstants.setFontFamily(style1,f.getFamily());
+        StyleConstants.setFontSize(style1, f.getSize());
+        
+        Style style2 = textPane.addStyle("notselected", null);
+        StyleConstants.setForeground(style2, table.getForeground());
+        StyleConstants.setAlignment(style2, StyleConstants.ALIGN_LEFT);
+        StyleConstants.setFontFamily(style2,f.getFamily());
+        StyleConstants.setFontSize(style2, f.getSize());
+        textPane.getStyledDocument().setParagraphAttributes(0, 0, textPane.getStyle("notselected"), true);        
+        rh = textPane.getFontMetrics(f).getHeight();
+    }
+    
+    
+    public Component getTableCellEditorComponent(JTable table, Object value,boolean isSelected,int row, int column) {
+        String text =  (value == null) ? "" : value.toString() ;
+        textPane.setText( text);
+        textPane.setFont(UIManager.getFont("Table.font"));
+        textPane.setToolTipText(text);
+        cr= row;
+        cc = column;
+        /*
+        if (isSelected) {
+            //textPane.setForeground(table.getSelectionForeground());
+            
+            textPane.getStyledDocument().setParagraphAttributes(0, 0, textPane.getStyle("selected"), true);
+            textPane.setBackground(table.getSelectionBackground());
+            
+        } else {
+            if(UIManager.get("Table.evenRowColor") instanceof Color &&  UIManager.get("Table.evenRowColor") instanceof Color) {
+                Color rc =  row%2==0? (Color)UIManager.get("Table.evenRowColor"):(Color)UIManager.get("Table.oddRowColor");
+                textPane.getStyledDocument().setParagraphAttributes(0, 0, textPane.getStyle("notselected"), true);
+                textPane.setBackground(rc);
+            } else {
+                textPane.getStyledDocument().setParagraphAttributes(0, 0, textPane.getStyle("notselected"), true);
+                textPane.setBackground(table.getBackground());
+            }
+        }
+        */
+        textPane.addFocusListener(new FocusListener() {
+
+            @Override
+            public void focusGained(FocusEvent e) {
+
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                fireEditingStopped();
+            }
+        });
+        return textPane;
+    }
+
+    @Override
+    public Object getCellEditorValue() {
+        return textPane.getText();
+    }
+    
+    
+    
+    class MyEditorKit extends StyledEditorKit {
+        @Override
+        public ViewFactory getViewFactory() {
+            return new StyledViewFactory();
+        }
+        
+        class StyledViewFactory implements ViewFactory {
+            public View create(Element elem) {
+                String kind = elem.getName();
+                if (kind != null) {
+                    if (kind.equals(AbstractDocument.ContentElementName)) {
+                        return new LabelView(elem);
+                    } else if (kind.equals(AbstractDocument.ParagraphElementName)) {
+                        return new ParagraphView(elem);
+                    } else if (kind.equals(AbstractDocument.SectionElementName)) {
+                        return new CenteredBoxView(elem, View.Y_AXIS);
+                    } else if (kind.equals(StyleConstants.ComponentElementName)) {
+                        return new ComponentView(elem);
+                    } else if (kind.equals(StyleConstants.IconElementName)) {
+                        return new IconView(elem);
+                    }
+                }
+                // default to text display
+                return new LabelView(elem);
+            }
+        }
+    }
+    
+    class CenteredBoxView extends BoxView {
+        public CenteredBoxView(Element elem, int axis) {
+            super(elem,axis);
+        }
+        @Override
+        protected void layoutMajorAxis(int targetSpan, int axis, int[] offsets, int[] spans) {
+            super.layoutMajorAxis(targetSpan,axis,offsets,spans);
+            int textBlockHeight = 0;
+            int offset = 0;
+
+            int nrows = getWrapedLines(textPane);   
+            int nh = nrows*(rh+2);
+            nh = nh<23?23:nh;
+            table.setMinimumRowHeight(nh,cr,cc);
+            int min = table.getMinimumRowHeight(cr,cc);
+            //nh = nh<min?min:nh;
+            
+            
+            if(Math.abs(min-table.getRowHeight(cr))>5 ) table.setRowHeight(cr,min);
+            
+            for (int i = 0; i < spans.length; i++) {
+                textBlockHeight += spans[ i ];
+            }
+            offset = (targetSpan - textBlockHeight) / 2-2;
+            for (int i = 0; i < offsets.length; i++) {
+                offsets[ i ] += offset;
+            }
+        }
+    }
+    
+    public static int getWrapedLines(JTextComponent component){
+        int lines = 0;
+        
+        View view = component.getUI().getRootView(component).getView(0);
+        int paragraphs = view.getViewCount();
+        
+        for (int i = 0; i < paragraphs; i++) {
+            lines += view.getView(i).getViewCount();
+        }
+        
+        return lines;
+    }
+
+    public SBJTable getTable(){
+        return table;
+    }
+
+    public int getRow(){
+        return cr;
+    }
+}

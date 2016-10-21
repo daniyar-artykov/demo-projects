@@ -1,0 +1,227 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+/*
+ * jPFirma.java
+ *
+ * Created on Mar 2, 2009, 3:18:00 PM
+ */
+
+package sleekbill.swingutils;
+
+import java.awt.Dimension;
+import java.awt.Image;
+import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+
+import sleekbill.Common;
+import sleekbill.Company;
+import sleekbill.frames.JDialogSwitchCompany;
+import sleekbill.xmlrpc.Client;
+
+
+/**
+ *
+ * @author  flaviu m
+ */
+public class JPanelFirma extends javax.swing.JPanel {
+    Company firma = null;
+
+    /** Creates new form jPFirma */
+    public JPanelFirma() {
+        initComponents();
+    }
+
+    public JPanelFirma(Company f,ActionListener al){
+        initComponents();
+        this.firma = f;
+        jTAFirma.setText(f.getDbName() == null ? f.getName() : f.getDbName());
+        jBSelect.addActionListener(al);
+        jBSelect.setName("selectFirma"+f.getName());
+        Object buf = null;
+        if(f.getLogoPath()!=null && !"".equals(f.getLogoPath())){
+            buf = loadImageOnLabel(getLogoLabel(), new File(f.getLogoPath()));
+        }
+        if(buf==null) {
+            loadImageOnLabel(getLogoLabel(), new File("./images/dialogs/img_firma_no_logo.png"));
+        }
+        if(firma.isActive()) {
+            setBorder(BorderFactory.createLineBorder(UIManager.getColor("TableHeader.background")));
+            setToolTipText("active company");
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+//                    jBSelect.requestFocusInWindow();
+                }
+            });
+        }
+        else {
+            setBorder(BorderFactory.createLineBorder(UIManager.getColor("Table.oddRowColor")));
+        }
+    }
+
+    public Company getFirma(){
+        return firma;
+    }
+
+    public JLabel getLogoLabel(){
+        return jLSigla;
+    }
+    
+    public JButton getButton(){
+        return jBSelect;
+    }
+    private BufferedImage loadImageOnLabel(JLabel label, File file){
+        BufferedImage bufimg=null;
+        //Dimension imageDimension = new Dimension(100,70);
+        String imgPath = file.getPath();
+        Dimension imageDimension;
+        if(imgPath.equals(".\\images\\dialogs\\img_firma_no_logo.png")){
+            imageDimension = new Dimension(56,48);
+        }else{            
+            imageDimension = new Dimension(100,100);
+        }
+        try {
+            if(Common.isClient() && !file.exists()){
+                Client.fetch(file);
+            }
+            bufimg = ImageIO.read(file);
+        } catch (IOException ex) {
+            label.setIcon(null);
+            label.setPreferredSize(new Dimension(100,10) );
+            return null;
+        }
+        catch(OutOfMemoryError ome){
+            label.setIcon(null);
+            label.setPreferredSize(new Dimension(100,10) );
+            return null;
+        }
+		catch(Exception ex){
+			label.setIcon(null);
+            label.setPreferredSize(new Dimension(100,10) );
+            return null;
+		}
+        if(bufimg==null) return null;
+        if(bufimg.getWidth()>3000 && bufimg.getHeight()>3000){
+            label.setIcon(null);
+            label.setPreferredSize(new Dimension(100,10) );
+            return null;
+        }
+        int width,height;
+        if(bufimg.getWidth()*6/10>bufimg.getHeight()){
+            width = (int)imageDimension.getWidth();
+            height= (int)(bufimg.getHeight()/(bufimg.getWidth()/imageDimension.getWidth()));
+        }
+        else {
+            height= (int)imageDimension.getHeight();
+            width = (int)(bufimg.getWidth()/(bufimg.getHeight()/imageDimension.getHeight()));
+        }
+        ImageIcon scaledIcon = new ImageIcon(bufimg.getScaledInstance(width,height, Image.SCALE_DEFAULT));
+        label.setPreferredSize(new Dimension(width,height) );
+        label.setIcon(scaledIcon);
+        return bufimg;
+    }
+
+    public static void main(String args[]) {
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                JDialogSwitchCompany dialog = new JDialogSwitchCompany(null, true);
+                dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+                    public void windowClosing(java.awt.event.WindowEvent e) {
+                        System.exit(0);
+                    }
+                });
+                dialog.setVisible(true);
+            }
+        });
+    }
+
+    /** This method is called from within the constructor to
+     * initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is
+     * always regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
+
+        jBSelect = new javax.swing.JButton();
+        jTAFirma = new javax.swing.JTextArea();
+        jPanel1 = new javax.swing.JPanel();
+        jLSigla = new javax.swing.JLabel();
+
+        setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(203, 209, 213)));
+        setMaximumSize(new java.awt.Dimension(450, 100));
+        setLayout(new java.awt.GridBagLayout());
+
+        jBSelect.setIcon(new ImageIcon("./images/buttons/ico_check.png"));
+        jBSelect.setText("Select");
+        jBSelect.setName("selectFirma"); // NOI18N
+        jBSelect.setPreferredSize(new java.awt.Dimension(100, 25));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(10, 10, 5, 10);
+        add(jBSelect, gridBagConstraints);
+
+        jTAFirma.setEditable(false);
+        jTAFirma.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        jTAFirma.setLineWrap(true);
+        jTAFirma.setRows(2);
+        jTAFirma.setText("SC De Test SRL DOUA RANDURI UNU DOI TREI PATRU\n");
+        jTAFirma.setWrapStyleWord(true);
+        jTAFirma.setBorder(null);
+        jTAFirma.setMaximumSize(new java.awt.Dimension(200, 200));
+        jTAFirma.setOpaque(false);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 10, 10, 10);
+        add(jTAFirma, gridBagConstraints);
+
+        jPanel1.setOpaque(false);
+        jPanel1.setPreferredSize(new java.awt.Dimension(105, 105));
+        jPanel1.setLayout(new javax.swing.BoxLayout(jPanel1, javax.swing.BoxLayout.LINE_AXIS));
+
+        jLSigla.setToolTipText("");
+        jLSigla.setMinimumSize(new java.awt.Dimension(100, 100));
+        jLSigla.setPreferredSize(new java.awt.Dimension(100, 100));
+        jPanel1.add(jLSigla);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridheight = 2;
+        gridBagConstraints.insets = new java.awt.Insets(0, 10, 0, 10);
+        add(jPanel1, gridBagConstraints);
+    }// </editor-fold>//GEN-END:initComponents
+
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    public javax.swing.JButton jBSelect;
+    private javax.swing.JLabel jLSigla;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JTextArea jTAFirma;
+    // End of variables declaration//GEN-END:variables
+
+}

@@ -1,0 +1,110 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.entities;
+
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+
+/**
+ *
+ * @author Andrei
+ */
+@DatabaseTable(tableName = "config")
+public class ConfigEntity {
+
+    public static final String CONFIG_ID = "config_id";
+    public static final String KEY = "key";
+    public static final String VALUE = "value";
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+    @DatabaseField(columnName = CONFIG_ID, canBeNull = false)
+    protected Integer configId;
+    @DatabaseField(columnName = KEY, canBeNull = true)
+    protected String key;
+    @DatabaseField(columnName = VALUE, canBeNull = true)
+    protected String value;
+
+    public ConfigEntity(ConfigEntity configEntity) {
+        this.id = configEntity.id;
+        this.configId = configEntity.configId;
+        this.key = configEntity.key;
+        this.value = configEntity.value;
+    }
+
+    public ConfigEntity(Integer configId, String key, String value) {
+        this.configId = configId;
+        this.key = key;
+        this.value = value;
+    }
+
+    public ConfigEntity() {
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public Integer getConfigId() {
+        return configId;
+    }
+
+    public void setConfigId(Integer configId) {
+        this.configId = configId;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 41 * hash + this.id;
+        hash = 41 * hash + (this.configId != null ? this.configId.hashCode() : 0);
+        hash = 41 * hash + (this.key != null ? this.key.hashCode() : 0);
+        hash = 41 * hash + (this.value != null ? this.value.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final ConfigEntity other = (ConfigEntity) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (this.configId != other.configId && (this.configId == null || !this.configId.equals(other.configId))) {
+            return false;
+        }
+        if ((this.key == null) ? (other.key != null) : !this.key.equals(other.key)) {
+            return false;
+        }
+        if ((this.value == null) ? (other.value != null) : !this.value.equals(other.value)) {
+            return false;
+        }
+        return true;
+    }
+}

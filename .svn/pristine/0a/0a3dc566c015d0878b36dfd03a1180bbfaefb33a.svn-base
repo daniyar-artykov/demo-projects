@@ -1,0 +1,991 @@
+/*
+ * JDialogError.java
+ *
+ * Created on February 15, 2008, 11:57 AM
+ */
+
+package sleekbill.frames;
+
+import java.awt.GridBagConstraints;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.ClipboardOwner;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
+import java.awt.event.ActionEvent;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.security.CodeSource;
+import java.util.Date;
+import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.swing.Action;
+import javax.swing.ImageIcon;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
+
+import sleekbill.Common;
+import sleekbill.Config;
+import sleekbill.Facilitate;
+import sleekbill.Main;
+import sleekbill.SBConstants;
+import sleekbill.Versiuni;
+import sleekbill.util.SBSwingUtils;
+import sleekbill.utils.SBDesktop;
+
+/**
+ *
+ * @author  flaviu marcu
+ */
+public class JDialogError extends javax.swing.JDialog implements HyperlinkListener {
+    
+    private final static String FONT_ERROR =   "style=\"font-family:Tahoma;font-size:11;\"";
+    private final static String FONT_SOLUTION = "style=\"font-family:Verdana;font-size:11;\"";
+    
+    private final static String MESSAGE = "<div "+ FONT_ERROR + ">Could not complete the request!" //<div style=\"font-family:Tahoma;font-size:11;\">Nu s-a putut efectua operatia!" 
+            + " To solve the issue, please follow the steps below."
+            + " In case you encounter further difficulties, we'd appreciate it if you sent us the error message"
+            + " with any other relevant details regarding the situation when"
+            + " the error occurred at " + SBConstants.MAILTO + ". Thank you!"
+            + "</div>";
+
+    private final static String MESSAGE_RETEA = "<div "+ FONT_ERROR + ">Could not connect to server!" //<div style=\"font-family:Tahoma;font-size:11;\">Nu s-a putut efectua operatia!"
+           + " To solve the issue, please follow the steps below."
+            + " In case you encounter further difficulties, we'd appreciate it if you sent us the error message"
+            + " with any other relevant details regarding the situation when"
+            + " the error occurred at " + SBConstants.MAILTO + ". Thank you!"
+            + "</div>";
+
+    private final static String MESAJ_DEFAULT = "<div " + FONT_SOLUTION + ">" +"1 - The Send button will launch an email message with the error details included."
+                          + "<br/>2 - The Cancel button in the error screen will return you to Sleek Bill."
+                          + "<br/>3 - We'd appreciate it if you provided more details regarding the situation when the error occurred. "
+                          + "</div>";
+
+//Va rugam sa ne trimiteti atasat mailului si <a href=\"http://program-facturi.ro/ajutor/\"> baza dumneavoastra de date</a>. = We'd appreciate it if you attached your database to the email as well.	
+//	apare in urma actualizarii programului ? cand anume apare? (la emitere documente, modificare, filtre doc. etc.). = did it appear after a specific update? when exactly did it appear? (when issuing, editing or filtering documents? a.s.o.)
+
+
+    private final static String MESAJ_ECHIPA_SLEEK_BILL = "<div " + FONT_SOLUTION + ">We are looking forward to hearing from you! "
+                                                                 + "<br/>Kind regards, "
+                                                                 + "<br/>Sleek Bill Team"
+                                                         + "</div>";
+    boolean afiseaza_erorile = false;
+    private String dialog_parent = "";
+    private String eroare_consola = "";
+    private boolean eroare_retea = false;
+
+    /** Creates new form JDialogError */
+    public JDialogError(java.awt.Window parent, Throwable e ) {
+        super(Common.getMainFrame(),ModalityType.APPLICATION_MODAL);
+        initComponents();
+        setLocationRelativeTo(Common.getMainFrame());
+        jEPLogin.setText(MESSAGE);
+        jEPLogin.setEditable(false);
+        jEPLogin.addHyperlinkListener(this);
+
+        try {
+            eroare_retea = isEroareRetea(e);
+        } catch (Exception ex) {
+        }
+
+        if (existeTabelaErori()){
+            try {
+                afiseazaSolutie(e);
+            } catch (Exception ex) {
+                Logger.getLogger(JDialogError.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }else{
+			if (eroare_retea) {
+                this.setTitle("Eroare - " + "Could not connect to server!");
+//				jEPSolutie.setText(showEroareRetea(e));
+				try {
+					afiseazaSolutie(e);
+				} catch (Exception ex) {
+					Logger.getLogger(JDialogError.class.getName()).log(Level.SEVERE, null, ex);
+				}
+
+            } else {
+				jEPSolutie.setText(MESAJ_DEFAULT);
+			}
+        }
+        try {
+            setMesajDinConsola(e);
+        } catch (Exception ex) {
+            Logger.getLogger(JDialogError.class.getName()).log(Level.SEVERE, null, ex);
+        }
+//        eroare_consola = antet+sw.toString();
+        jEPError.setText(eroare_consola);
+//        jEPError.setCaretPosition(0);
+        
+        SBSwingUtils.addContextMenuToChildren(this);
+//        SBSwingUtils.applyFocusBorder(this);
+      
+    }
+    public JDialogError(java.awt.Window parent, Throwable e, String fereastra) {
+        super(Common.getMainFrame(),ModalityType.APPLICATION_MODAL);
+        initComponents();
+        setLocationRelativeTo(Common.getMainFrame());
+        jEPLogin.setText(MESSAGE);
+        jEPLogin.setEditable(false);
+        jEPLogin.addHyperlinkListener(this);
+
+        dialog_parent = fereastra;
+        
+        try {
+            eroare_retea = isEroareRetea(e);
+        } catch (Exception ex) {
+        }
+
+        try {
+            setMesajDinConsola(e);
+        } catch (Exception ex) {
+            Logger.getLogger(JDialogError.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        if (existeTabelaErori()){
+            try {
+                afiseazaSolutie(e);
+            } catch (Exception ex) {
+                Logger.getLogger(JDialogError.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }else{
+            jEPSolutie.setText(MESAJ_DEFAULT);
+        }
+
+        jEPError.setText(eroare_consola);
+//        jEPError.setText(antet+sw.toString());
+        jEPError.setCaretPosition(0);
+        
+        SBSwingUtils.addContextMenuToChildren(this);
+        SBSwingUtils.applyFocusBorder(this);
+
+
+    }
+
+    /** This method is called from within the constructor to
+     * initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is
+     * always regenerated by the Form Editor.
+     */
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
+
+        jSPMesajEroareSB = new javax.swing.JScrollPane();
+        jEPError = new javax.swing.JEditorPane();
+        jPanel1 = new javax.swing.JPanel();
+        jPanelEror = new javax.swing.JPanel();
+        jEPLogin = new javax.swing.JEditorPane();
+        jLIcon3 = new javax.swing.JLabel();
+        jPSolutie = new javax.swing.JPanel();
+        jPanel3 = new javax.swing.JPanel();
+        jLIcon4 = new javax.swing.JLabel();
+        jEPSolutie = new javax.swing.JEditorPane();
+        jLbilaV = new javax.swing.JLabel();
+        jPMesajSB = new javax.swing.JPanel();
+        jBDetalii = new javax.swing.JButton();
+        jPMesajEroare = new javax.swing.JPanel();
+        jPButoane = new javax.swing.JPanel();
+        jBTrimite = new javax.swing.JButton();
+        jBIesire = new javax.swing.JButton();
+        jBExit = new javax.swing.JButton();
+
+        jSPMesajEroareSB.setPreferredSize(new java.awt.Dimension(520, 160));
+        jSPMesajEroareSB.setViewportView(jEPError);
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setTitle("Error");
+        setMinimumSize(new java.awt.Dimension(770, 400));
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosed(java.awt.event.WindowEvent evt) {
+                formWindowClosed(evt);
+            }
+        });
+        getContentPane().setLayout(new java.awt.GridBagLayout());
+
+        jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder(""));
+        jPanel1.setLayout(new java.awt.GridBagLayout());
+
+        jPanelEror.setPreferredSize(new java.awt.Dimension(600, 100));
+        jPanelEror.setLayout(new java.awt.GridBagLayout());
+
+        jEPLogin.setEditable(false);
+        jEPLogin.setContentType("text/html"); // NOI18N
+        jEPLogin.setPreferredSize(new java.awt.Dimension(200, 80));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.weighty = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelEror.add(jEPLogin, gridBagConstraints);
+
+        jLIcon3.setPreferredSize(new java.awt.Dimension(90, 90));
+        jLIcon3.setIcon(new ImageIcon("./images/dialogs/icon_x.png"));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 10, 5, 5);
+        jPanelEror.add(jLIcon3, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.weighty = 0.01;
+        jPanel1.add(jPanelEror, gridBagConstraints);
+
+        jPSolutie.setLayout(new java.awt.GridBagLayout());
+
+        jPanel3.setBackground(new java.awt.Color(239, 246, 255));
+        jPanel3.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, null, new java.awt.Color(207, 220, 228)));
+        jPanel3.setLayout(new java.awt.GridBagLayout());
+
+        jLIcon4.setBackground(new java.awt.Color(244, 252, 255));
+        jLIcon4.setPreferredSize(new java.awt.Dimension(90, 90));
+        jLIcon4.setIcon(new ImageIcon("./images/dialogs/icon_info.png"));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel3.add(jLIcon4, gridBagConstraints);
+
+        jEPSolutie.setBackground(new java.awt.Color(244, 252, 255));
+        jEPSolutie.setBorder(null);
+        jEPSolutie.setContentType("text/html"); // NOI18N
+        jEPSolutie.setEditable(false);
+        jEPSolutie.setOpaque(false);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.05;
+        gridBagConstraints.weighty = 0.05;
+        gridBagConstraints.insets = new java.awt.Insets(3, 0, 3, 5);
+        jPanel3.add(jEPSolutie, gridBagConstraints);
+
+        jLbilaV.setBackground(new java.awt.Color(255, 255, 204));
+        jLbilaV.setPreferredSize(new java.awt.Dimension(144, 125));
+        jLbilaV.setIcon(new ImageIcon("./images/dialogs/errorDialog_check.jpg"));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.SOUTHEAST;
+        gridBagConstraints.weightx = 0.01;
+        jPanel3.add(jLbilaV, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.weighty = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(0, 5, 5, 5);
+        jPSolutie.add(jPanel3, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.01;
+        jPanel1.add(jPSolutie, gridBagConstraints);
+
+        jPMesajSB.setMinimumSize(new java.awt.Dimension(532, 200));
+        jPMesajSB.setOpaque(false);
+        jPMesajSB.setLayout(new java.awt.GridBagLayout());
+
+        jBDetalii.setMnemonic('a');
+        jBDetalii.setText("Show Error");
+        jBDetalii.setMinimumSize(new java.awt.Dimension(120, 10));
+        jBDetalii.setName("bShowError"); // NOI18N
+        jBDetalii.setIcon(new ImageIcon("./images/buttons/arrow_down_ico.png"));
+        jBDetalii.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBDetaliiActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHEAST;
+        gridBagConstraints.weightx = 0.02;
+        gridBagConstraints.weighty = 0.02;
+        gridBagConstraints.insets = new java.awt.Insets(3, 5, 0, 5);
+        jPMesajSB.add(jBDetalii, gridBagConstraints);
+
+        jPMesajEroare.setLayout(new java.awt.GridBagLayout());
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 0, 5);
+        jPMesajSB.add(jPMesajEroare, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.weighty = 0.5;
+        jPanel1.add(jPMesajSB, gridBagConstraints);
+
+        jBTrimite.setMnemonic('T');
+        jBTrimite.setText("Send");
+        jBTrimite.setMargin(new java.awt.Insets(2, 25, 2, 25));
+        jBTrimite.setMinimumSize(new java.awt.Dimension(120, 10));
+        jBTrimite.setName("bSend"); // NOI18N
+        jBTrimite.setSelected(true);
+        jBTrimite.setIcon(new ImageIcon("./images/buttons/email.png"));
+        jBTrimite.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBTrimiteActionPerformed(evt);
+            }
+        });
+        jPButoane.add(jBTrimite);
+
+        jBIesire.setMnemonic('e');
+        jBIesire.setText("Cancel");
+        jBIesire.setMinimumSize(new java.awt.Dimension(120, 10));
+        jBIesire.setName("bCancel"); // NOI18N
+        jBIesire.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBIesireActionPerformed(evt);
+            }
+        });
+        jPButoane.add(jBIesire);
+
+        jBExit.setText("Quit application");
+        jBExit.setName("bQuit"); // NOI18N
+        jBExit.setIcon(new ImageIcon("./images/buttons/Exit.png"));
+        jBExit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBExitActionPerformed(evt);
+            }
+        });
+        jPButoane.add(jBExit);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        jPanel1.add(jPButoane, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.weighty = 0.01;
+        getContentPane().add(jPanel1, gridBagConstraints);
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void jBExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBExitActionPerformed
+        System.exit(0);
+    }//GEN-LAST:event_jBExitActionPerformed
+
+    private void jBIesireActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBIesireActionPerformed
+        dispose();
+    }//GEN-LAST:event_jBIesireActionPerformed
+
+    private void jBTrimiteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBTrimiteActionPerformed
+        
+        StringSelection stringSelection = new StringSelection( jEPError.getText());        
+        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        clipboard.setContents(stringSelection, new ClipboardOwner() {
+            public void lostOwnership(Clipboard clipboard, Transferable contents) {
+                
+            }
+        });        
+        jEPError.requestFocus();
+        jEPError.selectAll();        
+        
+        //mailto:suport@program-facturi.ro?subject=eroare&body=   
+        trimite();
+        
+    }//GEN-LAST:event_jBTrimiteActionPerformed
+
+    private void jBDetaliiActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBDetaliiActionPerformed
+        // TODO add your handling code here:jPanel3.getPreferredSize()
+        afiseaza_erorile = !afiseaza_erorile;
+        jSPMesajEroareSB.setVisible(afiseaza_erorile);
+        jEPError.setVisible(afiseaza_erorile);
+        if (afiseaza_erorile) {            
+            jBDetalii.setIcon(new ImageIcon("./images/buttons/arrow_up_ico.png"));
+            this.setSize(this.getWidth(), this.getHeight() + (jSPMesajEroareSB.getPreferredSize().height + 10));
+            setLocationRelativeTo(Common.getMainFrame());
+            GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
+            gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+            gridBagConstraints.weightx = 0.1;
+            gridBagConstraints.weighty = 0.1;
+            gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+            jPMesajEroare.add(jSPMesajEroareSB, gridBagConstraints);
+        } else {
+            jBDetalii.setIcon(new ImageIcon("./images/buttons/arrow_down_ico.png"));
+            this.setSize(this.getWidth(), this.getHeight() - (jSPMesajEroareSB.getPreferredSize().height + 10));
+            setLocationRelativeTo(Common.getMainFrame());
+            jPMesajEroare.remove(jSPMesajEroareSB);
+        }
+    //        this.pack();
+    }//GEN-LAST:event_jBDetaliiActionPerformed
+
+    private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
+        // TODO add your handling code here:
+        iesire();
+    }//GEN-LAST:event_formWindowClosed
+
+    private void iesire(){
+        if(eroare_retea && (dialog_parent == null || dialog_parent.isEmpty())){
+            System.exit(0);
+        }
+    }
+
+    @Override
+  public void hyperlinkUpdate(HyperlinkEvent event) {
+        jEPSolutie.setToolTipText("");
+        if (event.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+            if (event.getURL() != null){
+                if (event.getURL().toString().contains("mailto:support@")){
+                    trimite();
+                }else if (event.getURL().toString().contains("http://")){
+                    this.deschideLink(event.getURL().toString());
+                }else{
+                    textSalvarea();
+                }
+            }else{
+                if ((event.getDescription() != null  && event.getDescription().contains("./ajutor"))){
+                    this.deschideLink(event.getDescription().toString());
+                }else{
+                    textSalvarea();
+                }
+            }
+        }
+  }
+   
+    private boolean isEroareRetea(Throwable error){
+		return false;
+//        return error != null? error.getCause() instanceof XmlRpcException: false;
+    }
+    private void setMesajDinConsola(Throwable e) throws Exception{
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        if (e !=  null){
+            e.printStackTrace(pw);
+        }
+        String titlu = " ";
+        try {
+            titlu = "Sleek Bill " + Common.getVersionName(Integer.parseInt(Common.getVersion())) + " " + Common.getVersionNr() + (Common.getVersionMinor() != null ? "." + Common.getVersionMinor() : "");
+        } catch (Exception ex) {
+        }
+		
+		CodeSource codeSource = Main.class.getProtectionDomain().getCodeSource();
+		File jarFile = new File(codeSource.getLocation().toURI().getPath());
+		String jarDir = jarFile.getParentFile().getPath();
+        String antet = titlu + " - " + Common.getSelectedCompany().getName()+"\n"+
+            System.getProperty("java.version")+"\n"+
+            System.getProperty("os.name")+"\n"+
+            System.getProperty("os.version")+"\n"+
+            System.getProperty("os.arch")+"\n"+
+			jarDir+"\n";
+        eroare_consola = antet + sw.toString();
+    }
+
+    private void textSalvarea(){
+        jEPSolutie.setToolTipText("Salvarea acesteia se face din Unelte- Salvare/Restaurare date-Salvare Date. \nVeti obtine un fisier cu numele firmei dumneavostra, data la care a fost salvat si extensia \".sbf\".");
+     //   JComponent component = (JComponent)event.getSource();
+        Action toolTipAction = jEPSolutie.getActionMap().get("postTip");
+        if (toolTipAction != null){
+            ActionEvent postTip = new ActionEvent(jEPSolutie, ActionEvent.ACTION_PERFORMED, "");
+            toolTipAction.actionPerformed( postTip );
+        }
+    }
+    
+/*    BILL-593 (Eroare de java atasat nu este complet): Am vorbit cu Dani si il mutam pt 1.6, si vedem cum ramane.*/
+    public File ataseazaBazaDate(){
+        File file = null;
+        
+//        if (!jChkTrimiteSalvare.isSelected())return file;
+
+//        String fkey = DBAccess.getFirmakey();
+//        String den = fkey + "_EROARE_" + Common.sanitizePath(Common.ROMANIAN_DATE_FORMAT.format(new Date()));
+//        if(!fkey.equals(DBConnection.DEFAULT_DBKEY)){
+//            String fn = Common.REPORTS_FOLDER_PATH + den + ".sbf";
+//            if(!new File(Common.REPORTS_FOLDER_PATH + Common.sanitizePath(fkey)).exists()){
+//                fn = Common.REPORTS_FOLDER_PATH + Common.sanitizePath(den + ".sbf");
+//            }
+//            file = new File(fn);
+//            
+//            if(!file.exists()){
+//                try {
+//                    Ziper.zipFolder(Common.USERDATA_FOLDER_PATH, new File(fn));
+//                } catch (Exception ex) {
+//                    Logger.getLogger(Common.class.getName()).log(Level.SEVERE, null, ex);
+//                }
+//            }
+//            
+//        }
+        return file;
+    }
+    /*    BILL-593 (Eroare de java atasat nu este complet): Am vorbit cu Dani si il mutam pt 1.6, si vedem cum ramane.*/
+    public boolean canSendEmail(){
+        return !"".equals(new Config().get("smtp_host")) && Versiuni.isAvailable(Facilitate.EMAIL);
+        
+    }
+/*    BILL-593 (Eroare de java atasat nu este complet): Am vorbit cu Dani si il mutam pt 1.6, si vedem cum ramane.*/
+    public void logEror(String path, String err) throws Exception {
+        FileOutputStream archivo;
+        PrintStream p = null;
+        try {
+            archivo = new FileOutputStream(path, true);
+            p = new PrintStream(archivo);
+            p.println();
+            p.println("-----" + Common.SQLITE_DATE_FORMAT.format(new Date()) + "-----");
+            p.println(err);
+            p.println("-----------------------------------------------------------------------------------");
+
+            p.flush();
+            p.close();
+        }catch(Exception e){
+
+        }finally{
+            p.flush();
+            p.close();
+        }
+
+    }
+
+    public void trimite(){
+        if (java.awt.Desktop.isDesktopSupported()) {
+            try {
+                String body = encode(jEPError.getText());
+                URI uri = new URI("mailto:support@sleekbill.com?subject=" + encode(this.getTitle()) + "&body="+body);
+//                java.awt.Desktop.getDesktop().browse(uri);
+				SBDesktop.browse(uri);
+            } catch (UnsupportedEncodingException ex) {
+                ex.printStackTrace();
+            } catch (IOException ex) {
+                //ex.printStackTrace();
+            } catch (URISyntaxException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+    
+/*    BILL-593 (Eroare de java atasat nu este complet): Am vorbit cu Dani si il mutam pt 1.6, si vedem cum ramane.*/
+    /*
+     BILL-593 (Eroare de java atasat nu este complet): Am vorbit cu Dani si il mutam pt 1.6, si vedem cum ramane.
+     public void trimite(){
+
+        String body = jEPError.getText();
+        File f = ataseazaBazaDate();
+        try {
+            logEror(Common.REPORTS_FOLDER_PATH + "logEroare.log",jEPError.getText());
+        } catch (Exception exception) {
+        }
+        String salvarea = jChkTrimiteSalvare.isSelected()? " Va rugam sa ne trimiteti atasat mailului si baza dumneavoastra de date. Salvarea de date sub numele de: '" + f.getName() + "' il gasiti in diretorul unde aveti instalat Sleek Bill in directotul: "  + f.getParentFile() + "\n" + "\n": " ";
+        
+        if (canSendEmail()){
+//         trimite email direct din program 
+//                                                 this, attach, from,                              to, body,         subject, confirmare
+            JDialogEmail dialog = new JDialogEmail(this,      f,   "", "esteban.vera@intelligentit.ro", body, this.getTitle(),      false);
+
+            dialog.setVisible(true);
+        }else{
+////  deschide clientul de email implicit din sistem.
+            try {
+                String textLog =  "Va rugam sa ne trimiteti atasat fisierul: 'logEroare.log' il gasiti in diretorul unde aveti instalat Sleek Bill in directotul: "  + Common.REPORTS_FOLDER_PATH + "\n" + "\n";
+//                                "mailto:suport@program-facturi.ro?subject=eroare&body="+body
+                URI uri = new URI("mailto:suport@program-facturi.ro?"
+                        + "subject=" + encode(this.getTitle())
+                        + "&body=" + encode(textLog + salvarea )
+                        +  "&Attach=" + (jChkTrimiteSalvare.isSelected()? f.toURI(): "")
+
+                        );
+
+                java.awt.Desktop.getDesktop().browse(uri);//java.awt.Desktop.getDesktop().mail(uri);
+
+            } catch (UnsupportedEncodingException ex) {
+                ex.printStackTrace();
+            } catch (IOException ex) {
+                //ex.printStackTrace();
+            } catch (URISyntaxException ex) {
+                ex.printStackTrace();
+            }
+            
+        }
+
+    }
+ 
+  @Deprecated
+    public void mail(){
+        try {
+//            URI f = new URI("c:/eroaretxt.txt");
+            logEror(Common.REPORTS_FOLDER_PATH + "logEroare.log",jEPError.getText());
+            File f = new File(Common.REPORTS_FOLDER_PATH + "logEroare.log");
+
+         Runtime.getRuntime().exec(
+                  new String[] {"rundll32", "url.dll,FileProtocolHandler",
+                  "mailto:suport@program-facturi.ro?"
+                    + "subject= titulo del mensaje"
+                    + "&body=Faceti clic dreapta si clic stang pe optiunea lipeste sau paste"
+                    + "&Attach=" + f.toURI()}, null
+                  );
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    * 
+     */
+    public void deschideLink(String adresa){
+        if (java.awt.Desktop.isDesktopSupported()) {
+            try {
+                URI uri = new java.net.URI(adresa);
+//                java.awt.Desktop.getDesktop().browse(uri);
+				SBDesktop.browse(uri);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            } catch (URISyntaxException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+  public static String encode(String toEncode){
+        try {
+            String urlEncoded = URLEncoder.encode(toEncode,"UTF-8");
+            StringTokenizer tokenizer = new StringTokenizer(urlEncoded, "+", true);
+            StringBuffer buffer = new StringBuffer();
+
+            while (tokenizer.hasMoreTokens()) {
+               String token = tokenizer.nextToken();
+               buffer.append(token.equals("+") ? "%20" : token);
+            }
+
+            return buffer.toString();
+        } catch (UnsupportedEncodingException ex) {
+            ex.printStackTrace();
+        }
+        return "";
+}  
+  
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new JDialogError(new javax.swing.JFrame(), new NullPointerException("null test"), "Parent_Dialog_ERROR").setVisible(true);
+            }
+        });
+    }
+    
+    private void afiseazaSolutie(Throwable eroare) throws Exception{
+        String solutie = "";
+        if (eroare !=null){
+//            eroare de retea
+            if (eroare_retea) {
+                this.setTitle("Eroare - " + "Could not connect to server!");
+//                String err = eroare.getCause().getLocalizedMessage();
+//				if(err.startsWith("Failed to parse servers response: Failed to read result object:")){
+//					solutie = "<div " + FONT_SOLUTION + ">"
+//							+ "Pe calculatorul server ruleaza o versiune diferita a programului."
+//							+ "<br/>1 - Savlati baza/bazele de date de pe server. "
+//                            + "<br/>2 - Va rugam accesati <a href='http://program-facturi.ro/client-retea/'>www.program-facturi.ro</a> "
+//								+ "si descarcati atat pentru server cat si pentru client versiunea de program achizionata."
+//							+ "<br/>3 - Dezinstalati serverul vechi. Instalati serverul nou. Restaurati baza/bazele de date salvate."
+//							+ "<br/>4 - Dezinstalati clientul vechi. Instalati clientul nou."
+//							+ " </div>";
+//				} else {
+//                solutie = eroareRetea();
+//					new JDialogClientConfig(null).setVisible(true);
+//				}
+				solutie = showEroareRetea(eroare);
+
+            }else{
+                this.setTitle("Eroare - " + eroare.getMessage());
+                if (eroare.toString().startsWith("java.lang.RuntimeException:")){
+                    solutie = getSolutie(eroare);
+                }else{
+                    solutie = getSolutie(eroare);
+                }
+            }
+        }else{
+            this.setTitle("Eroare -  -");
+        }
+
+        jEPSolutie.setText(solutie);
+        jEPSolutie.setEditable(false);
+        jEPSolutie.addHyperlinkListener(this);
+
+        jSPMesajEroareSB.setVisible(afiseaza_erorile);
+        jEPError.setVisible(afiseaza_erorile);
+        
+    }
+
+	public String showEroareRetea(Throwable eroare) {
+		String solutie = "";
+		String err = eroare.getCause().getLocalizedMessage();
+		if (err.startsWith("Failed to parse servers response: Failed to read result object:")) {
+			solutie = "<div " + FONT_SOLUTION + ">"
+					+ "Pe calculatorul server ruleaza o versiune diferita a programului."
+					+ "<br/>1 - Savlati baza/bazele de date de pe server. "
+					+ "<br/>2 - Va rugam accesati <a href='http://program-facturi.ro/client-retea/'>www.program-facturi.ro</a> "
+					+ "si descarcati atat pentru server cat si pentru client versiunea de program achizionata."
+					+ "<br/>3 - Dezinstalati serverul vechi. Instalati serverul nou. Restaurati baza/bazele de date salvate."
+					+ "<br/>4 - Dezinstalati clientul vechi. Instalati clientul nou."
+					+ " </div>";
+		} else {
+			solutie = eroareRetea();
+			new JDialogClientConfig(null).setVisible(true);
+		}
+		return solutie;
+	}
+
+//daca nu gaseste eroare ar fi bine sa il adauge automat
+    private String getSolutie (Throwable err){
+        String mesajul = getNumeMesaj(err.getMessage());
+        String sol ="";
+        err.getCause();
+        
+            boolean gasit = false;//                                scoatem prepareString sa nu gaseasca eroare sau sa dea eroarea.
+//            String query = "SELECT * FROM erori WHERE nume like " + Common.prepareString(mesajul.toString()) + " AND activ = 'y'";
+//
+//    //                 System.err.println("query = "+query);
+//            try {
+//                ResultSet rs = DBAccess.getRows(query);
+//                if (rs.next()) {
+//                    sol  = rs.getString("mesaj");
+//                    gasit = true;
+//                }
+//                rs.close();
+//            } catch (SQLException e) {
+//                e.printStackTrace();
+//                sol = "Problema de comunicare cu daza de date.";
+//            }
+            if (gasit){
+
+                if (mesajul.contains("java.io.FileNotFoundException") || mesajul.contains("Could not load object from location")){
+                    String nume_folder = "x";
+                    String nume_fisier = "x";
+                    try {
+                        String text = err.getMessage().replace("/","\\");
+                        String[] split = text/*err.getMessage()*/.split("\\.\\\\");
+                        String[] split1 = split[split.length - 1].split("\\\\");
+                        nume_folder = "\"" + split1[0] + "\"";
+                        nume_fisier = "\"" + split1[split1.length - 1] + "\"";
+                    } catch (Exception e) {
+                    }
+                    sol = sol.replace("NUME_FOLDER", nume_folder);
+                    sol = sol.replace("NUME_FISIER", nume_fisier);
+                }
+
+            }else {//ARATAM MESAJUL DEFAULT.
+                adaugaEroareNouAparut(err);
+                sol = getMesajImplicit();
+
+            }
+
+        //return sol = "<div " + FONT_SOLUTION + ">" + sol + "</div>";
+        return  "<div " + FONT_SOLUTION + ">" + (Common.isClient()? " Eroare aparuta pe client": "")  + sol + " </div>";
+    }
+
+    /***
+     *
+     * @return   mesajul implicit de eroare fara formatarea fontului
+     */
+    private String getMesajImplicit(){
+        String query = "SELECT * FROM erori WHERE cod = '1' AND nume like 'implicit' ";
+        String sol="";
+//          System.err.println("query = "+query);
+//        try {
+//            ResultSet rs2 = DBAccess.getRows(query);
+//            if (rs2.next()) {
+//                sol  = rs2.getString("mesaj");               
+//            }
+//            rs2.close();
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+//            sol = "('IMPLICIT') - Problema de comunicare cu daza de date.";
+//        }
+        return sol;
+    }
+    
+    private String adaugaEroareNouAparut(Throwable eroare){
+        String mesaj = eroare.getMessage();
+        String nume = "";
+
+        if(existeTabelaErori()) {
+//            eroare.getMessage();
+//            String query = "INSERT INTO erori(nume,eroare_java,versiune,mesaj)  VALUES (?, ?, ?, ?)";
+//            try {
+//                DBAccess.uidRow(query, new Object[]{mesaj,
+//                                                    this.eroare_consola,
+//                                                    Common.getNrVersiune()+(Common.getVersiuneMinor()!=null?"."+Common.getVersiuneMinor():""),
+//                                                    "mesaj e.getMessage"
+//                                                    });
+//            } catch (SQLException ex) {
+//
+//            }
+        }
+        return nume;
+    }
+
+    private String getNumeMesaj(String mesajul){
+         String nume ="";
+
+        if (mesajul == null){
+//            ramane textul default.
+
+        } else if (mesajul.contains("java.sql.SQLException: no such table")){
+            /* date_cont_premium
+             * plati
+             * bonuri_articole
+             * alias_email
+             * chestionare
+             * intrebari
+             * leg_chest_intreb
+             * mentiuni
+             * tipuri_incasari
+            */
+            nume = "java.sql.SQLException: no such table";
+        } else if (mesajul.contains("java.sql.SQLException: no such column" /* fk_id"*/)){
+            /* pret_cu_tva(facturi_articole,avize_articole,proforme_articole)
+             * calc_mode(facturi_articole,avize_articole,proforme_articole)
+             * platitor_TVA(clienti)
+             * cod_postal(clienti)
+             * stare_societate(clienti)
+             * cifra_afaceri_neta(clienti)
+             * tip_activitate(clienti)
+             * nr_angajati(clienti)
+             * deleted(delegati)
+             * deleted(intocmitori)
+             * fk_id(operatiuni_casa)
+             * nr_anexa(operatiuni_casa)
+             * val_factura(incasari_facturi)
+             * tip_plata_incasare_id(bonuri)
+             * implicit(serii)
+             *
+             */
+            nume = "java.sql.SQLException: no such column";
+        } else if (mesajul.contains("syntax error")){////trebuie reprodus
+            nume = "syntax error";
+        } else if (mesajul.contains("java.io.FileNotFoundException")){
+            nume = "java.io.FileNotFoundException";
+        }  // de verificat daca este complet cu aceasta denumirea 
+        else if (mesajul.contains("java.lang.IllegalArgumentException: the value should be from 0 to 100")){
+            nume = "java.lang.IllegalArgumentException: the value should be from 0 to 100";
+//mai ar trebui sa il zicem ca daca nu se rezolva problema sa-ne trimita informatie complementare.
+        } else if (mesajul.contains("java.sql.SQLException: attempt to write a readonly database")){
+            nume = "java.sql.SQLException: attempt to write a readonly database";
+        }  // de verificat daca este complet cu aceasta denumirea
+        else if (mesajul.contains("java.lang.IllegalArgumentException: protocol = http host = null")){
+            nume = "java.lang.IllegalArgumentException: protocol = http host = null";
+        } else if (mesajul.contains("java.sql.SQLException: disk I/O error")){
+            nume = "java.sql.SQLException: disk I/O error";
+        } // de verificat daca este complet cu aceasta denumirea
+        else if (mesajul.contains("java.net.SocketException: Unrecognized Windows Sockets error: 0: JVM_Bind")){
+            nume = "java.net.SocketException: Unrecognized Windows Sockets error: 0: JVM_Bind";
+        } else if (mesajul.contains("java.sql.SQLException: table istoric_curs has no column named")){
+            nume = "java.sql.SQLException: table istoric_curs has no column named";
+        }
+//nuevo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        else if (mesajul.contains("java.sql.SQLException: database in auto-commit mode")){
+            nume = "java.sql.SQLException: database in auto-commit mode";
+        }else if (mesajul.contains("Could not load object from location")){
+            nume = "Could not load object from location";
+        }
+
+        return nume ;
+
+    }
+
+    private boolean existeTabelaErori(){
+         //IF NOT EXISTS (SELECT * FROM sysobjects
+        //WHERE name='erori' AND xtype='U')
+//        if (false) return true;
+    	
+    	return false;
+//        try {
+//            boolean existeTabela = false;
+//            DatabaseMetaData dbmd = null;
+//            try {
+//                dbmd = DBConnection.getConnection("_TEMPERORI_", DBAccess.getFirmakey()).getMetaData();
+//            } catch (SQLException ex) {
+//                ex.printStackTrace();
+//                throw new RuntimeException(ex);
+//            }
+//            existeTabela = false;
+//            DBConnection.getConnection("_TEMPERORI_", DBAccess.getFirmakey()).close();
+//            return existeTabela;
+//            
+//        } catch (Exception exception) {
+//            return false;
+//        }
+
+     }
+
+    public String eroareRetea(){
+        jEPLogin.setText(MESSAGE_RETEA);
+        String url = "http://program-facturi.ro/ajutor/program-facturare-retea-windows-linux/?s=119";
+        /*Nu merge cu ajutor offline si calea relativa
+                Common.existaHelpOffline() ? SBConstants.OFFLINE_HELP_DIR + "program-facturare-retea-windows-linux/indexb738.html": SBConstants.URL_HELP + "program-facturare-retea-windows-linux/?s=119";
+        */
+        String sol = "Reporniti programul Sleek Bill Profesional Plus instalat pe calculatorul 'server' si incercati din nou."
+                + "<br/>Daca acesta este pornit deja si conexiunea cu statiile 'Client' nu s-a realizat este posibil ca adresa IP introdusa (a calculatorului server) sau portul sa fie configurate gresit."
+                + "<br/>De asemenea asigutati-va ca antivirusul si firewallul atat de pe server cat si de pe statiile client permit aceasta conexiune. "
+                + "Port-ul ales trebuie sa fie permis de catre firewall/antivirus/alte soft-uri/setari. "
+                + "<br/>In cazul in care intampinati in continuare dificultati pentru mai multe detalii va rugam accesati linkul urmator: "
+                + "<a href=\"" + url + "\"> Instructiuni pt utilizare Sleek Bill in retea</a>";
+
+        return "<div " + FONT_SOLUTION + ">" +  sol + " </div>";
+
+    }
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jBDetalii;
+    private javax.swing.JButton jBExit;
+    private javax.swing.JButton jBIesire;
+    private javax.swing.JButton jBTrimite;
+    private javax.swing.JEditorPane jEPError;
+    private javax.swing.JEditorPane jEPLogin;
+    private javax.swing.JEditorPane jEPSolutie;
+    private javax.swing.JLabel jLIcon3;
+    private javax.swing.JLabel jLIcon4;
+    private javax.swing.JLabel jLbilaV;
+    private javax.swing.JPanel jPButoane;
+    private javax.swing.JPanel jPMesajEroare;
+    private javax.swing.JPanel jPMesajSB;
+    private javax.swing.JPanel jPSolutie;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanelEror;
+    private javax.swing.JScrollPane jSPMesajEroareSB;
+    // End of variables declaration//GEN-END:variables
+    
+}

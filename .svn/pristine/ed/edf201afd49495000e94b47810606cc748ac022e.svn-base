@@ -1,0 +1,500 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.entities;
+
+import com.j256.ormlite.field.DataType;
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+import java.math.BigDecimal;
+
+/**
+ *
+ * @author Dani
+ */
+@DatabaseTable(tableName = "flags")
+public class FlagEntity {
+
+    public static final String ID = "id";
+    public static final String VALUE_WITH_TAX = "value_with_tax";
+    public static final String INVOICE_LABEL = "invoice_label";
+    public static final String PO_NUMBER_LABEL = "po_number_label";
+    public static final String ESTIMATE_LABEL = "estimate_label";
+    public static final String PRODUCT_LABEL = "product_label";
+    public static final String QUANTITY_LABEL = "quantity_label";
+    public static final String PRICE_LABEL = "price_label";
+    public static final String SHOW_ADDRESS = "show_address";
+    public static final String TOTAL_WITHOUT_DECIMALS = "total_without_decimals";
+    public static final String TOTAL_IN_WORDS = "total_in_words";
+    public static final String HIDE_SIGNATURE = "show_signature";
+    public static final String REPLACE_QUANTITY = "replace_quantity";
+    public static final String SHOW_SHIPPING = "show_shipping";
+    public static final String SHIPPING_LABEL = "shipping_label";
+    public static final String SHIPPING_PRICE = "shipping_price";
+    public static final String REPLACE_PAYPAL = "replace_paypal";
+    public static final String HIDE_AMOUNT = "hide_amount";
+    public static final String SHOW_DELIVERY_NOTE_AMOUNT = "show_delivery_note_amount";
+    public static final String TAX_LABEL = "tax_label";
+    public static final String UM_LABEL = "um_label";
+    public static final String EXCISE_DUTY = "excise_duty";
+    public static final String SHOW_UM_COLUMN = "show_um_column";
+    public static final String SHOW_UP_COLUMN = "show_up_column";
+    public static final String SHOW_TAX_COLUMN = "show_tax_column";
+    public static final String SHOW_TAX_PERCENTAGE = "show_tax_percentage";
+    public static final String DECIMALS = "decimals";
+    public static final String INDIAN_FORMAT = "indian_format";
+
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+    @DatabaseField(columnName = VALUE_WITH_TAX, canBeNull = false, dataType = DataType.BOOLEAN)
+    protected boolean valueWithTax;
+    @DatabaseField(columnName = SHOW_ADDRESS, canBeNull = false, dataType = DataType.BOOLEAN)
+    protected boolean showAddress;
+    @DatabaseField(columnName = INVOICE_LABEL, canBeNull = false)
+    protected String invoiceLabel;
+    @DatabaseField(columnName = PO_NUMBER_LABEL, canBeNull = false)    
+    protected String poNumberLabel;
+    @DatabaseField(columnName = ESTIMATE_LABEL, canBeNull = false)
+    protected String estimateLabel;
+    @DatabaseField(columnName = PRODUCT_LABEL, canBeNull = false)
+    protected String productLabel;
+    @DatabaseField(columnName = QUANTITY_LABEL, canBeNull = false)
+    protected String quantityLabel;
+    @DatabaseField(columnName = PRICE_LABEL, canBeNull = false)
+    protected String priceLabel;
+    @DatabaseField(columnName = SHIPPING_LABEL, canBeNull = false)
+    protected String shippingLabel;
+    @DatabaseField(columnName = TOTAL_WITHOUT_DECIMALS, canBeNull = false, dataType = DataType.BOOLEAN)
+    protected boolean totalWithoutDecimals;
+    @DatabaseField(columnName = TOTAL_IN_WORDS, canBeNull = false, dataType = DataType.BOOLEAN)
+    protected boolean totalInWords;
+    @DatabaseField(columnName = HIDE_SIGNATURE, canBeNull = false, dataType = DataType.BOOLEAN)
+    protected boolean showSignature;
+    @DatabaseField(columnName = REPLACE_QUANTITY, canBeNull = false, dataType = DataType.BOOLEAN)
+    protected boolean replaceQuantity;
+    @DatabaseField(columnName = SHOW_SHIPPING, canBeNull = false, dataType = DataType.BOOLEAN)
+    protected boolean showShipping;
+    @DatabaseField(columnName = SHIPPING_PRICE, canBeNull = false, dataType = DataType.BIG_DECIMAL)
+    protected BigDecimal shippingPrice;
+    @DatabaseField(columnName = REPLACE_PAYPAL, canBeNull = false, dataType = DataType.BOOLEAN)
+    protected boolean replacePaypal;
+    @DatabaseField(columnName = HIDE_AMOUNT, canBeNull = false, dataType = DataType.BOOLEAN)
+    protected boolean hideAmount;
+    @DatabaseField(columnName = SHOW_DELIVERY_NOTE_AMOUNT, canBeNull = false, dataType = DataType.BOOLEAN)
+    protected boolean showDeliveryNoteAmount;
+    @DatabaseField(columnName = TAX_LABEL, canBeNull = false)
+    protected String taxLabel;
+    @DatabaseField(columnName = UM_LABEL, canBeNull = false)
+    protected String umLabel;
+    @DatabaseField(columnName = EXCISE_DUTY, canBeNull = false)
+    protected String exciseDuty;
+    @DatabaseField(columnName = SHOW_UM_COLUMN, canBeNull = false, dataType = DataType.BOOLEAN)
+    protected boolean showUmColumn;
+    @DatabaseField(columnName = SHOW_TAX_COLUMN, canBeNull = false, dataType = DataType.BOOLEAN)
+    protected boolean showTaxColumn;
+    @DatabaseField(columnName = SHOW_TAX_PERCENTAGE, canBeNull = false, dataType = DataType.BOOLEAN)
+    protected boolean showTaxPercentage;
+    @DatabaseField(columnName = DECIMALS, canBeNull = false)
+    protected Integer decimals;
+    @DatabaseField(columnName = SHOW_UP_COLUMN, canBeNull = false, dataType = DataType.BOOLEAN)
+    protected boolean showUPColumn;
+    @DatabaseField(columnName = INDIAN_FORMAT, canBeNull = false, dataType = DataType.BOOLEAN)
+    protected boolean indianFormat;
+
+//    @ForeignCollectionField(foreignFieldName = "client")
+//    protected ForeignCollection<InvoiceEntity> invoices;
+    public FlagEntity(FlagEntity flagEntity) {
+        this.id = flagEntity.id;
+        this.valueWithTax = flagEntity.valueWithTax;
+        this.showAddress = flagEntity.showAddress;
+        this.invoiceLabel = flagEntity.invoiceLabel;
+        this.poNumberLabel = flagEntity.poNumberLabel;
+        this.estimateLabel = flagEntity.estimateLabel;
+        this.productLabel = flagEntity.productLabel;
+        this.quantityLabel = flagEntity.quantityLabel;
+        this.priceLabel = flagEntity.priceLabel;
+        this.totalWithoutDecimals = flagEntity.totalWithoutDecimals;
+        this.totalInWords = flagEntity.totalInWords;
+        this.showSignature = flagEntity.showSignature;
+        this.replaceQuantity = flagEntity.replaceQuantity;
+        this.showShipping = flagEntity.showShipping;
+        this.shippingLabel = flagEntity.shippingLabel;
+        this.shippingPrice = flagEntity.shippingPrice;
+        this.replacePaypal = flagEntity.replacePaypal;
+        this.hideAmount = flagEntity.hideAmount;
+        this.showDeliveryNoteAmount = flagEntity.showDeliveryNoteAmount;
+        this.taxLabel = flagEntity.taxLabel;
+        this.umLabel = flagEntity.umLabel;
+        this.exciseDuty = flagEntity.exciseDuty;
+        this.showTaxColumn = flagEntity.showTaxColumn;
+        this.showTaxPercentage = flagEntity.showTaxPercentage;
+        this.showUmColumn = flagEntity.showUmColumn;
+        this.decimals = flagEntity.decimals;
+        this.showUPColumn = flagEntity.showUPColumn;
+        this.indianFormat = flagEntity.indianFormat;
+    }
+
+    public FlagEntity() {
+    }
+
+    public FlagEntity(boolean valueWithTax) {
+        this.valueWithTax = valueWithTax;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public boolean getValueWithTax() {
+        return valueWithTax;
+    }
+
+    public void setValueWithTax(boolean valueWithTax) {
+        this.valueWithTax = valueWithTax;
+    }
+
+    public boolean isShowAddress() {
+        return showAddress;
+    }
+
+    public void setShowAddress(boolean showAddress) {
+        this.showAddress = showAddress;
+    }
+
+    public String getInvoiceLabel() {
+        return invoiceLabel;
+    }
+
+    public void setInvoiceLabel(String invoiceLabel) {
+        this.invoiceLabel = invoiceLabel;
+    }
+
+    public String getPoNumberLabel() {
+        return poNumberLabel;
+    }
+
+    public void setPoNumberLabel(String poNumberLabel) {
+        this.poNumberLabel = poNumberLabel;
+    }
+
+    public String getEstimateLabel() {
+        return estimateLabel;
+    }
+
+    public void setEstimateLabel(String estimateLabel) {
+        this.estimateLabel = estimateLabel;
+    }
+
+    public String getProductLabel() {
+        return productLabel;
+    }
+
+    public void setProductLabel(String productLabel) {
+        this.productLabel = productLabel;
+    }
+
+    public String getQuantityLabel() {
+        return quantityLabel;
+    }
+
+    public void setQuantityLabel(String quantityLabel) {
+        this.quantityLabel = quantityLabel;
+    }
+
+    public String getPriceLabel() {
+        return priceLabel;
+    }
+
+    public void setPriceLabel(String priceLabel) {
+        this.priceLabel = priceLabel;
+    }
+
+    public boolean isTotalWithoutDecimals() {
+        return totalWithoutDecimals;
+    }
+
+    public void setTotalWithoutDecimals(boolean totalWithoutDecimals) {
+        this.totalWithoutDecimals = totalWithoutDecimals;
+    }
+
+    public boolean isTotalInWords() {
+        return totalInWords;
+    }
+
+    public void setTotalInWords(boolean totalInWords) {
+        this.totalInWords = totalInWords;
+    }
+
+    public boolean isShowSignature() {
+        return showSignature;
+    }
+
+    public void setShowSignature(boolean showSignature) {
+        this.showSignature = showSignature;
+    }
+
+    public boolean isReplaceQuantity() {
+        return replaceQuantity;
+    }
+
+    public void setReplaceQuantity(boolean replaceQuantity) {
+        this.replaceQuantity = replaceQuantity;
+    }
+
+    public boolean isShowShipping() {
+        return showShipping;
+    }
+
+    public void setShowShipping(boolean showShipping) {
+        this.showShipping = showShipping;
+    }
+
+    public String getShippingLabel() {
+        return shippingLabel;
+    }
+
+    public void setShippingLabel(String shippingLabel) {
+        this.shippingLabel = shippingLabel;
+    }
+
+    public BigDecimal getShippingPrice() {
+        return shippingPrice;
+    }
+
+    public void setShippingPrice(BigDecimal shippingPrice) {
+        this.shippingPrice = shippingPrice;
+    }
+
+    public boolean isReplacePaypal() {
+        return replacePaypal;
+    }
+
+    public void setReplacePaypal(boolean replacePaypal) {
+        this.replacePaypal = replacePaypal;
+    }
+
+    public boolean isHideAmount() {
+        return hideAmount;
+    }
+
+    public void setHideAmount(boolean hideAmount) {
+        this.hideAmount = hideAmount;
+    }
+
+    public boolean isShowDeliveryNoteAmount() {
+        return showDeliveryNoteAmount;
+    }
+
+    public void setShowDeliveryNoteAmount(boolean showDeliveryNoteAmount) {
+        this.showDeliveryNoteAmount = showDeliveryNoteAmount;
+    }
+
+    public String getTaxLabel() {
+        return taxLabel;
+    }
+
+    public void setTaxLabel(String taxLabel) {
+        this.taxLabel = taxLabel;
+    }
+
+    public String getUmLabel() {
+        return umLabel;
+    }
+
+    public void setUmLabel(String umLabel) {
+        this.umLabel = umLabel;
+    }
+
+    public String getExciseDuty() {
+        return exciseDuty;
+    }
+
+    public void setExciseDuty(String exciseDuty) {
+        this.exciseDuty = exciseDuty;
+    }
+
+    public boolean isShowUmColumn() {
+        return showUmColumn;
+    }
+
+    public void setShowUmColumn(boolean showUmColumn) {
+        this.showUmColumn = showUmColumn;
+    }
+
+    public boolean isShowTaxColumn() {
+        return showTaxColumn;
+    }
+
+    public void setShowTaxColumn(boolean showTaxColumn) {
+        this.showTaxColumn = showTaxColumn;
+    }
+
+    public boolean isShowTaxPercentage() {
+        return showTaxPercentage;
+    }
+
+    public void setShowTaxPercentage(boolean showTaxPercentage) {
+        this.showTaxPercentage = showTaxPercentage;
+    }
+
+    public Integer getDecimals() {
+        return decimals;
+    }
+
+    public void setDecimals(Integer decimals) {
+        this.decimals = decimals;
+    }
+
+    public boolean isShowUPColumn() {
+        return showUPColumn;
+    }
+
+    public void setShowUPColumn(boolean showUPColumn) {
+        this.showUPColumn = showUPColumn;
+    }
+
+    public boolean isIndianFormat() {
+        return indianFormat;
+    }
+
+    public void setIndianFormat(boolean indianFormat) {
+        this.indianFormat = indianFormat;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        
+        hash = 31 * hash + this.id;
+        hash = 31 * hash + (this.valueWithTax ? 1 : 0);
+        hash = 31 * hash + (this.showAddress ? 1 : 0);
+        hash = 31 * hash + (this.invoiceLabel != null ? this.invoiceLabel.hashCode() : 0);
+        hash = 31 * hash + (this.poNumberLabel != null ? this.poNumberLabel.hashCode() : 0);
+        hash = 31 * hash + (this.estimateLabel != null ? this.estimateLabel.hashCode() : 0);
+        hash = 31 * hash + (this.productLabel != null ? this.productLabel.hashCode() : 0);
+        hash = 31 * hash + (this.quantityLabel != null ? this.quantityLabel.hashCode() : 0);
+        hash = 31 * hash + (this.priceLabel != null ? this.priceLabel.hashCode() : 0);
+        hash = 31 * hash + (this.shippingLabel != null ? this.shippingLabel.hashCode() : 0);
+        hash = 31 * hash + (this.totalWithoutDecimals ? 1 : 0);
+        hash = 31 * hash + (this.totalInWords ? 1 : 0);
+        hash = 31 * hash + (this.showSignature ? 1 : 0);
+        hash = 31 * hash + (this.replaceQuantity ? 1 : 0);
+        hash = 31 * hash + (this.showShipping ? 1 : 0);
+        hash = 31 * hash + (this.shippingPrice != null ? this.shippingPrice.hashCode() : 0);
+        hash = 31 * hash + (this.replacePaypal ? 1 : 0);
+        hash = 31 * hash + (this.hideAmount ? 1 : 0);
+        hash = 31 * hash + (this.showDeliveryNoteAmount ? 1 : 0);
+        hash = 31 * hash + (this.taxLabel != null ? this.taxLabel.hashCode() : 0);
+        hash = 31 * hash + (this.umLabel != null ? this.umLabel.hashCode() : 0);
+        hash = 31 * hash + (this.exciseDuty != null ? this.exciseDuty.hashCode() : 0);
+        hash = 31 * hash + (this.showUmColumn ? 1 : 0);
+        hash = 31 * hash + (this.showUPColumn ? 1 : 0);
+        hash = 31 * hash + (this.showTaxColumn ? 1 : 0);
+        hash = 31 * hash + (this.showTaxPercentage ? 1 : 0);
+        hash = 31 * hash + (this.indianFormat ? 1 : 0);
+        hash = 31 * hash + (this.decimals != null ? this.decimals.hashCode() : 0);
+        
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final FlagEntity other = (FlagEntity) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (this.valueWithTax != other.valueWithTax) {
+            return false;
+        }
+        if (this.showAddress != other.showAddress) {
+            return false;
+        }
+        if ((this.invoiceLabel == null) ? (other.invoiceLabel != null) : !this.invoiceLabel.equals(other.invoiceLabel)) {
+            return false;
+        }
+        if ((this.poNumberLabel == null) ? (other.poNumberLabel != null) : !this.poNumberLabel.equals(other.poNumberLabel)) {
+            return false;
+        }
+        if ((this.estimateLabel == null) ? (other.estimateLabel != null) : !this.estimateLabel.equals(other.estimateLabel)) {
+            return false;
+        }
+        if ((this.productLabel == null) ? (other.productLabel != null) : !this.productLabel.equals(other.productLabel)) {
+            return false;
+        }
+        if ((this.quantityLabel == null) ? (other.quantityLabel != null) : !this.quantityLabel.equals(other.quantityLabel)) {
+            return false;
+        }
+        if ((this.priceLabel == null) ? (other.priceLabel != null) : !this.priceLabel.equals(other.priceLabel)) {
+            return false;
+        }
+        if ((this.shippingLabel == null) ? (other.shippingLabel != null) : !this.shippingLabel.equals(other.shippingLabel)) {
+            return false;
+        }
+        if (this.totalWithoutDecimals != other.totalWithoutDecimals) {
+            return false;
+        }
+        if (this.totalInWords != other.totalInWords) {
+            return false;
+        }
+        if (this.showSignature != other.showSignature) {
+            return false;
+        }
+        if (this.replaceQuantity != other.replaceQuantity) {
+            return false;
+        }
+        if (this.showShipping != other.showShipping) {
+            return false;
+        }
+        if (this.shippingPrice != other.shippingPrice && (this.shippingPrice == null || !this.shippingPrice.equals(other.shippingPrice))) {
+            return false;
+        }
+        if (this.replacePaypal != other.replacePaypal) {
+            return false;
+        }
+        if (this.hideAmount != other.hideAmount) {
+            return false;
+        }
+        if (this.showDeliveryNoteAmount != other.showDeliveryNoteAmount){
+            return false;
+        }
+        if ((this.taxLabel == null) ? (other.taxLabel != null) : !this.taxLabel.equals(other.taxLabel)) {
+            return false;
+        }
+        if ((this.umLabel == null) ? (other.umLabel != null) : !this.umLabel.equals(other.umLabel)) {
+            return false;
+        }
+        if ((this.exciseDuty == null) ? (other.exciseDuty != null) : !this.exciseDuty.equals(other.exciseDuty)) {
+            return false;
+        }
+        if (this.showUmColumn != other.showUmColumn) {
+            return false;
+        }
+        if (this.showUPColumn != other.showUPColumn) {
+            return false;
+        }
+        if (this.showTaxColumn != other.showTaxColumn) {
+            return false;
+        }
+        if (this.indianFormat != other.indianFormat) {
+            return false;
+        }
+        if (this.showTaxPercentage != other.showTaxPercentage) {
+            return false;
+        }
+        if (this.decimals != other.decimals && (this.decimals == null || !this.decimals.equals(other.decimals))) {
+            return false;
+        }
+        return true;
+    }
+}

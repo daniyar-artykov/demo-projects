@@ -1,0 +1,400 @@
+package sleekbill;
+
+import java.sql.SQLException;
+import java.util.HashMap;
+
+import sleekbill.entities.ConfigEntity;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.dao.GenericRawResults;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+
+/**
+ *
+ * @author dani
+ */
+public class Config {
+
+    public static final String DEFAULT_EMAIL_TEMPLATE = "default_email_template";
+    public static final String DEFAULT_MESSAGE = "Dear #client name#,\n"
+            + "please find attached #document type# no. #document number# dated #issue date#, total amount #document total#.\n"
+            + "Please remember that this #document type# is due on #due date#.\n"
+            + "Looking forward to doing business with you again!";
+    public static final String DEFAULT_MESSAGE2 = "You have received #document type# no. #document number#\n" 
+            + "Dear #client name#,\n"
+            + "Please find attached #document type# no. #document number# dated #issue date#, total amount #document total#.\n"
+            + "Please remember that the due date is #due date#.\n"
+            + "Thank you for your business!\n"
+            + "Yours sincerely,";
+    public static final String DEFAULT_MESSAGE3 = "#document type# attached for #client name#\n"
+            + "Dear #client name#,\n"
+            + "Please find attached #document type# no. #document number# dated #issue date#, total amount #document total#.\n"
+            + "Please remember that this #document type# is due on #due date#.\n"
+            + "Looking forward to doing business with you again!\n"
+            + "Yours sincerely,";
+    public static final String DEFAULT_SUBJECT = "#document type# no. #document number#";
+    public static final String DEFAULT_SUBJECT2 = "#document type# no. #document number#";
+    public static final String DEFAULT_SUBJECT3 = "#document type# no. #document number#";
+
+    public static final String VERSION = "version";
+    public static final String INVOICES_SAVE_PATH = "invoices_save_path";
+    public static final String ESTIMATES_SAVE_PATH = "estimates_save_path";
+//	public static final String INSTALLATION_SOURCE = "installation_source";
+    public static final String PAGE_RESULTS = "page_results";
+    public static final String TEST_UPDATE = "test_update";
+    public static final String INSTALL_CODE = "ic";
+    public static final String SHOW_ABOUT_CODE = "show_about_code";
+    public static final String SMTP_HOST = "smtp_host";
+    public static final String SMTP_PORT = "smtp_port";
+    public static final String SMTP_TLS = "smtp_tls";
+    public static final String SMTP_USER = "smtp_user";
+    public static final String SMTP_PASS = "smtp_pass";
+    public static final String LAST_BACKUP = "last_backup";
+    public static final String LAST_COLOR = "last_color";
+    public static final String AUTOSAVE_DOCUMENTS = "autosave_documents";
+    public static final String JASPER_PRINT_FITPAGE = "jasper_print_fitpage";
+    public static final String LAST_PAGE_SIZE = "last_page_size";
+    public static final String LAST_PAGE_PRINT = "last_page_print";
+    public static final String UPDATE_TEST = "utdb";
+    public static final String TIPS = "tips";
+    public static final String SAVE_PRODUCTS = "save_products";
+    public static final String ASK_PRODUCTS = "ask_products";
+    public static final String SAVE_LOGO = "save_logo";
+    public static final String ASK_LOGO = "ask_logo";
+    public static final String SHOW_PLACEHOLDERE = "show_placeholdere";
+    public static final String MESSAGE = "message";
+    public static final String MESSAGE2 = "message2";
+    public static final String MESSAGE3 = "message3";
+    public static final String SUBJECT = "subject";
+    public static final String SUBJECT2 = "subject2";
+    public static final String SUBJECT3 = "subject3";
+    public static final String LAST_MAIL = "last_mail";
+    public static final String LAST_URL = "last_url";
+    public static final String FIRST_CLOSE = "first_close";
+    public static final String SENT_FEEDBACK = "sent_feedback";    
+    public static final String LOGO_TEXT = "logo_text";
+    public static final String LOGO_FONT_NAME = "logo_font_name";
+    public static final String LOGO_FONT_SIZE = "logo_font_size";
+    public static final String LOGO_COLOR = "logo_color";
+    public static String SAVE_DOCUMENT = "first_document_save";
+    public static String LOGO_MARGIN = "logo_margin";
+    public static String USE_PASSWORD = "use_password";
+    public static String PASSWORD = "password";
+    public static String KEEP_STOCKS = "keep_stocks";
+    public static String ASK_STOCKS = "ask_stocks";
+    public static String ZOOM = "zoom";
+    public static String DATE_MASK = "date_format";
+    public static String ACTIVATED = "activated";
+    public static String DEFAULT_INVOICE_NOTE = "default_invoice_note";
+    public static String DEFAULT_ESTIMATE_NOTE = "default_estimate_note";
+    public static String NOTIFICATION1 = "notification1";
+    public static String NOTIFICATION2 = "notification2";
+    public static String NOTIFICATION3 = "notification3";
+    public static String SHOW_COUNTRY_BALLOON = "show_country_balloon";
+    public static String INDIA = "india";
+    public static String ASK_TOTALS = "ask_totals";
+
+    HashMap<String, Flag> flagsMap = new HashMap<String, Flag>();
+
+    public Config() {
+        flagsMap.put(VERSION, new Flag(VERSION, "2", false));
+        flagsMap.put(INVOICES_SAVE_PATH, new Flag(INVOICES_SAVE_PATH, "", true));
+        flagsMap.put(ESTIMATES_SAVE_PATH, new Flag(ESTIMATES_SAVE_PATH, "", true));
+//	flagsMap.put(INSTALLATION_SOURCE, new Flag(INSTALLATION_SOURCE, "generic", false));
+        flagsMap.put(PAGE_RESULTS, new Flag(PAGE_RESULTS, "10", true));
+        flagsMap.put(TEST_UPDATE, new Flag(TEST_UPDATE, "false", false));
+        flagsMap.put(INSTALL_CODE, new Flag(INSTALL_CODE, "", false));
+        flagsMap.put(SHOW_ABOUT_CODE, new Flag(SHOW_ABOUT_CODE, "false", false));
+        flagsMap.put(SMTP_HOST, new Flag(SMTP_HOST, "", true));
+        flagsMap.put(SMTP_PORT, new Flag(SMTP_PORT, "", true));
+        flagsMap.put(SMTP_TLS, new Flag(SMTP_TLS, "", true));
+        flagsMap.put(SMTP_USER, new Flag(SMTP_USER, "", true));
+        flagsMap.put(SMTP_PASS, new Flag(SMTP_PASS, "", true));
+        flagsMap.put(LAST_BACKUP, new Flag(LAST_BACKUP, "", true));
+        flagsMap.put(LAST_COLOR, new Flag(LAST_COLOR, "3D6B86", true));
+        flagsMap.put(AUTOSAVE_DOCUMENTS, new Flag(AUTOSAVE_DOCUMENTS, "true", true));
+        flagsMap.put(JASPER_PRINT_FITPAGE, new Flag(JASPER_PRINT_FITPAGE, "true", false));
+        flagsMap.put(LAST_PAGE_SIZE, new Flag(LAST_PAGE_SIZE, "1", true));
+        flagsMap.put(LAST_PAGE_PRINT, new Flag(LAST_PAGE_PRINT, "1", true));
+        flagsMap.put(UPDATE_TEST, new Flag(UPDATE_TEST, "false", true));
+        flagsMap.put(TIPS, new Flag(TIPS, "true", true));
+        flagsMap.put(SAVE_PRODUCTS, new Flag(SAVE_PRODUCTS, "true", true));
+        flagsMap.put(ASK_PRODUCTS, new Flag(ASK_PRODUCTS, "true", true));
+        flagsMap.put(SHOW_PLACEHOLDERE, new Flag(SHOW_PLACEHOLDERE, "true", true));
+        flagsMap.put(DEFAULT_EMAIL_TEMPLATE, new Flag(DEFAULT_EMAIL_TEMPLATE, "1", true));
+        flagsMap.put(MESSAGE, new Flag(MESSAGE, DEFAULT_MESSAGE, true));
+        flagsMap.put(MESSAGE2, new Flag(MESSAGE2, DEFAULT_MESSAGE2, true));
+        flagsMap.put(MESSAGE3, new Flag(MESSAGE3, DEFAULT_MESSAGE3, true));
+        flagsMap.put(SUBJECT, new Flag(SUBJECT, DEFAULT_SUBJECT, true));
+        flagsMap.put(SUBJECT2, new Flag(SUBJECT2, DEFAULT_SUBJECT2, true));
+        flagsMap.put(SUBJECT3, new Flag(SUBJECT3, DEFAULT_SUBJECT3, true));
+        flagsMap.put(LAST_MAIL, new Flag(LAST_MAIL, "", true));
+        flagsMap.put(LAST_URL, new Flag(LAST_URL, "", true));
+        flagsMap.put(FIRST_CLOSE, new Flag(FIRST_CLOSE, "false", true));
+        flagsMap.put(SENT_FEEDBACK, new Flag(SENT_FEEDBACK, "false", true));
+        flagsMap.put(SAVE_DOCUMENT, new Flag(SAVE_DOCUMENT, "true", true));
+        flagsMap.put(SAVE_LOGO, new Flag(SAVE_LOGO, "true", true));
+        flagsMap.put(ASK_LOGO, new Flag(ASK_LOGO, "true", true));
+        flagsMap.put(LOGO_TEXT, new Flag(LOGO_TEXT, "", true));
+        flagsMap.put(LOGO_FONT_NAME, new Flag(LOGO_FONT_NAME, "", true));
+        flagsMap.put(LOGO_FONT_SIZE, new Flag(LOGO_FONT_SIZE, "", true));
+        flagsMap.put(LOGO_COLOR, new Flag(LOGO_COLOR, "", true));
+        flagsMap.put(LOGO_MARGIN, new Flag(LOGO_MARGIN, "", true));
+        flagsMap.put(USE_PASSWORD, new Flag(USE_PASSWORD, "false", true));
+        flagsMap.put(PASSWORD, new Flag(PASSWORD, "", true));
+        flagsMap.put(KEEP_STOCKS, new Flag(KEEP_STOCKS, "false", true));
+        flagsMap.put(ASK_STOCKS, new Flag(ASK_STOCKS, "false", true));
+        flagsMap.put(ASK_TOTALS, new Flag(ASK_TOTALS, "false", true));
+        flagsMap.put(ZOOM, new Flag(ZOOM, "fit_to_page", true));
+        flagsMap.put(DATE_MASK, new Flag(DATE_MASK, " MM - dd - yyyy ", true));
+        flagsMap.put(ACTIVATED, new Flag(ACTIVATED, "false", true));
+        flagsMap.put(DEFAULT_INVOICE_NOTE, new Flag(DEFAULT_INVOICE_NOTE, "", true));
+        flagsMap.put(DEFAULT_ESTIMATE_NOTE, new Flag(DEFAULT_ESTIMATE_NOTE, "", true));
+        flagsMap.put(SHOW_COUNTRY_BALLOON, new Flag(SHOW_COUNTRY_BALLOON, "true", true));
+        flagsMap.put(INDIA, new Flag(INDIA, "", true));//free or paid or empty
+    }
+
+    public Config(boolean loadAll) {
+        this();
+        if (loadAll) {
+            loadAll();
+        }
+    }
+
+    public Config loadAll() {
+        try {
+            JdbcConnectionSource conn = Common.connection.getConnection();
+            Dao<ConfigEntity, Integer> configDao = DaoManager.createDao(conn, ConfigEntity.class);
+            GenericRawResults<String[]> rawResults = configDao.queryRaw("SELECT key, value FROM config WHERE config_id = " + "(SELECT max(config_id) FROM config)");
+            
+            for (String[] resultArray : rawResults) {
+                Flag flag = flagsMap.get(resultArray[0]);
+                
+                if (flag != null && flag.isSaveToDB()) {
+                    flag.setValue(resultArray[1]);
+                }
+            }
+            rawResults.close();
+
+            for (Flag flag : flagsMap.values()) {
+                if (!flag.isSaveToDB()) {
+                    flag.setValue(Common.sbProperties.getProperty(flag.getName()));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return this;
+    }
+
+    protected String load(Flag f, int configId, JdbcConnectionSource connection) throws SQLException {
+        
+        if (f.isSaveToDB()) {
+            f.setValue(sleekbill.beans.Config.getValue(connection, configId, f.getName()));
+        } else {
+            f.setValue(Common.sbProperties.getProperty(f.getName()));
+
+        }
+        return null;
+    }
+
+    protected String load(Flag f, int configId) throws SQLException {
+        
+        if (f.isSaveToDB()) {
+            f.setValue(sleekbill.beans.Config.getValue(Common.connection.getConnection(), configId, f.getName()));
+        } else {
+            f.setValue(Common.sbProperties.getProperty(f.getName()));
+
+        }
+        return null;
+    }
+
+    //TODO
+    // special f for updates
+//	public void saveAll(String user, String fkey) {
+//		int lastConfig = DBAccess.getInt("select max(config_id) from config", null, user, fkey);
+//		lastConfig = lastConfig + 1;
+//		try {
+//			DBAccess.beginTransaction(user, fkey);
+//			for (Flag f : flagsMap.values()) {
+//				if (f.getValue() == null)
+//					continue;
+//				if (f.isSaveToDB()) {
+//					DBAccess.uidRow("insert into config(key,value,config_id) values(?,?,?)",
+//							new Object[] { f.getName(), f.getValue(), lastConfig }, user, fkey);
+//				} else {
+//					Common.sbProperties.put(f.getName(), f.getValue());
+//				}
+//			}
+//		} catch (SQLException e) {
+//			System.err.println(e.getMessage());
+//		} finally {
+//			DBAccess.commitTr(user, fkey);
+//			Common.saveProperties();
+//		}
+//	}
+    //TODO
+//	public void saveAll() {
+//		int lastConfig = DBAccess.getInt("select max(config_id) from config", null);
+//		lastConfig = lastConfig + 1;
+//		try {
+//			DBAccess.beginTransaction();
+//			for (Flag f : flagsMap.values()) {
+//				if (f.getValue() == null)
+//					continue;
+//				if (f.isSaveToDB()) {
+//					DBAccess.uidRow("insert into config(key,value,config_id) values(?,?,?)",
+//							new Object[] { f.getName(), f.getValue(), lastConfig });
+//				} else {
+//					Common.sbProperties.put(f.getName(), f.getValue());
+//				}
+//			}
+//		} catch (SQLException e) {
+//			System.err.println(e.getMessage());
+//		} finally {
+//			DBAccess.commitTr();
+//			Common.saveProperties();
+//		}
+//	}
+    public void set(String flag, String value) {
+        Flag f = (Flag) flagsMap.get(flag);
+        
+        if (f.isSaveToDB()) {
+            try {
+                sleekbill.beans.Config.insertOrReplace(Common.connection.getConnection(), f.getName(), value);
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        } else {
+            if (value != null) {
+                Common.sbProperties.setProperty(f.getName(), value);
+            }
+            Common.saveProperties();
+        }
+        f.setValue(value);
+    }
+
+    public String get(String name) {
+        Flag f = (Flag) flagsMap.get(name);
+        
+        try {
+            if (f.isSaveToDB()) {
+                return get(name, sleekbill.beans.Config.getMaxConfigId(Common.connection.getConnection()));
+            } else {
+                return get(name, 0);
+            }
+        } catch (SQLException e) {
+            return f.getDefaultValue();
+        }
+    }
+
+    public String get(String name, JdbcConnectionSource connection) {
+        Flag f = (Flag) flagsMap.get(name);
+        
+        try {
+            if (f.isSaveToDB()) {
+                return get(name, sleekbill.beans.Config.getMaxConfigId(connection), connection);
+            } else {
+                return get(name, 0, connection);
+            }
+        } catch (SQLException e) {
+            return f.getDefaultValue();
+        }
+    }
+
+    public String get(String name, int configId, JdbcConnectionSource connection) throws SQLException {
+        Flag f = (Flag) flagsMap.get(name);
+        
+        if (!f.isLoaded()) {
+            load(f, configId, connection);
+        }
+        if (f.getValue() == null) {
+            return f.getDefaultValue();
+        }
+        return f.getValue();
+    }
+
+    public String get(String name, int configId) throws SQLException {
+        Flag f = (Flag) flagsMap.get(name);
+        
+        if (!f.isLoaded()) {
+            load(f, configId);
+        }
+        
+        if (f.getValue() == null) {
+            return f.getDefaultValue();
+        }
+        
+        return f.getValue();
+    }
+
+    public boolean reset(String flag, String value) {
+        Flag f = (Flag) flagsMap.get(flag);
+        
+        if (f == null) {
+            return false;
+        }
+        
+        f.setValue(value);
+        
+        return true;
+    }
+
+    public static class Flag {
+
+        String name;
+        String value;
+        String defaultValue;
+        
+        boolean saveToDB;
+        boolean loaded = false;
+
+        public Flag(String name, String defaultValue, boolean saveToDB) {
+            this.name = name;
+            this.defaultValue = defaultValue;
+            this.saveToDB = saveToDB;
+        }
+
+        public String getDefaultValue() {
+            return defaultValue;
+        }
+
+        public void setDefaultValue(String defaultValue) {
+            this.defaultValue = defaultValue;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public boolean isSaveToDB() {
+            return saveToDB;
+        }
+
+        public void setSaveToDB(boolean saveToDB) {
+            this.saveToDB = saveToDB;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+            loaded = true;
+        }
+
+        public boolean isLoaded() {
+            return loaded;
+        }
+
+        public void setLoaded(boolean loaded) {
+            this.loaded = loaded;
+        }
+    }
+}

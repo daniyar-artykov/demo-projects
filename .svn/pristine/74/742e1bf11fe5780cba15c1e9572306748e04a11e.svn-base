@@ -1,0 +1,41 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill;
+
+import java.util.Calendar;
+import java.util.Date;
+
+/**
+ *
+ * @author daniyar.artykov
+ */
+public class Test {
+    
+    public static void main(String [] args) {
+        Calendar c = Calendar.getInstance();
+        c.set(Calendar.YEAR, 2015);
+        System.out.println(getFiscYear(c.getTime(), 2014));
+    }
+    
+    private static String getFiscYear(Date date, int year) {
+        Calendar c = Calendar.getInstance();
+        if(year >= c.get(Calendar.YEAR)) {
+            return "";
+        }
+        
+        Calendar min = Calendar.getInstance();
+        min.set(year, 4, 1);
+        
+        Calendar max = Calendar.getInstance();
+        max.set(year + 1, 3, 31);
+        
+        if(date.after(min.getTime()) && date.before(max.getTime())) {
+            return (year + "-" + (year + 1));
+        }
+        
+        return getFiscYear(date, year + 1);
+    }
+}

@@ -1,0 +1,34 @@
+package sleekbill.wsServer;
+
+import javax.jws.WebMethod;
+import javax.jws.WebService;
+
+import sleekbill.TestORMLite;
+import sleekbill.entities.TaxEntity;
+
+//@WebService(name = "SleekBill", serviceName = "SleekBillService")
+@WebService(serviceName = "SleekBillService")
+public class SleekBillImpl {
+	
+	@WebMethod(operationName = "getQuote")
+	public double getQuote(String ticker) {
+		double result = 0.0;
+		if (ticker.equals("MHP")) {
+			result = 50.0;
+		} else if (ticker.equals("IBM")) {
+			result = 83.0;
+		}
+		return result;
+	}
+	
+	@WebMethod(operationName = "addTax")
+	public void addTax(TaxEntity tax) throws Exception {
+//		try {
+			TestORMLite.saveT1(tax);
+//		} catch (SQLException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+	}
+	
+}

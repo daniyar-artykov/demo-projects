@@ -1,0 +1,232 @@
+package sleekbill.beans;
+
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.util.List;
+
+import sleekbill.Common;
+import sleekbill.entities.ProductEntity;
+import sleekbill.entities.TaxEntity;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.stmt.DeleteBuilder;
+import com.j256.ormlite.stmt.PreparedQuery;
+import com.j256.ormlite.stmt.SelectArg;
+import com.j256.ormlite.stmt.UpdateBuilder;
+
+public class Product extends ProductEntity {
+
+    private Dao<ProductEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+
+    public Product(ProductEntity productsEntity) {
+        this(0);
+        this.id = productsEntity.getId();
+        this.name = productsEntity.getName();
+        this.description = productsEntity.getDescription();
+        this.measuringUnit = productsEntity.getMeasuringUnit();
+        this.price = productsEntity.getPrice();
+        this.hasTaxIncluded = productsEntity.isHasTaxIncluded();
+        this.tax = productsEntity.getTax();
+        this.deleted = productsEntity.getDeleted();
+        this.invoiceProducts = productsEntity.getInvoiceProducts();
+    }
+    
+    public Product() {
+        this(0);
+    }
+
+    public Product(String name, BigDecimal price, boolean hasTaxIncluded) {
+        super(name, price, hasTaxIncluded);
+    }
+
+    public Product(String name, String description, String measuringUnit, BigDecimal price, boolean hasTaxIncluded,
+            TaxEntity tax) {
+        super(name, description, measuringUnit, price, hasTaxIncluded, tax);
+    }
+
+    public Product(int id, String name, String description, String measuringUnit, BigDecimal price, boolean hasTaxIncluded,
+            TaxEntity tax) {
+        super(id, name, description, measuringUnit, price, hasTaxIncluded, tax);
+    }
+
+	public Product(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager
+                        .createDao(mainConnection, ProductEntity.class);
+
+                if (id != null && id != 0) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void create() throws Exception {
+        mainDao.create(this);
+    }
+
+    public ProductEntity read(Integer id) throws Exception {
+        return mainDao.queryForId(id);
+    }
+
+    public void update() throws Exception {
+        mainDao.update(this);
+    }
+
+    public void delete() throws Exception {
+   		mainDao.delete(this);
+    }
+    
+    public void updateDeleted(boolean deleted) throws SQLException{
+    	Dao<ProductEntity, Integer> productsDao = DaoManager.createDao(Common.connection.getConnection(), ProductEntity.class);
+        UpdateBuilder<ProductEntity, Integer> updateBuilder = productsDao.updateBuilder();
+        updateBuilder.updateColumnValue(Product.DELETED, deleted ? "y" : "n");
+        updateBuilder.where().eq("id", id);
+        updateBuilder.update(); 
+    }
+    
+    public static void add(JdbcConnectionSource connectionSource, Product product) throws SBDaoException, SQLException {
+
+        Dao<ProductEntity, Integer> productsDao = DaoManager.createDao(connectionSource, ProductEntity.class);
+
+        TaxEntity tax = product.getTax();
+
+        if (tax.getId() <= 0) {
+
+            TaxEntity auxTax = Tax.get(connectionSource, tax.getTaxName(), tax.getTaxPercentage(), tax.isDefaultTax());
+            product.setTax(auxTax == null ? product.getTax() : auxTax);
+        }
+
+        productsDao.create(product);
+    }
+     
+    public static ProductEntity get(JdbcConnectionSource connectionSource, String name, String description) throws SBDaoException, SQLException {
+
+      SelectArg selectName = new SelectArg();
+      SelectArg selectDescription = new SelectArg();
+      Dao<ProductEntity, Integer> productDao = DaoManager.createDao(connectionSource, ProductEntity.class);
+      PreparedQuery<ProductEntity> pq = productDao.queryBuilder().where().eq(Product.NAME, selectName).and().like(Product.DESCRIPTION, selectDescription).and().eq(Product.DELETED, "n").prepare();
+      List<ProductEntity> list = productDao.query(pq);
+      selectName.setValue(name);
+      selectDescription.setValue(description);
+
+      if (list.size() > 0) {
+          return list.get(0);
+      }
+      return null;
+    }
+    
+     public static ProductEntity getUndeletedByName(JdbcConnectionSource connectionSource, String name) throws SBDaoException, SQLException {
+
+      SelectArg selectArg = new SelectArg();
+      Dao<ProductEntity, Integer> productDao = DaoManager.createDao(connectionSource, ProductEntity.class);
+      PreparedQuery<ProductEntity> pq = productDao.queryBuilder().where().eq(Product.NAME, selectArg).and().eq(Product.DELETED, "n").prepare();
+      selectArg.setValue(name);
+      List<ProductEntity> list = productDao.query(pq);
+
+      if (list.size() > 0) {
+          return list.get(0);
+      }
+      return null;
+    }
+
+	public static Product get(JdbcConnectionSource connectionSource, int id)
+			throws SBDaoException, SQLException {
+
+		Dao<ProductEntity, Integer> productDao = DaoManager.createDao(connectionSource, ProductEntity.class);
+		return new Product(productDao.queryForId(id));
+		
+	}
+ 
+    public static void delete(JdbcConnectionSource connectionSource, int id) throws SQLException{
+    	Dao<ProductEntity, Integer> productDao = DaoManager.createDao(connectionSource, ProductEntity.class);
+    	DeleteBuilder<ProductEntity, Integer> deleteBuilder = productDao.deleteBuilder();
+    	deleteBuilder.where().eq(ID, id);
+    	productDao.delete(deleteBuilder.prepare());
+    }
+    
+    public static void updateDeleted(JdbcConnectionSource connectionSource, int id, boolean deleted) throws SQLException{
+    	Dao<ProductEntity, Integer> productDao = DaoManager.createDao(connectionSource, ProductEntity.class);
+        UpdateBuilder<ProductEntity, Integer> updateBuilder = productDao.updateBuilder();
+        updateBuilder.updateColumnValue(DELETED, deleted ? "y" : "n");
+        updateBuilder.where().eq("id", id);
+        updateBuilder.update(); 
+    }	
+    
+    public void refreshDao(){
+            try {
+                mainDao = DaoManager
+                        .createDao(Common.connection.getConnection(), ProductEntity.class);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+    }
+    
+        @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 37 * hash + this.id;
+        hash = 37 * hash + (this.name != null ? this.name.hashCode() : 0);
+        hash = 37 * hash + (this.description != null ? this.description.hashCode() : 0);
+        hash = 37 * hash + (this.measuringUnit != null ? this.measuringUnit.hashCode() : 0);
+        hash = 37 * hash + (this.price != null ? this.price.hashCode() : 0);
+        hash = 37 * hash + (this.tax != null ? this.tax.hashCode() : 0);
+        hash = 37 * hash + (this.deleted != null ? this.deleted.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Product other = (Product) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if ((this.name == null) ? (other.name != null) : !this.name.equals(other.name)) {
+            return false;
+        }
+        if ((this.description == null) ? (other.description != null) : !this.description.equals(other.description)) {
+            return false;
+        }
+        if ((this.measuringUnit == null) ? (other.measuringUnit != null) : !this.measuringUnit.equals(other.measuringUnit)) {
+            return false;
+        }
+        if (this.price != other.price && (this.price == null || !this.price.equals(other.price))) {
+            return false;
+        }
+        if (this.hasTaxIncluded != other.hasTaxIncluded) {
+            return false;
+        }
+        if (this.tax != other.tax && (this.tax == null || !this.tax.equals(other.tax))) {
+            return false;
+        }
+        if ((this.deleted == null) ? (other.deleted != null) : !this.deleted.equals(other.deleted)) {
+            return false;
+        }
+        return true;
+    }
+    
+     public Dao<ProductEntity, Integer> getMainDao() {
+        return mainDao;
+    }
+
+    public void setMainDao(Dao<ProductEntity, Integer> mainDao) {
+        this.mainDao = mainDao;
+    }
+}

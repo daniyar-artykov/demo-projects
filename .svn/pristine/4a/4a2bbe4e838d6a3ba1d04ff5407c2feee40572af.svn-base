@@ -1,0 +1,88 @@
+/*
+ * SBArticoleTableModel.java
+ *
+ * Created on November 18, 2007, 2:35 PM
+ *
+ * To change this template, choose Tools | Template Manager
+ * and open the template in the editor.
+ */
+
+
+package sleekbill.swingutils;
+
+import java.util.ArrayList;
+
+import javax.swing.table.AbstractTableModel;
+
+import sleekbill.frames.records.Record;
+/**
+ *
+ * @author Ioana Hasan
+ */
+public abstract class SBArticoleTableModel extends AbstractTableModel{
+    
+    /** Creates a new instance of SBArticoleTableModel */
+    public SBArticoleTableModel() {
+        data = getData();
+    }
+    
+    protected String[] columnNames;
+    protected  ArrayList<Record> data;
+    protected int[] preferredColumnWidths;
+    
+    public abstract ArrayList<Record> getData();
+    @Override
+    public int getColumnCount() {
+        return columnNames.length;
+    }
+    
+    @Override
+    public int getRowCount() {
+        return data.size();
+    }
+    
+    @Override
+    public String getColumnName(int col) {
+        return columnNames[col];
+    }
+    
+    @Override
+     public Object getValueAt(int row, int col) {
+        if (col == 0) {
+            return new Integer(row + 1); /*Nr. crt*/
+        }
+        return data.get(row).getValueAt(col);
+    }
+    
+        /*
+         * JTable uses this method to determine the default renderer/
+         * editor for each cell.  If we didn't implement this method,
+         * then the last column would contain text ("true"/"false"),
+         * rather than a component.
+         */
+    
+    @Override
+    public Class getColumnClass(int c) {
+        return getValueAt(0, c).getClass();
+    }
+    
+    public void refreshData(){
+              
+        data = getData();
+        fireTableDataChanged();
+    }
+    public int[] getPreferredColumnWidths(){
+        return preferredColumnWidths;
+    }
+    
+    public void removeRow(int row) {
+        data.remove(row);
+        fireTableRowsDeleted(row, row);
+    }
+
+    public void updateRow(Record record, int row) {
+        data.remove(row);
+        data.add(row, record);
+        fireTableRowsUpdated(row, row);
+    }
+}

@@ -1,0 +1,38 @@
+/*
+ * JSbCheckBox.java
+ *
+ * Created on November 13, 2007, 12:54 PM
+ */
+
+package sleekbill.swingutils;
+
+import javax.swing.JCheckBox;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
+/**
+ *
+ * @author flaviu marcu
+ */
+    public class SBJCheckBox extends JCheckBox {
+        private boolean changed=false;
+        public SBJCheckBox(){
+            super();
+            addChangeListener(new ChangeListener() {
+                public void stateChanged(ChangeEvent e) {
+                    changed=true;                       
+                }
+            });              
+        }
+        public SBJCheckBox(String label,boolean status){
+            super(label,status);
+            addChangeListener(new ChangeListener() {
+                public void stateChanged(ChangeEvent e) {
+                    changed=true;                       
+                }
+            });  
+        }
+        public boolean isChanged(){
+            return changed;
+        }         
+    }

@@ -1,0 +1,511 @@
+package sleekbill;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Date;
+import java.util.Vector;
+
+import sleekbill.entities.CompanyDetailsEntity;
+import sleekbill.util.Modules;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.dao.GenericRawResults;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+
+/**
+ *
+ * @author dani
+ */
+public class Company implements Serializable {
+
+	private static final long serialVersionUID = 171254690215533065L;
+	String name;
+	String dbName;
+	String path;
+//    String cif;
+	String logoPath;
+	boolean active;
+	int lastFacturaId;
+	int maxCliets = 0;
+	Modules modules;
+	OnlineStatus onlineStatus;
+	String ecr_type = "";
+
+	public Company(String name, String path, /*String cif, */ String logoPath, boolean active, 
+			int lastFacturaIdm, Modules modules, int ecr_id, String dbName) {
+		this.name = name;
+		this.path = path;
+//        this.cif = cif;
+		this.logoPath = logoPath;
+		this.active = active;
+		this.lastFacturaId = lastFacturaIdm;
+		this.modules = modules;
+		this.dbName = dbName;
+		setECRType(ecr_id);
+	}
+
+	public void setECRType(int ecr_id) {
+		switch (ecr_id) {
+			case 0:
+				ecr_type = "None";
+				break;
+			case 1:
+				ecr_type = "Datecs";
+				break;
+			case 2:
+				ecr_type = "Eltrade";
+				break;
+			case 3:
+				ecr_type = "Sapel";
+				break;
+			case 4:
+				ecr_type = "Activa";
+				break;
+			case 5:
+				ecr_type = "Partner 500 EJ";
+				break;
+			default:
+				ecr_type = "None";
+		}
+	}
+
+	public String getECRType() {
+		return ecr_type;
+	}
+
+//    public String getCif() {
+//        return cif;
+//    }
+//
+//    public void setCif(String cif) {
+//        this.cif = cif;
+//    }
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getDbName() {
+		return dbName;
+	}
+
+	public void setDbName(String dbName) {
+		this.dbName = dbName;
+	}
+
+	public String getLogoPath() {
+		return logoPath;
+	}
+
+	public void setLogoPath(String logoPath) {
+		this.logoPath = logoPath;
+	}
+
+	public String getPath() {
+		return path;
+	}
+
+	public void setPath(String path) {
+		this.path = path;
+	}
+
+	public boolean isActive() {
+		return active;
+	}
+
+	public void setActive(boolean active) {
+		this.active = active;
+	}
+
+	public int getLastFacturaId() {
+		return lastFacturaId;
+	}
+
+	public void setLastFacturaId(int lastFacturaId) {
+		this.lastFacturaId = lastFacturaId;
+	}
+
+	public OnlineStatus getOnlineStatus() {
+		return onlineStatus;
+	}
+
+	public void setOnlineStatus(OnlineStatus onlineStatus) {
+		this.onlineStatus = onlineStatus;
+	}
+
+	public Modules getModules() {
+		return modules;
+	}
+
+	public void setModules(Modules modules) {
+		this.modules = modules;
+	}
+
+	public int getMaxCliets() {
+		return maxCliets;
+	}
+
+	public void setMaxCliets(int maxCliets) {
+		this.maxCliets = maxCliets;
+	}
+
+	@Override
+	public String toString() {
+		return name;
+	}
+
+	public static Vector<Company> getCompaniesList() {
+		return getCompaniesList("");
+	}
+
+	public static Vector<Company> getCompaniesList(String fkey) {
+//		if (Common.isClient()) {
+//			ClientFactory factory = sleekbill.xmlrpc.Client.getFactory();
+//			Handlers hs = (Handlers) factory.newInstance(Handlers.class);
+//			return hs.getCompanieseList(fkey);
+//		}
+
+		final File dir = new File(SBConstants.COMPANIES_PATH);
+		File files[] = dir.listFiles(new FileFilter() {
+			@Override
+			public boolean accept(File pathname) {
+				if (pathname.isDirectory() && pathname.getParentFile().equals(dir)) {
+					return true;
+				}
+				return false;
+			}
+		});
+
+		Vector<Company> companies = new Vector<Company>();
+		for (int i = 0; i < files.length; i++) {
+			String firma = files[i].getName();
+//			ResultSet rs = null;
+			String dbName = null;
+			String logo = null;
+			int lastId = 0;
+			int ecrId = 0;
+			String modules = "0";
+
+			try {
+				boolean blacklisted = Common.isBlacklisted(Common.COMPANIES_PATH + "/" + firma + "/dbfile/" + Common.DB_FILE);
+				if (blacklisted) {
+					Common.alterDatabase(Common.COMPANIES_PATH + "/" + firma + "/dbfile/" + Common.DB_FILE, Common.COMPANIES_PATH + "/" + firma + "/dbfile/" + Common.DB_FILE + "x", false);
+				}
+				File dbfile = new File(Common.COMPANIES_PATH + "/" + firma + "/dbfile/" + Common.DB_FILE);
+				if (!dbfile.exists()) {
+					continue;
+				}
+				if (!dbfile.canWrite()) {
+					dbfile.setWritable(true);
+				}
+				String url = "jdbc:sqlite:" + Common.getDBPath(firma);
+				JdbcConnectionSource connectionSource = new JdbcConnectionSource(url);
+//				rs = DBAccess.getRows("select cif from date_firma order by configuratie_id desc limit 1", "_TEMP_", firma);
+//				if (rs.next()) {
+//					cif = rs.getString("cif");
+//				}
+//				rs.close();
+
+//				rs = DBAccess.getRows("select logo from date_firma order by configuratie_id desc limit 1", "_TEMP_", firma);
+//				if (rs.next()) {
+//					logo = rs.getString("logo");
+//				}
+				Dao<CompanyDetailsEntity, Integer> dao = DaoManager.createDao(connectionSource, CompanyDetailsEntity.class);
+				GenericRawResults<String[]> rawResults = dao.queryRaw("SELECT logo FROM company_details ORDER BY id DESC LIMIT 1");
+				for (String[] resultArray : rawResults) {
+					logo = resultArray[0];
+				}
+				rawResults.close();
+
+				try{
+					rawResults = dao.queryRaw("SELECT name FROM company_details ORDER BY id DESC LIMIT 1");
+					for (String[] resultArray : rawResults) {
+						dbName = resultArray[0];
+					}
+					rawResults.close();
+				} catch (Exception ex){
+					
+				}
+
+//				rs = DBAccess.getRows("select rowid from facturi order by rowid desc limit 1", "_TEMP_", firma);
+//				if (rs.next()) {
+//					lastId = rs.getInt(1);
+//				}
+//				rs.close();
+				rawResults = dao.queryRaw("SELECT rowid FROM invoices ORDER BY rowid DESC LIMIT 1");
+				for (String[] resultArray : rawResults) {
+					lastId = Integer.valueOf(resultArray[0]);
+				}
+				rawResults.close();
+
+//				rs = DBAccess.getRows("select value from config where key='ecr' order by rowid desc limit 1", "_TEMP_", firma);
+//				if (rs.next()) {
+//					ecr_id = rs.getInt(1);
+//				}
+//				rs.close();
+				//TODO de bagat licenta
+//				try {
+//					rs = DBAccess.getRows("select valoare1 from facturi_stornate", "_TEMP_", firma);
+//					if (rs.next()) {
+//						String valoare = Common.encode().decrypt(rs.getString("valoare1"));
+//						String arr[] = valoare.split(",");
+//						if (arr.length >= 7) {
+//							modules = arr[6];
+//						}
+//					}
+//				} catch (SQLException ex1) {
+//				}
+//				if (!DBAccess.getFirmakey().equals(firma))
+//					try {
+//						DBConnection.getConnection("_TEMP_", firma).close();
+//					} catch (SQLException ex) {
+//						ex.printStackTrace();
+//					}
+//				if (cif != null) {
+				boolean active = false;
+				if (fkey.equals(firma)) {
+					active = true;
+				}
+				String logoPath = logo != null && !"".equals(logo) ? files[i].getPath() + "/logos/" + logo : "";
+//					Company f = new Company(firma, files[i].getPath(), cif, logoPath, active, lastId, new Modules(modules), ecr_id);
+				Company f = new Company(firma, files[i].getPath(), /*cif, */ logoPath, active, lastId, new Modules(modules), ecrId, dbName);
+				if (blacklisted) {
+					OnlineStatus os = new OnlineStatus("66842", "Your Sleek Bill license key is not valid for the 2016 version.<br>For details please contact us at <a href='mailto:"+Common.MAILTO+"'>"+Common.MAILTO+"</a>.", "", "");
+					f.setOnlineStatus(os);
+				}
+//				f.setDbName(dbName);
+				companies.add(f);
+//				}
+
+				if (connectionSource != null) {
+					connectionSource.close();
+				}
+			} catch (Exception ex) {
+				ex.printStackTrace();
+				continue;
+			}
+//			if (cif != null) {
+//				boolean active = false;
+//				if (fkey.equals(firma))
+//					active = true;
+//				String logoPath = logo != null && !"".equals(logo) ? files[i].getPath() + "/logos/" + logo : "";
+////				Company f = new Company(firma, files[i].getPath(), cif, logoPath, active, lastId, new Modules(modules), ecr_id);
+//				Company f = new Company(firma, files[i].getPath(), /*cif, */logoPath, active, lastId, new Modules(modules), ecr_id);
+//				companies.add(f);
+//			}
+		}
+		return companies;
+	}
+
+	public static Company getTestCompany() {
+		Company f = null;
+
+		final File dir = new File(SBConstants.TESTDB_PATH);
+		File files[] = dir.listFiles(new FileFilter() {
+			@Override
+			public boolean accept(File pathname) {
+				if (pathname.isDirectory() && pathname.getParentFile().equals(dir)) {
+					return true;
+				}
+				return false;
+			}
+		});
+
+		for (int i = 0; i < files.length; i++) {
+			String firma = files[i].getName();
+			String cif = null;
+			String logo = null;
+			int lastId = 0;
+			int ecrId = 0;
+			String modules = "0";
+
+			try {
+				File dbfile = new File(SBConstants.TESTDB_PATH + "/" + firma + "/dbfile/" + Common.DB_FILE);
+				if (!dbfile.exists()) {
+					continue;
+				}
+				if (!dbfile.canWrite()) {
+					dbfile.setWritable(true);
+				}
+				String url = "jdbc:sqlite:" + Common.getTestDBPath(firma);
+				JdbcConnectionSource connectionSource = new JdbcConnectionSource(url);
+
+				Dao<CompanyDetailsEntity, Integer> dao = DaoManager.createDao(connectionSource, CompanyDetailsEntity.class);
+				GenericRawResults<String[]> rawResults = dao.queryRaw("SELECT logo FROM company_details ORDER BY id DESC LIMIT 1");
+				for (String[] resultArray : rawResults) {
+					logo = resultArray[0];
+				}
+				rawResults.close();
+
+				rawResults = dao.queryRaw("SELECT rowid FROM invoices ORDER BY rowid DESC LIMIT 1");
+				for (String[] resultArray : rawResults) {
+					lastId = Integer.valueOf(resultArray[0]);
+				}
+				rawResults.close();
+
+				boolean active = false;
+
+				String logoPath = logo != null && !"".equals(logo) ? files[i].getPath() + "/logos/" + logo : "";
+
+				f = new Company(firma, files[i].getPath(), /*cif, */ logoPath, active, lastId, new Modules(modules), ecrId, firma);
+
+				if (connectionSource != null) {
+					connectionSource.close();
+				}
+			} catch (Exception ex) {
+				ex.printStackTrace();
+				continue;
+			}
+
+		}
+		return f;
+	}
+
+	public static boolean deleteFirma(Company firma) {
+//        try {
+//            DBConnection.getConnection(DBAccess.SERVERNAME, firma.getDenumire()).close();
+//        } catch (SQLException ex) {
+//            ex.printStackTrace();
+//            return false;
+//        }
+		try {
+			Common.copy(new File(firma.getPath() + "/dbfile/" + Common.DB_FILE), new File(firma.getPath() + "/dbfile/" + Common.DB_FILE + ".deleted"));
+		} catch (IOException ex) {
+			ex.printStackTrace();
+			return false;
+		}
+		return Common.deleteDir(new File(firma.getPath() + "/dbfile/" + Common.DB_FILE));
+	}
+
+	public static class OnlineStatus implements Serializable {
+
+		private static final long serialVersionUID = -6017902548300554316L;
+		public static final int OK_RESPID = 0;
+		public static final int NOK_RESPID = 1;
+		public static final int FORCE_RESPID = 2;
+		public static final int THIEF_RESPID = 3;
+		String respId;
+		String cif;
+		String message;
+		String key;
+		String free;
+		String code;
+		Date dataExp;
+		Modules modules;
+		int maxClients;
+		String imageThief;
+		String specialRegCasa = "0";
+
+		public OnlineStatus(String respId, String cif, String message, String key,
+				Date dataExp, Modules modules, int maxClients, String imageThief, String specialRegCasa) {
+			this.respId = respId;
+			this.cif = cif;
+			this.message = message;
+			this.key = key;
+			this.dataExp = dataExp;
+			this.modules = modules;
+			this.maxClients = maxClients;
+			this.imageThief = imageThief;
+			this.specialRegCasa = specialRegCasa;
+		}
+
+		public OnlineStatus(String respId, String message, String free, String code) {
+			this.respId = respId;
+			this.message = message;
+			this.free = free;
+			this.code=code;
+		}
+
+		public String getCif() {
+			return cif;
+		}
+
+		public void setCif(String cif) {
+			this.cif = cif;
+		}
+
+		public Date getDataExp() {
+			return dataExp;
+		}
+
+		public void setDataExp(Date dataExp) {
+			this.dataExp = dataExp;
+		}
+
+		public String getKey() {
+			return key;
+		}
+
+		public void setKey(String key) {
+			this.key = key;
+		}
+
+		public String getMessage() {
+			return message;
+		}
+
+		public void setMessage(String message) {
+			this.message = message;
+		}
+
+		public String getRespId() {
+			return respId;
+		}
+
+		public void setRespId(String respId) {
+			this.respId = respId;
+		}
+
+		public Modules getModules() {
+			return modules;
+		}
+
+		public void setModules(Modules modules) {
+			this.modules = modules;
+		}
+
+		public int getMaxClients() {
+			return maxClients;
+		}
+
+		public void setMaxClients(int maxClients) {
+			this.maxClients = maxClients;
+		}
+
+		public String getImageThief() {
+			return imageThief;
+		}
+
+		public void setImageThief(String imageThief) {
+			this.imageThief = imageThief;
+		}
+
+		public String getSpecialRegCasa() {
+			return specialRegCasa;
+		}
+
+		public String getFree() {
+			return free;
+		}
+
+		public void setFree(String free) {
+			this.free = free;
+		}
+
+		public String getCode() {
+			return code;
+		}
+
+		public void setCode(String code) {
+			this.code = code;
+		}
+
+	}
+
+}

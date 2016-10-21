@@ -1,0 +1,17 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames.records;
+
+/**
+ *
+ * @author Andrei
+ */
+public class ClientRecord extends Record {
+
+    public ClientRecord(Integer id, String name, String contact, String address, String email, String phone, String details) {       
+        this.data = new String[]{name, contact, address, email, phone, details, ""};
+        this.id = id;
+    }
+}

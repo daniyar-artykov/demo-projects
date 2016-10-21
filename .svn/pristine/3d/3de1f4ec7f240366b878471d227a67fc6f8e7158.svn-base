@@ -1,0 +1,380 @@
+/*
+ * EditDeleteButtonCell.java
+ *
+ * Created on November 14, 2007, 11:46 AM
+ */
+package sleekbill.swingutils;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+
+import javax.swing.AbstractCellEditor;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JPanel;
+import javax.swing.JTable;
+import javax.swing.UIManager;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumnModel;
+
+/**
+ *
+ * @author flaviu marcu
+ */
+public class EditDeleteButtonCell extends AbstractCellEditor
+        implements TableCellRenderer, TableCellEditor, ActionListener {
+
+    SBJTable table;
+    JPanel renderPanel;
+    JPanel editPanel;
+    JButton renderEditButton;
+    JButton renderDeleteButton;
+    JButton editButton;
+    JButton deleteButton;
+    boolean discount = false;
+    String toolTip1 = "Edit the record";
+    String toolTip2 = "Delete the record";
+    public final static int VERTICAL_ALIGNMENT = 1;
+    public final static int HORIZONTAL_ALIGNMENT = 2;
+    int alignment = 1;
+    boolean special = false;
+
+    public EditDeleteButtonCell(SBJTable table, int column, boolean special) {
+        /*delete buttons*/
+
+        this(table, column, HORIZONTAL_ALIGNMENT, false);
+        this.special = special;
+    }
+
+    public EditDeleteButtonCell(SBJTable table, int column) {
+        /*delete buttons*/
+
+        this(table, column, HORIZONTAL_ALIGNMENT, false);
+    }
+
+    public EditDeleteButtonCell(SBJTable table, int column, int align, 
+            boolean iconSmall, boolean discount) {
+        /*delete buttons*/
+
+        super();
+        this.discount = discount;
+        if (discount) {
+            toolTip1 = "Edit/Discount";
+            toolTip2 = "Delete";
+        }
+
+        this.table = table;
+        this.alignment = align;
+        renderPanel = new JPanel() {
+
+            @Override
+            public String getToolTipText(MouseEvent e) {
+                if (renderEditButton.getBounds().contains(e.getPoint())) {
+                    return renderEditButton.getToolTipText();
+                }
+                if (renderDeleteButton.getBounds().contains(e.getPoint())) {
+                    return renderDeleteButton.getToolTipText();
+                }
+                return "";
+            }
+        };
+        renderPanel.setLayout(new GridBagLayout());
+
+        renderEditButton = iconSmall ? new JButton(new ImageIcon("./images/buttons/Pencil.png")) : new JButton(new ImageIcon("./images/buttons/Pencil.png"));
+        renderEditButton.setFocusPainted(false);
+        renderEditButton.setPreferredSize(new Dimension(20, 17));
+        renderEditButton.setToolTipText(toolTip1);
+        renderEditButton.setOpaque(false);
+        renderEditButton.setBorder(new EmptyBorder(2, 0, 0, 0));
+        renderEditButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        renderEditButton.setContentAreaFilled(false);
+        if (align == HORIZONTAL_ALIGNMENT) {
+            renderPanel.add(renderEditButton, new GridBagConstraints(0, 0, 1, 1, 0.0, 0, GridBagConstraints.CENTER, 0, new Insets(0, 2, 0, 1), 0, 0));
+        } else {
+            renderPanel.add(renderEditButton, new GridBagConstraints(0, 0, 1, 1, 0.0, 0, GridBagConstraints.NORTHWEST, 0, new Insets(2, 1, 2, 1), 0, 0));
+        }
+
+        renderDeleteButton = new JButton(new ImageIcon("./images/buttons/Cross.png"));
+        //renderDeleteButton.setDisabledIcon(new ImageIcon("./images/buttons/Cross.png"));
+        renderDeleteButton.setFocusPainted(false);
+        renderDeleteButton.setPreferredSize(new Dimension(20, 17));
+        renderDeleteButton.setToolTipText(toolTip2);
+        renderDeleteButton.setOpaque(false);
+        renderDeleteButton.setBorder(new EmptyBorder(0, 0, 2, 0));
+        renderDeleteButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        renderDeleteButton.setContentAreaFilled(false);
+
+        if (align == HORIZONTAL_ALIGNMENT) {
+            renderPanel.add(renderDeleteButton, new GridBagConstraints(1, 0, 1, 1, 0.0, 0, GridBagConstraints.CENTER, 0, new Insets(0, 1, 0, 2), 0, 0));
+        } else {
+            renderPanel.add(renderDeleteButton, new GridBagConstraints(0, 1, 1, 1, 0.0, 0, GridBagConstraints.NORTHWEST, 0, new Insets(2, 1, 2, 1), 0, 0));
+        }
+
+//        renderPanel.setPreferredSize(new Dimension(40, 17));
+        editPanel = new JPanel();
+        editPanel.setLayout(new GridBagLayout());
+
+        editButton = iconSmall ? new JButton(new ImageIcon("./images/buttons/Pencil.png")) : new JButton(new ImageIcon("./images/buttons/Pencil.png"));
+        editButton.addActionListener(this);
+        editButton.setFocusPainted(false);
+        editButton.setPreferredSize(new Dimension(20, 17));
+        editButton.setOpaque(false);
+        editButton.setBorder(new EmptyBorder(2, 0, 0, 0));
+        editButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        editButton.setContentAreaFilled(false);
+
+        deleteButton = new JButton(new ImageIcon("./images/buttons/Cross.png"));
+        //deleteButton.setDisabledIcon(new ImageIcon("./images/buttons/Cross.png"));
+        deleteButton.addActionListener(this);
+        deleteButton.setFocusPainted(false);
+        deleteButton.setPreferredSize(new Dimension(20, 17));
+        deleteButton.setOpaque(false);
+        deleteButton.setBorder(new EmptyBorder(0, 0, 2, 0));
+        deleteButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        deleteButton.setContentAreaFilled(false);
+
+        if (align == HORIZONTAL_ALIGNMENT) {
+            editPanel.add(editButton, new GridBagConstraints(0, 0, 1, 1, 0.0, 0, GridBagConstraints.CENTER, 0, new Insets(0, 2, 0, 1), 0, 0));
+        } else {
+            editPanel.add(editButton, new GridBagConstraints(0, 0, 1, 1, 0.0, 0, GridBagConstraints.NORTHWEST, 0, new Insets(2, 1, 2, 1), 0, 0));
+        }
+        if (align == HORIZONTAL_ALIGNMENT) {
+            editPanel.add(deleteButton, new GridBagConstraints(1, 0, 1, 1, 0.0, 0, GridBagConstraints.CENTER, 0, new Insets(0, 1, 0, 2), 0, 0));
+        } else {
+            editPanel.add(deleteButton, new GridBagConstraints(0, 1, 1, 1, 0.0, 0, GridBagConstraints.NORTHWEST, 0, new Insets(1, 1, 2, 1), 0, 0));
+        }
+        if (align == VERTICAL_ALIGNMENT) {
+            editButton.setText(discount ? "edit(%)" : "edit");
+            renderEditButton.setText(discount ? "edit(%)" : "edit");
+            deleteButton.setText("delete");
+            renderDeleteButton.setText("delete");
+            editButton.setForeground(Color.black);
+            renderEditButton.setForeground(Color.black);
+            deleteButton.setForeground(Color.BLACK);
+            renderDeleteButton.setForeground(Color.BLACK);
+            editButton.setPreferredSize(new Dimension(100, 17));
+            deleteButton.setPreferredSize(new Dimension(100, 17));
+            renderDeleteButton.setPreferredSize(new Dimension(100, 17));
+            renderEditButton.setPreferredSize(new Dimension(100, 17));
+        }
+
+        TableColumnModel columnModel = table.getColumnModel();
+        columnModel.getColumn(column).setCellRenderer(this);
+        columnModel.getColumn(column).setCellEditor(this);
+    }
+
+    public EditDeleteButtonCell(SBJTable table, int column, int align, boolean iconSmall) {
+        /*delete buttons*/
+
+        super();
+        this.table = table;
+        this.alignment = align;
+        renderPanel = new JPanel() {
+
+            @Override
+            public String getToolTipText(MouseEvent e) {
+                if (renderEditButton.getBounds().contains(e.getPoint())) {
+                    return renderEditButton.getToolTipText();
+                }
+                if (renderDeleteButton.getBounds().contains(e.getPoint())) {
+                    return renderDeleteButton.getToolTipText();
+                }
+                return "";
+            }
+        };
+        renderPanel.setLayout(new GridBagLayout());
+
+        renderEditButton = iconSmall ? new JButton(new ImageIcon("./images/buttons/Pencil.png")) : new JButton(new ImageIcon("./images/buttons/Pencil.png"));
+        renderEditButton.setFocusPainted(false);
+        renderEditButton.setPreferredSize(new Dimension(20, 17));
+        renderEditButton.setToolTipText(toolTip1);
+        renderEditButton.setOpaque(false);
+        renderEditButton.setBorder(new EmptyBorder(2, 0, 0, 0));
+        renderEditButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        renderEditButton.setContentAreaFilled(false);
+        if (align == HORIZONTAL_ALIGNMENT) {
+            renderPanel.add(renderEditButton, new GridBagConstraints(0, 0, 1, 1, 0.0, 0, GridBagConstraints.CENTER, 0, new Insets(0, 2, 0, 1), 0, 0));
+        } else {
+            renderPanel.add(renderEditButton, new GridBagConstraints(0, 0, 1, 1, 0.0, 0, GridBagConstraints.NORTHWEST, 0, new Insets(2, 1, 2, 1), 0, 0));
+        }
+
+        renderDeleteButton = new JButton(new ImageIcon("./images/buttons/Cross.png"));
+        //renderDeleteButton.setDisabledIcon(new ImageIcon("./images/buttons/Cross.png"));
+        renderDeleteButton.setFocusPainted(false);
+        renderDeleteButton.setPreferredSize(new Dimension(20, 17));
+        renderDeleteButton.setToolTipText(toolTip2);
+        renderDeleteButton.setOpaque(false);
+        renderDeleteButton.setBorder(new EmptyBorder(0, 0, 2, 0));
+        renderDeleteButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        renderDeleteButton.setContentAreaFilled(false);
+
+        if (align == HORIZONTAL_ALIGNMENT) {
+            renderPanel.add(renderDeleteButton, new GridBagConstraints(1, 0, 1, 1, 0.0, 0, GridBagConstraints.CENTER, 0, new Insets(0, 1, 0, 2), 0, 0));
+        } else {
+            renderPanel.add(renderDeleteButton, new GridBagConstraints(0, 1, 1, 1, 0.0, 0, GridBagConstraints.NORTHWEST, 0, new Insets(2, 1, 2, 1), 0, 0));
+        }
+
+//        renderPanel.setPreferredSize(new Dimension(40, 17));
+        editPanel = new JPanel();
+        editPanel.setLayout(new GridBagLayout());
+
+        editButton = iconSmall ? new JButton(new ImageIcon("./images/buttons/Pencil.png")) : new JButton(new ImageIcon("./images/buttons/Pencil.png"));
+        editButton.addActionListener(this);
+        editButton.setFocusPainted(false);
+        editButton.setPreferredSize(new Dimension(20, 17));
+        editButton.setOpaque(false);
+        editButton.setBorder(new EmptyBorder(2, 0, 0, 0));
+        editButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        editButton.setContentAreaFilled(false);
+
+        deleteButton = new JButton(new ImageIcon("./images/buttons/Cross.png"));
+        //deleteButton.setDisabledIcon(new ImageIcon("./images/buttons/Cross.png"));
+        deleteButton.addActionListener(this);
+        deleteButton.setFocusPainted(false);
+        deleteButton.setPreferredSize(new Dimension(20, 17));
+        deleteButton.setOpaque(false);
+        deleteButton.setBorder(new EmptyBorder(0, 0, 2, 0));
+        deleteButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        deleteButton.setContentAreaFilled(false);
+
+        if (align == HORIZONTAL_ALIGNMENT) {
+            editPanel.add(editButton, new GridBagConstraints(0, 0, 1, 1, 0.0, 0, GridBagConstraints.CENTER, 0, new Insets(0, 2, 0, 1), 0, 0));
+        } else {
+            editPanel.add(editButton, new GridBagConstraints(0, 0, 1, 1, 0.0, 0, GridBagConstraints.NORTHWEST, 0, new Insets(2, 1, 2, 1), 0, 0));
+        }
+        if (align == HORIZONTAL_ALIGNMENT) {
+            editPanel.add(deleteButton, new GridBagConstraints(1, 0, 1, 1, 0.0, 0, GridBagConstraints.CENTER, 0, new Insets(0, 1, 0, 2), 0, 0));
+        } else {
+            editPanel.add(deleteButton, new GridBagConstraints(0, 1, 1, 1, 0.0, 0, GridBagConstraints.NORTHWEST, 0, new Insets(1, 1, 2, 1), 0, 0));
+        }
+        if (align == VERTICAL_ALIGNMENT) {
+            editButton.setText(discount ? "edit(%)" : "edit");
+            renderEditButton.setText(discount ? "edit(%)" : "edit");
+            deleteButton.setText("delete");
+            renderDeleteButton.setText("delete");
+            editButton.setForeground(Color.black);
+            renderEditButton.setForeground(Color.black);
+            deleteButton.setForeground(Color.BLACK);
+            renderDeleteButton.setForeground(Color.BLACK);
+            editButton.setPreferredSize(new Dimension(100, 17));
+            deleteButton.setPreferredSize(new Dimension(100, 17));
+            renderDeleteButton.setPreferredSize(new Dimension(100, 17));
+            renderEditButton.setPreferredSize(new Dimension(100, 17));
+        }
+
+        TableColumnModel columnModel = table.getColumnModel();
+        columnModel.getColumn(column).setCellRenderer(this);
+        columnModel.getColumn(column).setCellEditor(this);
+    }
+
+    public EditDeleteButtonCell(SBJTable table, int column, ImageIcon i1, ImageIcon i2) {
+        this(table, column);
+        toolTip1 = "Vizualizare factura";
+        toolTip2 = "Vizualizare chitante";
+
+        renderEditButton.setIcon(i1);
+        renderEditButton.setText("");
+        renderEditButton.setMinimumSize(new Dimension(20, i1.getIconHeight() + 2));
+        renderEditButton.setPreferredSize(new Dimension(20, i1.getIconHeight() + 2));
+
+        renderDeleteButton.setIcon(i2);
+        renderDeleteButton.setDisabledIcon(null);
+        renderDeleteButton.revalidate();
+        renderDeleteButton.setText("");
+        renderDeleteButton.setMinimumSize(new Dimension(20, i2.getIconHeight() + 2));
+        renderDeleteButton.setPreferredSize(new Dimension(20, i2.getIconHeight() + 2));
+
+        editButton.setIcon(i1);
+        editButton.setText("");
+        editButton.setMinimumSize(new Dimension(20, i1.getIconHeight() + 2));
+        editButton.setPreferredSize(new Dimension(20, i1.getIconHeight() + 2));
+
+        deleteButton.setIcon(i2);
+        deleteButton.setDisabledIcon(null);
+        deleteButton.revalidate();
+        deleteButton.setText("");
+        deleteButton.setMinimumSize(new Dimension(20, i2.getIconHeight() + 2));
+        deleteButton.setPreferredSize(new Dimension(20, i2.getIconHeight() + 2));
+
+    }
+
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        renderEditButton.setToolTipText(toolTip1);
+        renderDeleteButton.setToolTipText(toolTip2);
+        editButton.setToolTipText(toolTip1);
+        deleteButton.setToolTipText(toolTip2);
+//        if (table.getModel() instanceof UtilizatoriTableModel) {
+//            boolean isViewable = ((UtilizatoriTableModel)table.getModel()).isViewable(row);
+//            deleteButton.setEnabled(isViewable);
+//            renderDeleteButton.setEnabled(isViewable);
+//        }
+        if (isSelected) {
+            renderPanel.setForeground(table.getSelectionForeground());
+            renderPanel.setBackground(table.getSelectionBackground());
+        } else if (UIManager.get("Table.evenRowColor") instanceof Color && UIManager.get("Table.evenRowColor") instanceof Color) {
+            Color rc = row % 2 == 0 ? (Color) UIManager.get("Table.evenRowColor") : (Color) UIManager.get("Table.oddRowColor");
+            renderPanel.setForeground(special ? new Color(255, 254, 211) : rc);
+            renderPanel.setBackground(special ? new Color(255, 254, 211) : rc);
+        } else {
+            renderPanel.setForeground(table.getForeground());
+            renderPanel.setBackground(table.getBackground());
+        }
+        if (alignment == VERTICAL_ALIGNMENT) {
+            int minRowHeight = (int) (deleteButton.getPreferredSize().getHeight() + editButton.getPreferredSize().getHeight() + 3);
+            if (((SBJTable) table).getMinimumRowHeight(row, column) < minRowHeight) {
+                ((SBJTable) table).setMinimumRowHeight(minRowHeight, row, column);
+                ((AbstractTableModel) table.getModel()).fireTableRowsUpdated(row, row);
+            }
+        }
+        return renderPanel;
+    }
+
+    @Override
+    public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+        editPanel.setForeground(table.getSelectionForeground());
+        editPanel.setBackground(table.getSelectionBackground());
+//        if (table.getModel() instanceof UtilizatoriTableModel) {
+//            boolean isViewable = ((UtilizatoriTableModel) table.getModel()).isViewable(row);
+//            deleteButton.setEnabled(isViewable);
+//            renderDeleteButton.setEnabled(isViewable);
+//        }
+        return editPanel;
+    }
+
+    @Override
+    public Object getCellEditorValue() {
+        return "";
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        fireEditingStopped();
+        if (e.getSource().equals(editButton)) {
+            table.actionEdit();
+        }
+        if (e.getSource().equals(deleteButton)) {
+            table.actionDelete();
+        }
+    }
+
+    public JButton getDeleteButton() {
+        return deleteButton;
+    }
+
+    public JButton getEditButton() {
+        return editButton;
+    }
+
+}

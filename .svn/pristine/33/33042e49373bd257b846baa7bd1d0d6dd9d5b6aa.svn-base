@@ -1,0 +1,16 @@
+package sleekbill.swingutils;
+
+import javax.swing.JMenu;
+
+/**
+ *
+ * @author  flaviu m
+ */
+public class JMenuWithDelay extends JMenu {
+
+    @Override
+    public void setPopupMenuVisible(boolean b) {
+        super.setPopupMenuVisible(b);
+    }
+
+}

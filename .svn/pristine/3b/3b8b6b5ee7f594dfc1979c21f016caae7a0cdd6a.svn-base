@@ -1,0 +1,254 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.beans;
+
+import java.sql.SQLException;
+import java.util.List;
+
+import sleekbill.Common;
+import sleekbill.entities.FlagEntity;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.stmt.PreparedQuery;
+import com.j256.ormlite.table.DatabaseTable;
+
+/**
+ *
+ * @author Dani
+ */
+@DatabaseTable(tableName = "flags")
+public class Flag extends FlagEntity {
+
+    private Dao<FlagEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+
+    public Flag(FlagEntity flagEntity) {
+        this.id = flagEntity.getId();
+        this.valueWithTax = flagEntity.getValueWithTax();
+        this.showAddress = flagEntity.isShowAddress();
+        this.invoiceLabel = flagEntity.getInvoiceLabel();
+        this.poNumberLabel = flagEntity.getPoNumberLabel();
+        this.estimateLabel = flagEntity.getEstimateLabel();
+        this.productLabel = flagEntity.getProductLabel();
+        this.quantityLabel = flagEntity.getQuantityLabel();
+        this.priceLabel = flagEntity.getPriceLabel();
+        this.totalWithoutDecimals = flagEntity.isTotalWithoutDecimals();
+        this.totalInWords = flagEntity.isTotalInWords();
+        this.showSignature = flagEntity.isShowSignature();
+        this.replaceQuantity = flagEntity.isReplaceQuantity();
+        this.showShipping = flagEntity.isShowShipping();
+        this.shippingLabel = flagEntity.getShippingLabel();
+        this.shippingPrice = flagEntity.getShippingPrice();
+        this.replacePaypal = flagEntity.isReplacePaypal();
+        this.hideAmount = flagEntity.isHideAmount();
+        this.showDeliveryNoteAmount = flagEntity.isShowDeliveryNoteAmount();
+        this.umLabel = flagEntity.getUmLabel();
+        this.taxLabel = flagEntity.getTaxLabel();
+        this.exciseDuty = flagEntity.getExciseDuty();
+        this.showTaxColumn = flagEntity.isShowTaxColumn();
+        this.showTaxPercentage = flagEntity.isShowTaxPercentage();
+        this.showUmColumn = flagEntity.isShowUmColumn();
+        this.showUPColumn = flagEntity.isShowUPColumn();
+        this.decimals = flagEntity.getDecimals();
+        this.indianFormat = flagEntity.isIndianFormat();
+        this.documentPrefix = flagEntity.isDocumentPrefix();
+        this.prefixSeparator = flagEntity.getPrefixSeparator();
+        this.prefixAsDate = flagEntity.isPrefixAsDate();
+        this.endFiscYear = flagEntity.isEndFiscYear();
+        this.fiscYearStart = flagEntity.getFiscYearStart();
+    }
+
+    public Flag() {
+    }
+
+    public Flag(boolean valueWithTax) {
+        this.valueWithTax = valueWithTax;
+    }
+
+    public Flag(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager.createDao(mainConnection, FlagEntity.class);
+
+                if (id != null && id != 0) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+//	@SuppressWarnings({ "rawtypes", "unchecked" })
+    public static void add(final JdbcConnectionSource connectionSource, final Flag flag) throws SBDaoException, SQLException {
+
+        Dao<FlagEntity, Integer> flagDao = DaoManager.createDao(connectionSource, FlagEntity.class);
+
+        flagDao.create(flag);
+    }
+
+    public static Flag getLast(JdbcConnectionSource connectionSource) throws SBDaoException, SQLException {
+
+        Dao<FlagEntity, Integer> flagDao = DaoManager.createDao(Common.connection.getConnection(),
+                FlagEntity.class);
+        PreparedQuery<FlagEntity> pq = flagDao.queryBuilder().orderBy("id", false).limit(1L).prepare();
+        List<FlagEntity> list = flagDao.query(pq);
+        
+        if (list.size() > 0) {
+            return new Flag(list.get(0));
+        }
+
+        return null;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        
+        hash = 31 * hash + this.id;
+        hash = 31 * hash + (this.valueWithTax ? 1 : 0);
+        hash = 31 * hash + (this.showAddress ? 1 : 0);
+        hash = 31 * hash + (this.invoiceLabel != null ? this.invoiceLabel.hashCode() : 0);
+        hash = 31 * hash + (this.estimateLabel != null ? this.estimateLabel.hashCode() : 0);
+        hash = 31 * hash + (this.productLabel != null ? this.productLabel.hashCode() : 0);
+        hash = 31 * hash + (this.quantityLabel != null ? this.quantityLabel.hashCode() : 0);
+        hash = 31 * hash + (this.priceLabel != null ? this.priceLabel.hashCode() : 0);
+        hash = 31 * hash + (this.shippingLabel != null ? this.shippingLabel.hashCode() : 0);
+        hash = 31 * hash + (this.totalWithoutDecimals ? 1 : 0);
+        hash = 31 * hash + (this.totalInWords ? 1 : 0);
+        hash = 31 * hash + (this.showSignature ? 1 : 0);
+        hash = 31 * hash + (this.replaceQuantity ? 1 : 0);
+        hash = 31 * hash + (this.showShipping ? 1 : 0);
+        hash = 31 * hash + (this.shippingPrice != null ? this.shippingPrice.hashCode() : 0);
+        hash = 31 * hash + (this.replacePaypal ? 1 : 0);
+        hash = 31 * hash + (this.hideAmount ? 1 : 0);
+        hash = 31 * hash + (this.taxLabel != null ? this.taxLabel.hashCode() : 0);
+        hash = 31 * hash + (this.umLabel != null ? this.umLabel.hashCode() : 0);
+        hash = 31 * hash + (this.exciseDuty != null ? this.exciseDuty.hashCode() : 0);
+        hash = 31 * hash + (this.showUmColumn ? 1 : 0);
+        hash = 31 * hash + (this.showUPColumn ? 1 : 0);
+        hash = 31 * hash + (this.showTaxColumn ? 1 : 0);
+        hash = 31 * hash + (this.showTaxPercentage ? 1 : 0);
+        hash = 31 * hash + (this.indianFormat ? 1 : 0);
+        hash = 31 * hash + (this.documentPrefix ? 1 : 0);
+        hash = 31 * hash + (this.prefixSeparator != null ? this.prefixSeparator.hashCode() : 0);
+        hash = 31 * hash + (this.prefixAsDate ? 1 : 0);
+        hash = 31 * hash + (this.endFiscYear ? 1 : 0);
+        hash = 31 * hash + (this.decimals != null ? this.decimals.hashCode() : 0);
+        hash = 31 * hash + (this.fiscYearStart != null ? this.fiscYearStart.hashCode() : 0);
+        
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Flag other = (Flag) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (this.valueWithTax != other.valueWithTax) {
+            return false;
+        }
+        if (this.showAddress != other.showAddress) {
+            return false;
+        }
+        if ((this.invoiceLabel == null) ? (other.invoiceLabel != null) : !this.invoiceLabel.equals(other.invoiceLabel)) {
+            return false;
+        }
+        if ((this.estimateLabel == null) ? (other.estimateLabel != null) : !this.estimateLabel.equals(other.estimateLabel)) {
+            return false;
+        }
+        if ((this.productLabel == null) ? (other.productLabel != null) : !this.productLabel.equals(other.productLabel)) {
+            return false;
+        }
+        if ((this.quantityLabel == null) ? (other.quantityLabel != null) : !this.quantityLabel.equals(other.quantityLabel)) {
+            return false;
+        }
+        if ((this.priceLabel == null) ? (other.priceLabel != null) : !this.priceLabel.equals(other.priceLabel)) {
+            return false;
+        }
+        if ((this.shippingLabel == null) ? (other.shippingLabel != null) : !this.shippingLabel.equals(other.shippingLabel)) {
+            return false;
+        }
+        if (this.totalWithoutDecimals != other.totalWithoutDecimals) {
+            return false;
+        }
+        if (this.totalInWords != other.totalInWords) {
+            return false;
+        }
+        if (this.showSignature != other.showSignature) {
+            return false;
+        }
+        if (this.replaceQuantity != other.replaceQuantity) {
+            return false;
+        }
+        if (this.showShipping != other.showShipping) {
+            return false;
+        }
+        if (this.shippingPrice != other.shippingPrice && (this.shippingPrice == null || !this.shippingPrice.equals(other.shippingPrice))) {
+            return false;
+        }
+        if (this.replacePaypal != other.replacePaypal) {
+            return false;
+        }
+        if (this.hideAmount != other.hideAmount) {
+            return false;
+        }
+        if ((this.taxLabel == null) ? (other.taxLabel != null) : !this.taxLabel.equals(other.taxLabel)) {
+            return false;
+        }
+        if ((this.umLabel == null) ? (other.umLabel != null) : !this.umLabel.equals(other.umLabel)) {
+            return false;
+        }
+        if ((this.exciseDuty == null) ? (other.exciseDuty != null) : !this.exciseDuty.equals(other.exciseDuty)) {
+            return false;
+        }
+        if (this.showUmColumn != other.showUmColumn) {
+            return false;
+        }
+        if (this.showUPColumn != other.showUPColumn) {
+            return false;
+        }
+        if (this.showTaxColumn != other.showTaxColumn) {
+            return false;
+        }
+        if (this.showTaxPercentage != other.showTaxPercentage) {
+            return false;
+        }
+        if (this.indianFormat != other.indianFormat) {
+            return false;
+        }
+        if (this.documentPrefix != other.documentPrefix) {
+            return false;
+        }
+        if ((this.prefixSeparator == null) ? (other.prefixSeparator != null) 
+                : !this.prefixSeparator.equals(other.prefixSeparator)) {
+            return false;
+        }
+        if (this.prefixAsDate != other.prefixAsDate) {
+            return false;
+        }
+        if (this.endFiscYear != other.endFiscYear) {
+            return false;
+        }
+        if ((this.fiscYearStart == null) ? (other.fiscYearStart != null) : !this.fiscYearStart.equals(other.fiscYearStart)) {
+            return false;
+        }
+        
+        return !(this.decimals != other.decimals && (this.decimals == null || !this.decimals.equals(other.decimals)));
+    }
+}

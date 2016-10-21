@@ -1,0 +1,81 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.entities;
+
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+
+/**
+ *
+ * @author Andrei
+ */
+@DatabaseTable(tableName = "page_size")
+public class PageSizeEntity {
+
+    public static final String FORMAT = "format";
+    
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+    @DatabaseField(columnName = FORMAT, canBeNull = false, defaultValue = "1")
+    protected String format;
+
+    public PageSizeEntity() {
+    }
+
+    public PageSizeEntity(int id) {
+        this.id = id;
+    }
+
+    public PageSizeEntity(String year) {
+        this.format = year;
+    }
+
+    public PageSizeEntity(int id, String year) {
+        this.id = id;
+        this.format = year;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getFormat() {
+        return format;
+    }
+
+    public void setFormat(String format) {
+        this.format = format;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 71 * hash + this.id;
+        hash = 71 * hash + (this.format != null ? this.format.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final PageSizeEntity other = (PageSizeEntity) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if ((this.format == null) ? (other.format != null) : !this.format.equals(other.format)) {
+            return false;
+        }
+        return true;
+    }
+}

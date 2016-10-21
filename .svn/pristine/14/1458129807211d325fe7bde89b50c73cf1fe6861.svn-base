@@ -1,0 +1,179 @@
+package sleekbill.utils;
+
+import sleekbill.Common;
+import sleekbill.entities.CompanyDetailsEntity;
+
+public class SBStringUtils {
+
+	public static String implodeArray(String[] inputArray, String glueString) {
+
+		/**
+		 * Output variable
+		 */
+		String output = "";
+
+		if (inputArray.length > 0) {
+			StringBuilder sb = new StringBuilder();
+			sb.append(inputArray[0]);
+
+			for (int i = 1; i < inputArray.length; i++) {
+				sb.append(glueString);
+				sb.append(inputArray[i]);
+			}
+
+			output = sb.toString();
+		}
+
+		return output;
+	}
+
+	public static boolean isNumeric(String string) {
+		return string.matches("\\d+");
+	}
+
+	public static String padRight(String string, int n) {
+		return String.format("%1$-" + n + "s", string);
+	}
+
+	public static String padLeft(String string, int n) {
+		return String.format("%1$#" + n + "s", string);
+	}
+
+	public static String capitalizeWords(String string) {
+		//import org.apache.commons.lang.WordUtils; 
+		//return WordUtils.capitalizeFully(string);
+		if (string != null && !string.isEmpty()) {
+			string = string.substring(0, 1).toUpperCase() + string.substring(1, string.length()).toLowerCase();
+		} else {
+			string = "";
+		}
+		return string;
+	}
+
+	public static String capitalizeEachWord(String source) {
+		StringBuffer res = new StringBuffer();
+
+		String[] strArr = source.split(" ");
+		for (String str : strArr) {
+			char[] stringArray = str.trim().toCharArray();
+			stringArray[0] = Character.toUpperCase(stringArray[0]);
+			str = new String(stringArray);
+
+			res.append(str).append(" ");
+		}
+		return res.toString();
+	}
+
+	public static String capitalizeNumberToWord(String source) {
+		if (source == null || source.isEmpty()) {
+			return "";
+		}
+		StringBuffer res = new StringBuffer();
+
+		String[] strArr1 = source.split(" ");
+		for (String str1 : strArr1) {
+			if (str1.contains("-")) {
+				String[] strArr2 = str1.split("-");
+				for (String str2 : strArr2) {
+					char[] stringArray = str2.trim().toCharArray();
+					stringArray[0] = Character.toUpperCase(stringArray[0]);
+					str2 = new String(stringArray);
+
+					res.append(str2).append("-");
+				}
+				res.setCharAt(res.length() - 1, ' ');
+			} else {
+				char[] stringArray = str1.trim().toCharArray();
+				stringArray[0] = Character.toUpperCase(stringArray[0]);
+				str1 = new String(stringArray);
+
+				res.append(str1).append(" ");
+			}
+
+		}
+		return res.toString();
+	}
+
+//	public static String numberToWords(long val) {
+//		return capitalizeWords(Common.numberToWords.getName(val));
+//	}
+//
+//	public static String numberToWords(double val) {
+//		return capitalizeWords(Common.numberToWords.getName(val));
+//	}
+	public static String numberToWords(boolean indian, String val) {
+		return capitalizeWords(indian ? Words.getInstance(Long.valueOf(val)).getNumberInWords().trim() : Common.numberToWords.getName(val));
+	}
+
+	public static String numberToWordsExtra(boolean indian, String total, CompanyDetailsEntity cd, boolean totalWithoutDecimals) {
+		String fractionalUnit = " Only";
+		if (cd.getCurrency().getCurrencySymbol().equals("USD")) {
+			fractionalUnit = "Cents Only";
+		} else if (cd.getCurrency().getCurrencySymbol().equals("CAD")) {
+			fractionalUnit = "Cents Only";
+		} else if (cd.getCurrency().getCurrencySymbol().equals("INR")) {
+			fractionalUnit = "Paise Only";
+		} else if (cd.getCurrency().getCurrencySymbol().equals("GBP")) {
+			fractionalUnit = "Pennies Only";
+		} else if (cd.getCurrency().getCurrencySymbol().equals("AUD")) {
+			fractionalUnit = "Cents Only";
+		} else if (cd.getCurrency().getCurrencySymbol().equals("EUR")) {
+			fractionalUnit = "Cents Only";
+		}
+
+		String firstPart = "";
+		String secondPart = "";
+		if (total.contains(".")) {
+			String[] split = total.split("\\.");
+			firstPart = SBStringUtils.numberToWords(indian, split[0]);
+			if (!totalWithoutDecimals && Integer.parseInt(split[1]) != 0) {
+				secondPart = SBStringUtils.numberToWords(indian, split[1]);
+			} else {
+				fractionalUnit = "Only";
+			}
+		} else {
+			firstPart = SBStringUtils.numberToWords(indian, total);
+			fractionalUnit = "Only";
+		}
+
+		return SBStringUtils.capitalizeNumberToWord(firstPart) + (!secondPart.isEmpty() ? ((firstPart.isEmpty() ? "" : "and ") + SBStringUtils.capitalizeNumberToWord(secondPart)) : "") + fractionalUnit;
+	}
+
+	public static String numberSeparators(boolean indian, String value) {
+
+		if (!indian) {
+			return value;
+		}
+
+		boolean hasMinus = false;
+		if (value.contains("-")) {
+			value = value.replace("-", "");
+			hasMinus = true;
+		}
+
+		String decimals = "";
+
+		value = value.replace(",", "");
+
+		if (value.contains(".")) {
+			String[] split = value.split("\\.");
+			value = split[0];
+			decimals = split[1];
+		}
+
+		char lastDigit = value.charAt(value.length() - 1);
+		String result = "";
+		int len = value.length() - 1;
+		int nDigits = 0;
+
+		for (int i = len - 1; i >= 0; i--) {
+			result = value.charAt(i) + result;
+			nDigits++;
+			if (((nDigits % 2) == 0) && (i > 0)) {
+				result = "," + result;
+			}
+		}
+		result = hasMinus ? ("-" + result) : result;
+		return (result + lastDigit + (decimals.isEmpty() ? "" : ("." + decimals)));
+	}
+}

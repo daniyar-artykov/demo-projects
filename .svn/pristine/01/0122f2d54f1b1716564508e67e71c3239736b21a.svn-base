@@ -1,0 +1,217 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.entities;
+
+import java.math.BigDecimal;
+
+import com.j256.ormlite.dao.ForeignCollection;
+import com.j256.ormlite.field.DataType;
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.field.ForeignCollectionField;
+import com.j256.ormlite.table.DatabaseTable;
+
+/**
+ *
+ * @author Andrei
+ */
+@DatabaseTable(tableName = "taxes")
+public class TaxEntity {
+    
+    public static final String TAX_NAME = "tax_name";
+    public static final String TAX_PERCENTAGE = "tax_percentage";
+    public static final String IS_DEFAULT_TAX = "is_default_tax";
+	public static final String TYPE = "type";
+    public static final String EXPLICIT_ORDER = "explicit_order";
+    public static final String DELETED = "deleted";
+    
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+    @DatabaseField(columnName = TAX_NAME, canBeNull = false)
+    protected String taxName;
+    @DatabaseField(columnName = TAX_PERCENTAGE, canBeNull = true)
+    protected BigDecimal taxPercentage;
+    @DatabaseField(columnName = IS_DEFAULT_TAX, canBeNull = true, dataType = DataType.BOOLEAN, defaultValue = "0" )
+    protected boolean isDefaultTax;
+    @DatabaseField(columnName = DELETED, canBeNull = false, defaultValue = "n")
+    protected String deleted;
+	@DatabaseField(columnName = TYPE, canBeNull = false, defaultValue = "normal")
+    protected String type;
+    @DatabaseField(columnName = EXPLICIT_ORDER, canBeNull = false, dataType = DataType.BOOLEAN, defaultValue = "0" )
+    protected boolean explicitOrder;
+    
+    @ForeignCollectionField(foreignFieldName = "tax")
+    protected ForeignCollection<ProductEntity> products;
+    @ForeignCollectionField(foreignFieldName = "tax")
+    protected ForeignCollection<InvoiceProductEntity> invoiceProducts;
+	@ForeignCollectionField(foreignFieldName = "mainTax")
+    protected ForeignCollection<TaxComboEntity> combinedTaxes;
+	
+	public static final String TYPE_NORMAL = "normal";
+    public static final String TYPE_COMBINED = "composed";
+	public static final String TYPE_MULTI = "multi";
+	
+	protected BigDecimal taxValue = BigDecimal.ZERO;//warning !!! maintained field !!!
+
+    public TaxEntity(TaxEntity taxesEntity) {
+        this.id = taxesEntity.id;
+        this.taxName = taxesEntity.taxName;
+        this.taxPercentage = taxesEntity.taxPercentage;
+        this.deleted = taxesEntity.deleted;
+        this.isDefaultTax = taxesEntity.isDefaultTax;
+        this.products = taxesEntity.products;
+        this.invoiceProducts = taxesEntity.invoiceProducts;
+		this.combinedTaxes = taxesEntity.combinedTaxes;
+		this.type = taxesEntity.type;
+		this.explicitOrder = taxesEntity.explicitOrder;
+    }
+
+    public TaxEntity() {
+    }
+
+    public TaxEntity(String tax_name, BigDecimal taxPercentage) {
+        this.taxName = tax_name;
+        this.taxPercentage = taxPercentage;
+    }
+
+    public TaxEntity(String taxName, BigDecimal taxPercentage, boolean isDefaultTax) {
+        this.taxName = taxName;
+        this.taxPercentage = taxPercentage;
+        this.isDefaultTax = isDefaultTax;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getTaxName() {
+        return taxName;
+    }
+
+    public void setTaxName(String taxName) {
+        this.taxName = taxName;
+    }
+
+    public BigDecimal getTaxPercentage() {
+        return taxPercentage;
+    }
+
+    public void setTaxPercentage(BigDecimal taxPercentage) {
+        this.taxPercentage = taxPercentage;
+    }
+
+    public boolean isDefaultTax() {
+        return isDefaultTax;
+    }
+
+    public void setIsDefaultTax(boolean isDefaultTax) {
+        this.isDefaultTax = isDefaultTax;
+    }
+
+    public ForeignCollection<ProductEntity> getProducts() {
+        return products;
+    }
+
+    public void setProducts(ForeignCollection<ProductEntity> products) {
+        this.products = products;
+    }
+
+    public ForeignCollection<InvoiceProductEntity> getInvoiceProducts() {
+        return invoiceProducts;
+    }
+
+    public void setInvoiceProducts(ForeignCollection<InvoiceProductEntity> invoiceProducts) {
+        this.invoiceProducts = invoiceProducts;
+    }
+
+    public String getDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(String deleted) {
+        this.deleted = deleted;
+    }
+
+	public ForeignCollection<TaxComboEntity> getCombinedTaxes() {
+		return combinedTaxes;
+	}
+
+	public void setCombinedTaxes(ForeignCollection<TaxComboEntity> combinedTaxes) {
+		this.combinedTaxes = combinedTaxes;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public boolean isExplicitOrder() {
+		return explicitOrder;
+	}
+
+	public void setExplicitOrder(boolean explicitOrder) {
+		this.explicitOrder = explicitOrder;
+	}
+
+	public BigDecimal getTaxValue() {
+		return taxValue;
+	}
+
+	public void setTaxValue(BigDecimal taxValue) {
+		this.taxValue = taxValue;
+	}
+
+	@Override
+	public int hashCode() {
+		int hash = 5;
+		hash = 89 * hash + this.id;
+		hash = 89 * hash + (this.taxName != null ? this.taxName.hashCode() : 0);
+		hash = 89 * hash + (this.taxPercentage != null ? this.taxPercentage.hashCode() : 0);
+		hash = 89 * hash + (this.isDefaultTax ? 1 : 0);
+		hash = 89 * hash + (this.deleted != null ? this.deleted.hashCode() : 0);
+		hash = 89 * hash + (this.type != null ? this.type.hashCode() : 0);
+		hash = 89 * hash + (this.explicitOrder ? 1 : 0);
+		return hash;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final TaxEntity other = (TaxEntity) obj;
+		if (this.id != other.id) {
+			return false;
+		}
+		if ((this.taxName == null) ? (other.taxName != null) : !this.taxName.equals(other.taxName)) {
+			return false;
+		}
+		if (this.taxPercentage != other.taxPercentage && (this.taxPercentage == null || !this.taxPercentage.equals(other.taxPercentage))) {
+			return false;
+		}
+		if (this.isDefaultTax != other.isDefaultTax) {
+			return false;
+		}
+		if ((this.deleted == null) ? (other.deleted != null) : !this.deleted.equals(other.deleted)) {
+			return false;
+		}
+		if ((this.type == null) ? (other.type != null) : !this.type.equals(other.type)) {
+			return false;
+		}
+		if (this.explicitOrder != other.explicitOrder) {
+			return false;
+		}
+		return true;
+	}
+}

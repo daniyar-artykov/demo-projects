@@ -1,0 +1,5 @@
+sample/jersey/Service.class
+sample/jersey/SampleJerseyApplication.class
+sample/jersey/JerseyConfig.class
+sample/jersey/ReverseEndpoint.class
+sample/jersey/Endpoint.class

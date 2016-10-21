@@ -1,0 +1,81 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+
+/**
+ *
+ * @author daniyar.artykov
+ */
+public class Test {
+
+    private static final SimpleDateFormat SDF = new SimpleDateFormat("dd-MM-yyyy");
+
+    public static void main(String[] args) {
+        Calendar c = Calendar.getInstance();
+//        c.set(Calendar.MONTH, 3);
+//        c.set(Calendar.DATE, 7);
+        System.out.println(">>> " + SDF.format(c.getTime()));
+
+        StringBuilder query = new StringBuilder();
+        query.append("SELECT * FROM invoices WHERE (issue_date BETWEEN '");
+        Calendar c1 = Calendar.getInstance();
+        String[] fiscYears = getFiscYear1(c.getTime(), c1.get(Calendar.YEAR) - 2);
+        query.append(fiscYears[0]);
+        query.append("-04-01' AND '");
+        query.append(fiscYears[1]);
+        query.append("-03-31') AND deleted = 'n' AND type = '");
+        query.append("s");
+        query.append("'");
+
+        System.out.println("query: " + query.toString());
+
+        System.out.println(getFiscYear(c.getTime(), 2014));
+    }
+
+    private static String[] getFiscYear1(Date date, int year) {
+        Calendar c = Calendar.getInstance();
+        if (year >= c.get(Calendar.YEAR)) {
+            return new String[]{"" + c.get(Calendar.YEAR), "" + (c.get(Calendar.YEAR) + 1)};
+        }
+
+        // from 1 April to 31 March
+        Calendar min = Calendar.getInstance();
+        min.set(year, Calendar.APRIL, 1);
+
+        Calendar max = Calendar.getInstance();
+        max.set(year + 1, Calendar.MARCH, 31);
+
+        if (date.after(min.getTime()) && date.before(max.getTime())) {
+            return new String[]{"" + year, "" + (year + 1)};
+        }
+
+        return getFiscYear1(date, year + 1);
+    }
+
+    private static String getFiscYear(Date date, int year) {
+        Calendar c = Calendar.getInstance();
+        if (year >= c.get(Calendar.YEAR)) {
+            return "";
+        }
+
+        // from 1 April to 31 March
+        Calendar min = Calendar.getInstance();
+        min.set(year, Calendar.APRIL, 1);
+
+        Calendar max = Calendar.getInstance();
+        max.set(year + 1, Calendar.MARCH, 31);
+
+        if (date.after(min.getTime()) && date.before(max.getTime())) {
+            return (year + "-" + (year + 1));
+        }
+
+        return getFiscYear(date, year + 1);
+    }
+}

@@ -1,0 +1,313 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+/*
+ * JPMainPane.java
+ *
+ * Created on Jan 7, 2010, 1:22:56 PM
+ */
+
+package sleekbill.swingutils;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JEditorPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
+
+import sleekbill.Config;
+
+/**
+ *
+ * @author flaviu m
+ */
+public class JPMainPane extends javax.swing.JPanel {
+
+    /** Creates new form JPMainPane */
+    public JPMainPane() {
+        this(new JPanel());
+    }
+
+
+    public JPMainPane(JPanel panel){
+        this(panel,null);
+    }
+
+    public JPMainPane(JPanel panel,JButton button){
+        initComponents();
+        jBClose.setBorder(null);
+//        mainJsp.setViewportView(panel);
+        jEPText.getCaret().deinstall(jEPText);
+        mainJsp.getVerticalScrollBar().setUnitIncrement(20);
+        mainJsp.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        jPUp.add(panel);
+        boolean isHelpVisible = "true".equals(new Config().get("show_bottom_help"));
+        jBClose.setIcon(new ImageIcon("./images/buttons/toggle.png"));
+        setFocusCycleRoot(false);
+        setFocusable(false);
+        jPComponents.setBorder(new RoundLineBorder(new Color(248,231,188)));
+
+        if(!isHelpVisible){
+            jBClose.setIcon(new ImageIcon("./images/buttons/toggle-expand.png"));
+            jPEPText.remove(jEPText);
+			jPEPText.remove(jLText);
+            jLSigla.setVisible(false);
+            jPComponents.setVisible(false); 
+    }
+        jEPText.setFocusable(false);
+        jBClose.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+//                Messages.showOkMessage(JPMainPane.this, "Puteti reafisa casuta de ajutor din Configurari generale!", "Atentie");
+//                if(jEPText.isShowing()){
+				if("true".equals(new Config().get("show_bottom_help"))){
+                    jBClose.setIcon(new ImageIcon("./images/buttons/toggle-expand.png"));                    
+//                    jPEPText.remove(jEPText);
+                    jPEPText.remove(jLText);
+                    jLSigla.setVisible(false);
+                    jPComponents.setVisible(false);                 
+                    new Config().set("show_bottom_help", "false");
+    }
+                else {
+                    jBClose.setIcon(new ImageIcon("./images/buttons/toggle.png"));                    
+//                    jPEPText.add(jEPText);
+                    jPEPText.add(jLText);
+                    jLSigla.setVisible(true);
+                    jPComponents.setVisible(true);
+                    new Config().set("show_bottom_help", "true");
+                }
+            }
+        });
+
+        if(button!=null) {
+            jPButton.add(button);
+        }
+        else jPButton.setVisible(false);
+
+    }
+
+    public JPMainPane(JPanel panel, JButton button, Dimension d) {
+        this(panel, button);
+        jPDown.setSize(d);
+        jPDown.setPreferredSize(d);
+    }
+    public void AdjustInsets(int top, int left, int bottom, int right){
+        
+        jPDown.remove(jPComponents);
+        GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(top, left, bottom, right);
+        jPDown.add(jPComponents, gridBagConstraints);
+    }
+
+    public void setText(String text){
+            jEPText.setText(text);
+			jLText.setText(text);
+    }
+
+    public void setTextLater(final String text){
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                jEPText.setText(text);
+				jLText.setText(text);
+            }
+        });
+    }
+
+    public Component getHelpPane(){
+        return jPDown;
+    }
+
+    public JScrollPane getScrollPane(){
+        return mainJsp;
+    }
+
+    public void addActionListenerToCloseButton(ActionListener al){
+        jBClose.addActionListener(al);
+    }
+
+    public boolean isHelpCollapsed(){
+//        return !jEPText.isShowing();
+		return !jLText.isShowing();
+    }
+
+    public void showHelp(boolean show){
+        jPDown.setVisible(show);
+    }
+    /** This method is called from within the constructor to
+     * initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is
+     * always regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
+
+        jPButton = new javax.swing.JPanel();
+        jEPText = new JEditorPane(){
+            public void setText(String t){
+                super.setText(t);
+                this.revalidate();
+            }
+        };
+        mainJsp = new JScrollPane(){
+            public Dimension getPreferredScrollableViewportSize(){
+                return null;
+            }
+            boolean getScrollableTracksViewportHeight(){
+                return false;
+            }
+            boolean getScrollableTracksViewportWidth(){
+                return false;
+            }
+        };
+        jPMain = new javax.swing.JPanel();
+        jPUp = new javax.swing.JPanel();
+        jPDown = new javax.swing.JPanel();
+        jBClose = new javax.swing.JButton();
+        jPComponents = new javax.swing.JPanel();
+        jLSigla = new javax.swing.JLabel();
+        jPEPText = new javax.swing.JPanel();
+        jLText = new javax.swing.JLabel();
+
+        jEPText.setBackground(new java.awt.Color(255, 255, 204));
+        jEPText.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(153, 0, 153)));
+        jEPText.setContentType("text/html"); // NOI18N
+        jEPText.setEditable(false);
+        jEPText.setAutoscrolls(false);
+        jEPText.setFocusable(false);
+
+        setLayout(new javax.swing.BoxLayout(this, javax.swing.BoxLayout.LINE_AXIS));
+
+        mainJsp.setBorder(null);
+        mainJsp.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                mainJspPropertyChange(evt);
+            }
+        });
+
+        jPMain.setLayout(new java.awt.GridBagLayout());
+
+        jPUp.setLayout(new javax.swing.BoxLayout(jPUp, javax.swing.BoxLayout.LINE_AXIS));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.SOUTHWEST;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.weighty = 0.1;
+        jPMain.add(jPUp, gridBagConstraints);
+
+        jPDown.setMinimumSize(new java.awt.Dimension(702, 80));
+        jPDown.setPreferredSize(new java.awt.Dimension(776, 90));
+        jPDown.setLayout(new java.awt.GridBagLayout());
+
+        jBClose.setOpaque(false);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.gridheight = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.weighty = 0.05;
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 5);
+        jPDown.add(jBClose, gridBagConstraints);
+
+        jPComponents.setBackground(new java.awt.Color(255, 255, 204));
+        jPComponents.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, null, new java.awt.Color(248, 231, 188)));
+        jPComponents.setLayout(new java.awt.GridBagLayout());
+
+        jLSigla.setBackground(new java.awt.Color(255, 255, 255));
+        jLSigla.setIcon(new ImageIcon("./images/icons/ico_intrebare.png"));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 15, 5, 5);
+        jPComponents.add(jLSigla, gridBagConstraints);
+
+        jPEPText.setBackground(new java.awt.Color(255, 255, 204));
+        jPEPText.setLayout(new javax.swing.BoxLayout(jPEPText, javax.swing.BoxLayout.LINE_AXIS));
+
+        jLText.setPreferredSize(new java.awt.Dimension(650, 70));
+        jPEPText.add(jLText);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.01;
+        gridBagConstraints.weighty = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPComponents.add(jPEPText, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.01;
+        gridBagConstraints.insets = new java.awt.Insets(5, 10, 0, 0);
+        jPDown.add(jPComponents, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.weighty = 0.5;
+        jPMain.add(jPDown, gridBagConstraints);
+
+        mainJsp.setViewportView(jPMain);
+
+        add(mainJsp);
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void mainJspPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_mainJspPropertyChange
+    }//GEN-LAST:event_mainJspPropertyChange
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    protected javax.swing.JButton jBClose;
+    protected javax.swing.JEditorPane jEPText;
+    protected javax.swing.JLabel jLSigla;
+    protected javax.swing.JLabel jLText;
+    protected javax.swing.JPanel jPButton;
+    protected javax.swing.JPanel jPComponents;
+    protected javax.swing.JPanel jPDown;
+    protected javax.swing.JPanel jPEPText;
+    protected javax.swing.JPanel jPMain;
+    protected javax.swing.JPanel jPUp;
+    protected javax.swing.JScrollPane mainJsp;
+    // End of variables declaration//GEN-END:variables
+
+    public void setHelpSize(Dimension dimension) {
+        jEPText.setPreferredSize(dimension);
+		jLText.setPreferredSize(dimension);
+		jPDown.setPreferredSize(dimension);
+    }
+    public void fillHelpHorizontal(){
+        GridBagConstraints gbc = ((GridBagLayout)jPMain.getLayout()).getConstraints(jPDown);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        ((GridBagLayout)jPMain.getLayout()).setConstraints(jPDown, gbc);
+    }
+}

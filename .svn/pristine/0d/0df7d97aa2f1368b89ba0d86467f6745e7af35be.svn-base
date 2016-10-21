@@ -1,0 +1,1681 @@
+package sleekbill.beans;
+
+import java.io.File;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+
+import sleekbill.Common;
+import sleekbill.Config;
+import sleekbill.db.SBConnection;
+import sleekbill.entities.CompanyDetailsEntity;
+import sleekbill.entities.InvoiceEntity;
+import sleekbill.entities.InvoiceProductEntity;
+import sleekbill.entities.StateEntity;
+import sleekbill.entities.TaxEntity;
+import sleekbill.jasper.Document;
+import sleekbill.util.PayPalUtilities;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.dao.GenericRawResults;
+import com.j256.ormlite.dao.RawRowMapper;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.misc.TransactionManager;
+import com.j256.ormlite.stmt.PreparedQuery;
+import com.j256.ormlite.stmt.SelectArg;
+import com.j256.ormlite.stmt.UpdateBuilder;
+import java.text.NumberFormat;
+import java.util.Calendar;
+import sleekbill.utils.SBStringUtils;
+
+public class Invoice extends InvoiceEntity implements Document {
+
+    public static final String TYPE_STANDARD = "s";
+    public static final String TYPE_TAX = "t";
+    public static final String TYPE_RETAIL = "r";
+    public static final String TYPE_EXCISE = "e";
+
+    public static final String DOCUMENT_TYPE_NAME = "invoice";
+    static final String[] columnNames = new String[]{"NO", "PRODUCT", "DESCRIPTION", "UM", "QUANTITY", "PRICE", "DISCOUNT", "VALUE", "AMOUNT", "TAX_AMOUNT", "TAX_NAME", "BREAK"};
+    private Dao<InvoiceEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+    private List<InvoiceProduct> lazyProducts = new ArrayList<InvoiceProduct>();
+//    Integer printId = 0;
+//    int layoutId = 0;
+    private Estimate estimate = null;
+    private Integer formerId = 0;
+    private Payment payment = null;
+    private InvoicePayment invoicePayment = null;
+
+    public Invoice(InvoiceEntity invoicesEntity) {
+        this(0);
+        this.id = invoicesEntity.getId();
+        this.number = invoicesEntity.getNumber();
+        this.numberPrefix = invoicesEntity.getNumberPrefix();
+        this.secondNumber = invoicesEntity.getSecondNumber();
+        this.issueDate = invoicesEntity.getIssueDate();
+        this.dueDate = invoicesEntity.getDueDate();
+        this.companyDetails = invoicesEntity.getCompanyDetails();
+        this.client = invoicesEntity.getClient();
+        this.clientName = invoicesEntity.getClientName();
+        this.clientCode = invoicesEntity.getClientCode();
+        this.clientEmail = invoicesEntity.getClientEmail();
+        this.clientTelephone = invoicesEntity.getClientTelephone();
+        this.clientContact = invoicesEntity.getClientContact();
+        this.clientBillingAddress = invoicesEntity.getClientBillingAddress();
+        this.clientBillingZip = invoicesEntity.getClientBillingZip();
+        this.clientBillingCity = invoicesEntity.getClientBillingCity();
+        this.clientShippingAddress = invoicesEntity.getClientShippingAddress();
+        this.clientShippingZip = invoicesEntity.getClientShippingZip();
+        this.clientShippingCity = invoicesEntity.getClientShippingCity();
+        this.isPaid = invoicesEntity.isPaid();
+        this.isDraft = invoicesEntity.isDraft();
+        this.totalNoTax = invoicesEntity.getTotalNoTax();
+        this.totalTax = invoicesEntity.getTotalTax();
+        this.totalAll = invoicesEntity.getTotalAll();
+        this.internalNotes = invoicesEntity.getInternalNotes();
+        this.invoiceNotes = invoicesEntity.getInvoiceNotes();
+        this.deleted = invoicesEntity.getDeleted();
+        this.color = invoicesEntity.getColor();
+        this.poNumber = invoicesEntity.getPoNumber();
+        this.pageSize = invoicesEntity.getPageSize();
+        this.clientBillingState = invoicesEntity.getClientBillingState();
+        this.clientShippingState = invoicesEntity.getClientShippingState();
+        this.invoiceProducts = invoicesEntity.getInvoiceProducts();
+        this.payEmail = invoicesEntity.getPayEmail();
+        this.isPayOnline = invoicesEntity.isPayOnline();
+        this.logo = invoicesEntity.getLogo();
+        this.flag = invoicesEntity.getFlag();
+        this.layout = invoicesEntity.getLayout();
+        this.printId = invoicesEntity.getPrintId();
+        this.discount = invoicesEntity.getDiscount();
+        this.sent = invoicesEntity.isSent();
+        this.type = invoicesEntity.getType();
+    }
+
+    public Invoice() {
+        this(0);
+    }
+
+    public Invoice(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager
+                        .createDao(mainConnection, InvoiceEntity.class);
+
+                if (id != null && id != 0) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void refreshDao() {
+        try {
+            mainDao = DaoManager
+                    .createDao(Common.connection.getConnection(), InvoiceEntity.class);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void create() throws Exception {
+        mainDao.create(this);
+    }
+
+    public InvoiceEntity read(Integer id) throws Exception {
+        return mainDao.queryForId(id);
+    }
+
+    public void update() throws Exception {
+        mainDao.update(this);
+    }
+
+    public void delete() throws Exception {
+        mainDao.delete(this);
+    }
+
+    @Override
+    public void save() throws Exception {
+        add(mainConnection, this, formerId);
+        if (estimate != null) {
+            EstimateConversion ec = new EstimateConversion();
+            ec.setEstimate(estimate);
+            ec.setInvoice(this);
+            ec.create();
+        }
+
+        if (formerId != 0) {
+            Dao<InvoiceEntity, Integer> invoiceDao = DaoManager.createDao(Common.connection.getConnection(), InvoiceEntity.class);
+            UpdateBuilder<InvoiceEntity, Integer> updateBuilder = invoiceDao.updateBuilder();
+            updateBuilder.updateColumnValue(Invoice.DELETED, "y");
+            updateBuilder.where().eq("id", formerId);
+            updateBuilder.update();
+
+            InvoicePayment.editInvoice(mainConnection, formerId, id);
+        }
+
+        if (formerId == 0 && payment != null && invoicePayment != null) {
+            payment.create();
+            invoicePayment.setPayment(payment);
+            invoicePayment.create();
+        }
+
+        // change last flag, mark invoice number started new point
+        try {
+            Flag flagLocal = Flag.getLast(Common.connection.getConnection());
+            if (flagLocal != null && flagLocal.isEndFiscYear()
+                    && flagLocal.getFiscYearStart() != null
+                    && flagLocal.getFiscYearStart().length() > 0) {
+                flagLocal.setFiscYearStart(null);
+                Flag.add(Common.connection.getConnection(), flagLocal);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static void add(final JdbcConnectionSource connectionSource, final Invoice invoice, final int formerId) throws SBDaoException, SQLException {
+
+        TransactionManager.callInTransaction(connectionSource, new Callable() {
+            @Override
+            public Void call() throws Exception {
+
+                Dao<InvoiceEntity, Integer> invoicesDao = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+
+                invoicesDao.create(invoice);
+//TODO de utilizat connectionSource.           
+//                invoice.create();
+                invoice.storeLazyProducts(connectionSource);
+
+                Invoice formerInvoice = null;
+                if (formerId != 0) {
+                    formerInvoice = new Invoice(formerId);
+                }
+
+                if (Common.keepStocks()) {
+                    for (InvoiceProductEntity product : invoice.getInvoiceProducts()) {
+                        Stock stock = Stock.getByProductId(Common.connection.getConnection(), product.getProduct().getId());
+                        if (stock != null && stock.getQuantity() != null) {
+
+                            BigDecimal formerQuantity = BigDecimal.ZERO;
+                            if (formerInvoice != null) {
+                                for (InvoiceProductEntity formerProduct : formerInvoice.getInvoiceProducts()) {
+                                    if (formerProduct.getProduct().getId() == product.getProduct().getId()) {
+                                        formerQuantity = formerProduct.getQuantity();
+                                    }
+                                }
+                            }
+                            stock.setProduct(product.getProduct());
+                            stock.setQuantity(stock.getQuantity().subtract(product.getQuantity().subtract(formerQuantity)));
+                            stock.update();
+                        }
+                    }
+                }
+
+                return null;
+            }
+        });
+    }
+
+    public static Invoice get(JdbcConnectionSource connectionSource, Integer id) throws Exception {
+        Dao<InvoiceEntity, Integer> invoicesDao = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+        if (id != null) {
+            Invoice i = new Invoice();
+            i.setId(id);
+            if (invoicesDao.refresh(i) != 0) {
+                return i;
+            }
+        }
+        return null;
+    }
+
+    public static Invoice getLast(JdbcConnectionSource connectionSource) throws SBDaoException, SQLException {
+        Dao<InvoiceEntity, Integer> dao = DaoManager.createDao(Common.connection.getConnection(), InvoiceEntity.class);
+        PreparedQuery<InvoiceEntity> pq = dao.queryBuilder().orderBy("id", false).limit(1L).prepare();
+        List<InvoiceEntity> list = dao.query(pq);
+        if (list.size() > 0) {
+
+            return new Invoice(list.get(0));
+        }
+
+        return null;
+    }
+
+    public static boolean hasPriorMismatch(JdbcConnectionSource connectionSource, 
+            String number, Date date, String type, boolean endFiscYear) throws Exception {
+        if (Common.hasLettersOrNonNumbers(number)) {
+            return false;
+        }
+        Dao<InvoiceEntity, Integer> invoiceDao = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+        GenericRawResults<String[]> queryRaw = invoiceDao.queryRaw("SELECT count(*) FROM invoices WHERE CAST(number as integer) > " + number + " AND issue_date < '" + Common.SQLITE_DATE_FORMAT.format(date) + "' AND deleted = 'n'" + " AND type = '" + type + "'");
+        List<String[]> results = queryRaw.getResults();
+        String[] get = results.get(0);
+        return (Integer.parseInt(get[0]) > 0);
+    }
+
+    public static boolean hasLaterMismatch(JdbcConnectionSource connectionSource, String number, Date date, String type) throws Exception {
+        if (Common.hasLettersOrNonNumbers(number)) {
+            return false;
+        }
+        Dao<InvoiceEntity, Integer> invoiceDao = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+        GenericRawResults<String[]> queryRaw = invoiceDao.queryRaw("SELECT count(*) FROM invoices WHERE CAST(number as integer) < " + number + " AND issue_date >'" + Common.SQLITE_DATE_FORMAT.format(date) + "' AND deleted = 'n'" + " AND type = '" + type + "'");
+        List<String[]> results = queryRaw.getResults();
+        String[] get = results.get(0);
+        return (Integer.parseInt(get[0]) > 0);
+    }
+
+    public static boolean isInvoiceExist(JdbcConnectionSource connectionSource,
+            String number, String type, Date issueDate, boolean endFiscYear) {
+        try {
+            StringBuilder query = new StringBuilder();
+            if (endFiscYear) {
+                query.append("SELECT * FROM invoices WHERE (issue_date BETWEEN '");
+                Calendar c = Calendar.getInstance();
+                String[] fiscYears = getFiscYear(c.getTime(), c.get(Calendar.YEAR) - 2);
+                query.append(fiscYears[0]);
+                query.append("-04-01' AND '");
+                query.append(fiscYears[1]);
+                query.append("-03-31') AND deleted = 'n' AND type = '");
+                query.append(type);
+                query.append("' AND number = '");
+                query.append(number);
+                query.append("'");
+            } else {
+                query.append("SELECT * FROM invoices WHERE number = '");
+                query.append(number);
+                query.append("' AND deleted = 'n' AND type = '");
+                query.append(type);
+                query.append("'");
+            }
+            System.out.println("query: " + query.toString());
+
+            Dao<InvoiceEntity, Integer> invoicesDao = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+            GenericRawResults<String[]> queryRaw = invoicesDao.queryRaw(query.toString());
+            List<String[]> results = queryRaw.getResults();
+
+            return !results.isEmpty();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return false;
+    }
+
+    private static String[] getFiscYear(Date date, int year) {
+        Calendar c = Calendar.getInstance();
+        if (year >= c.get(Calendar.YEAR)) {
+            return new String[]{"" + c.get(Calendar.YEAR), "" + (c.get(Calendar.YEAR) + 1)};
+        }
+
+        // from 1 April to 31 March
+        Calendar min = Calendar.getInstance();
+        min.set(year, Calendar.APRIL, 1);
+
+        Calendar max = Calendar.getInstance();
+        max.set(year + 1, Calendar.MARCH, 31);
+
+        if (date.after(min.getTime()) && date.before(max.getTime())) {
+            return new String[]{"" + year, "" + (year + 1)};
+        }
+
+        return getFiscYear(date, year + 1);
+    }
+
+    public static Invoice get(JdbcConnectionSource connectionSource, String number, String type) throws Exception {
+        SelectArg selectArg = new SelectArg();
+        Dao<InvoiceEntity, Integer> invoicesDao = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+        PreparedQuery<InvoiceEntity> pq = invoicesDao.queryBuilder().where().eq(InvoiceEntity.NUMBER, selectArg).and()
+                .eq(InvoiceEntity.DELETED, "n").and().eq(InvoiceEntity.TYPE, type).prepare();
+        selectArg.setValue(number);
+        List<InvoiceEntity> list = invoicesDao.query(pq);
+        if (list != null && list.size() > 0) {
+            return new Invoice(list.get(0));
+        }
+        return null;
+    }
+
+    public static long getCount(SBConnection connection) throws SBDaoException, SQLException {
+        Dao<InvoiceEntity, Integer> invoicesDao = DaoManager.createDao(connection.getConnection(), InvoiceEntity.class);
+        return invoicesDao.countOf();
+    }
+
+    public static long getAllDocumentsCount(JdbcConnectionSource connectionSource) {
+        try {
+            String SQL = ""
+                    + "SELECT "
+                    + "    SUM(doc_count) "
+                    + "FROM "
+                    + "    ( "
+                    + "        SELECT "
+                    + "            COUNT(*) AS doc_count "
+                    + "        FROM "
+                    + "            invoices "
+                    + "        WHERE "
+                    + "            issue_date BETWEEN DATE('now', 'start of month') AND DATE('now','start of month', "
+                    + "            '+1 month', '-1 day') AND deleted='n'"
+                    + "        UNION ALL "
+                    + "        SELECT "
+                    + "            COUNT(*) AS doc_count "
+                    + "        FROM "
+                    + "            estimate "
+                    + "        WHERE "
+                    + "            issue_date BETWEEN DATE('now', 'start of month') AND DATE('now','start of month', '+1 month', '-1 day') AND deleted='n' )";
+            Dao<InvoiceEntity, Integer> invoicesDao = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+            GenericRawResults<String[]> queryRaw = invoicesDao.queryRaw(SQL);
+            List<String[]> results = queryRaw.getResults();
+
+            return Integer.valueOf(results.get(0)[0].toString());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return 0;
+    }
+
+    public static long getAllTimeDocumentsCount(JdbcConnectionSource connectionSource) {
+        try {
+            String SQL = ""
+                    + "SELECT "
+                    + "    SUM(doc_count) "
+                    + "FROM "
+                    + "    ( "
+                    + "        SELECT "
+                    + "            COUNT(*) AS doc_count "
+                    + "        FROM "
+                    + "            invoices "
+                    + "        WHERE deleted='n'"
+                    + "        UNION ALL "
+                    + "        SELECT "
+                    + "            COUNT(*) AS doc_count "
+                    + "        FROM "
+                    + "            estimate "
+                    + "        WHERE deleted='n' )";
+            Dao<InvoiceEntity, Integer> invoicesDao = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+            GenericRawResults<String[]> queryRaw = invoicesDao.queryRaw(SQL);
+            List<String[]> results = queryRaw.getResults();
+
+            return Integer.valueOf(results.get(0)[0].toString());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return 0;
+    }
+
+    public static int getLastUsedLayout(JdbcConnectionSource connectionSource) throws Exception {
+
+        Dao<InvoiceEntity, Integer> invoicesDao = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+        PreparedQuery<InvoiceEntity> pq = invoicesDao.queryBuilder().orderBy("id", false).limit(1L).prepare();
+        List<InvoiceEntity> list = invoicesDao.query(pq);
+        if (list.size() > 0) {
+            return list.get(0).getLayout();
+        }
+        return 1;
+    }
+
+    public static String getLastUsedTerm(SBConnection connection) {
+
+        return calculateDifference(getLastDueDays(connection));
+
+//        Dao<InvoiceEntity, Integer> invoicesDao = DaoManager.createDao(connection.getConnection(), InvoiceEntity.class);
+//        List<InvoiceEntity> query = invoicesDao.query(invoicesDao.queryBuilder().orderBy("id", false).limit(3L).prepare());
+//
+//        if (query.size() == 0) {
+//            return "";
+//        }
+//
+//        if (query.size() < 3) {
+//            return calculateDifference(query.get(0).getIssueDate(), query.get(0).getDueDate());
+//        } else {
+//            String a = calculateDifference(query.get(0).getIssueDate(), query.get(0).getDueDate());
+//            String b = calculateDifference(query.get(1).getIssueDate(), query.get(1).getDueDate());
+//            String c = calculateDifference(query.get(2).getIssueDate(), query.get(2).getDueDate());
+//
+//            if (a.equalsIgnoreCase(b) && b.equalsIgnoreCase(c) && c.equalsIgnoreCase(a)) {
+//                return a;
+//            }
+//            if (!a.equalsIgnoreCase(b) && !b.equalsIgnoreCase(c) && !c.equalsIgnoreCase(a)) {
+//                return a;
+//            }
+//
+//            if (a.equalsIgnoreCase(b)) {
+//                return a;
+//            }
+//            if (b.equalsIgnoreCase(c)) {
+//                return b;
+//            }
+//            if (c.equalsIgnoreCase(a)) {
+//                return c;
+//            }
+//
+//            return "";
+//        }
+    }
+
+    public static String calculateDifference(long days) {
+
+        if (days == 10
+                || days == 15
+                || days == 30
+                || days == 45
+                || days == 60
+                || days == 90) {
+            return "Net " + days;
+        }
+
+        if (days == 0) {
+            return "Due On Receipt";
+        }
+
+        return "Due On The Specified Date";
+    }
+
+    public Dao<InvoiceEntity, Integer> getMainDao() {
+        return mainDao;
+    }
+
+    public void setMainDao(Dao<InvoiceEntity, Integer> mainDao) {
+        this.mainDao = mainDao;
+    }
+
+    public List<InvoiceProduct> getLazyProducts() {
+        return lazyProducts;
+    }
+
+    public void setLazyProducts(List<InvoiceProduct> lazyProducts) {
+        this.lazyProducts = lazyProducts;
+    }
+
+    public void addProduct(InvoiceProduct product) {
+        this.lazyProducts.add(product);
+    }
+
+    public void deleteProduct(InvoiceProduct product) {
+        this.lazyProducts.remove(product);
+    }
+
+    public void storeLazyProducts(JdbcConnectionSource connectionSource) throws SQLException {
+
+        Dao<InvoiceEntity, Integer> invoicesDao = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+
+        invoicesDao.assignEmptyForeignCollection(this, "invoiceProducts");
+
+//        TransactionManager.callInTransaction(connectionSource, new Callable() {
+//            @Override
+//            public Void call() throws Exception {
+        for (InvoiceProduct item : lazyProducts) {
+
+            invoiceProducts.add(item);
+        }
+//                return null;
+//            }
+//        });
+
+    }
+
+    public static int getLastDueDays(SBConnection connection) {
+        int ret = -1;
+        Dao<InvoiceEntity, Integer> invoicesDao;
+        try {
+            invoicesDao = DaoManager.createDao(connection.getConnection(), InvoiceEntity.class);
+            GenericRawResults<Integer> rawResults
+                    = invoicesDao.queryRaw(
+                            "SELECT COUNT(days) AS cdays,vt.days"
+                            + " FROM( SELECT id, CASE WHEN (CAST((julianday(ifnull(due_date,'1990-01-17')) - julianday(issue_date)) AS INTEGER) NOT IN (0,10,15,30,45,60,90)) "
+                            + "THEN 100 ELSE CAST((julianday(ifnull(due_date,'1990-01-17')) - julianday(issue_date)) AS INTEGER) END AS days FROM invoices ORDER BY id DESC LIMIT 3 ) AS vt"
+                            + " GROUP BY vt.days ORDER BY COUNT(days) DESC, vt.id DESC",
+                            new RawRowMapper<Integer>() {
+                        public Integer mapRow(String[] columnNames, String[] resultColumns) {
+                            int days = 0;
+                            try {
+                                days = Integer.parseInt(resultColumns[1]);
+                            } catch (NumberFormatException e) {
+                            }
+
+                            return days;
+                        }
+                    });
+
+            List<Integer> days = rawResults.getResults();
+            if (days.size() > 0) {
+                return days.get(0);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return ret;
+    }
+
+    public static boolean usesPONumber(SBConnection connection) {
+        boolean ret = true;
+        Dao<InvoiceEntity, Integer> invoicesDao;
+        try {
+            invoicesDao = DaoManager.createDao(connection.getConnection(), InvoiceEntity.class);
+            GenericRawResults<String> rawResults
+                    = invoicesDao.queryRaw(
+                            "SELECT po_number from invoices ORDER BY id DESC LIMIT 3",
+                            new RawRowMapper<String>() {
+                        public String mapRow(String[] columnNames, String[] resultColumns) {
+                            return resultColumns[0];
+                        }
+                    });
+
+            int yes = 0;
+            int no = 0;
+
+            List<String> poList = rawResults.getResults();
+            for (String po : poList) {
+                if (po == null || po.isEmpty()) {
+                    no++;
+                    continue;
+                }
+                yes++;
+            }
+
+            return yes > no;
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return ret;
+    }
+
+    public static Date getLastIssueDate(SBConnection connection) {
+        Date ret = new Date();
+        Dao<InvoiceEntity, Integer> invoicesDao;
+        try {
+            invoicesDao = DaoManager.createDao(connection.getConnection(), InvoiceEntity.class);
+
+            GenericRawResults<String[]> rawResults = invoicesDao.queryRaw(
+                    "SELECT MAX(issue_date) from invoices where deleted='n'");
+            List<String[]> results = rawResults.getResults();
+            String date = results.get(0)[0];
+            return Common.SQLITE_DATE_FORMAT.parse(date);
+
+        } catch (Exception ex) {
+        }
+
+        return ret;
+    }
+
+//	@Override
+//	public String getReportTitle() {
+//		// TODO Auto-generated method stub
+//		return null;
+//	}
+    @Override
+    public String getSerie() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getNumber() {
+        return number;
+    }
+
+    @Override
+    public Integer getDocumentPrintId() {
+        return printId;
+    }
+
+    @Override
+    public void setDocumentPrintId(int printId) {
+        this.printId = printId;
+    }
+
+    @Override
+    public String[] getColumnsNames() {
+        return columnNames;
+    }
+
+    @Override
+    public Object[][] getDataForPrint() {
+
+        boolean valueWithTax = false;
+        if (getFlag() != null) {
+            valueWithTax = getFlag().getValueWithTax();
+        }
+
+        NumberFormat nf = NumberFormat.getInstance();
+        nf.setMinimumFractionDigits(getFlag() == null ? Common.PRECISION : getFlag().getDecimals());
+        nf.setMaximumFractionDigits(getFlag() == null ? Common.PRECISION : getFlag().getDecimals());
+        ArrayList<String[]> data = new ArrayList<String[]>();
+        int no = 1;
+
+        if (this.invoiceProducts != null) {
+            for (InvoiceProductEntity invEntity : this.invoiceProducts) {
+                boolean description = invEntity.getDescription() != null && !invEntity.getDescription().isEmpty();
+                String descriptionProduct = (description ? (invEntity.getDescription()) : "");
+                String total = "";
+                String strTax = invEntity.getTax().getTaxName() + " " + invEntity.getTax().getTaxPercentage() + "%";
+                String strDiscount = invEntity.getDiscountPercentage().compareTo(BigDecimal.ZERO) == 0 ? "" : "-Discount " + invEntity.getDiscountPercentage() + "%";
+                if (valueWithTax) {
+                    total = SBStringUtils.numberSeparators(getFlag().isIndianFormat(), nf.format(invEntity.getTotalAll()));
+                } else {
+                    total = SBStringUtils.numberSeparators(getFlag().isIndianFormat(), nf.format(invEntity.getTotalNoTax()));
+                }
+                data.add(new String[]{String.valueOf(no),//no
+                    invEntity.getName(),//product
+                    descriptionProduct,//description
+                    invEntity.getMeasuringUnit(),//um
+                    invEntity.getQuantity().toPlainString(),//quantty
+                    SBStringUtils.numberSeparators(getFlag().isIndianFormat(), nf.format(invEntity.getPrice())),//price
+                    strDiscount,//discount
+                    SBStringUtils.numberSeparators(getFlag().isIndianFormat(), nf.format(invEntity.getTotalNoTax())),//value
+                    total, //amount
+                    SBStringUtils.numberSeparators(getFlag().isIndianFormat(), nf.format(invEntity.getTotalAll().subtract(invEntity.getTotalNoTax()))),//tax amount
+                    strTax, //tax name
+                    "0"});
+                no++;
+            }
+        } else if (this.lazyProducts != null) {
+            for (InvoiceProduct invEntity : this.lazyProducts) {
+                boolean description = invEntity.getDescription() != null && !invEntity.getDescription().isEmpty();
+                String descriptionProduct = (description ? (invEntity.getDescription()) : "");
+                String total = "";
+                String strTax = invEntity.getTax().getTaxName() + " " + invEntity.getTax().getTaxPercentage() + "%";
+                String strDiscount = invEntity.getDiscountPercentage().compareTo(BigDecimal.ZERO) == 0 ? "" : "-" + invEntity.getDiscountPercentage() + "%";
+                if (valueWithTax) {
+                    total = SBStringUtils.numberSeparators(getFlag().isIndianFormat(), nf.format(invEntity.getTotalAll()));
+                } else {
+                    total = SBStringUtils.numberSeparators(getFlag().isIndianFormat(), nf.format(invEntity.getTotalNoTax()));
+                }
+                data.add(new String[]{String.valueOf(no),//no
+                    invEntity.getName(),//product
+                    descriptionProduct,//description
+                    invEntity.getMeasuringUnit(),//um
+                    invEntity.getQuantity().toPlainString(),//quantty
+                    SBStringUtils.numberSeparators(getFlag().isIndianFormat(), nf.format(invEntity.getPrice())),//price
+                    strDiscount,//discount
+                    SBStringUtils.numberSeparators(getFlag().isIndianFormat(), nf.format(invEntity.getTotalNoTax())),//value
+                    total, //amount
+                    SBStringUtils.numberSeparators(getFlag().isIndianFormat(), nf.format(invEntity.getTotalAll().subtract(invEntity.getTotalNoTax()))),//tax amount
+                    strTax, //tax name
+                    "0"});
+                no++;
+            }
+        }
+        if (data.size() == 0) {
+            data.add(new String[]{"", "", "", "", "", "", "", "", "", "", "", ""});
+        }
+
+        //test simboluri
+//        try {
+//            Dao<CurrencyEntity, Integer> currenciesDao = DaoManager.createDao(mainConnection, CurrencyEntity.class);
+//            List<CurrencyEntity> cc = currenciesDao.queryForAll();
+//            String text = "";
+//            for (CurrencyEntity currencyEntity : cc) {
+//                text += currencyEntity.getSymbol();
+//                data.add(new String[]{String.valueOf(no), currencyEntity.getCurrencyName(), currencyEntity.getSymbol(),
+//                    currencyEntity.getSymbol(), currencyEntity.getSymbol(), "0"});
+////				System.out.println(String.format("%040x", new BigInteger(currencyEntity.getSymbol().getBytes(/*YOUR_CHARSET?*/))));
+////				System.out.println(StringEscapeUtils.escapeJava(currencyEntity.getSymbol()));
+//                no++;
+//            }
+//            data.add(new String[]{"", text, "", "", "", ""});
+//        } catch (SQLException e) {
+//            // TODO Auto-generated catch block
+//            e.printStackTrace();
+//        }      
+        return data.toArray(new String[][]{});
+    }
+
+    @Override
+    public Object[][] getDataForPrintAlb() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+//	@Override
+//	public DocumentType getTemplate() {
+//		// TODO Auto-generated method stub
+//		return null;
+//	}
+//
+//	@Override
+//	public DocumentType getMainTemplate() {
+//		// TODO Auto-generated method stub
+//		return null;
+//	}
+//
+//	@Override
+//	public DocumentType getAltTemplate() {
+//		// TODO Auto-generated method stub
+//		return null;
+//	}
+//    @Override
+//    public int getLayoutId() {
+//        return layoutId;
+//    }
+//
+//    public void setLayoutId(int layoutId) {
+//        this.layoutId = layoutId;
+//    }
+    @Override
+    public Map<String, Object> getJasperParams() {
+        boolean totalWithoutDecimals = false;
+        boolean totalInWords = false;
+        boolean showSignature = false;
+        boolean showShipping = false;
+        boolean replacePaypal = false;
+        boolean hideAmount = false;
+        boolean showUmColumn = false;
+        boolean showTaxPercentage = false;
+        boolean showPriceColumn = false;
+        boolean showQuantityColumn = false;
+        boolean showTaxColumn = false;
+        String poLabel = "P.O. Number";
+
+        if (getFlag() != null) {
+            totalWithoutDecimals = getFlag().isTotalWithoutDecimals();
+            totalInWords = getFlag().isTotalInWords() && !Common.selectedCompanyConfig.get(Config.INDIA).equals("free");
+            showSignature = getFlag().isShowSignature();
+            showShipping = getFlag().isShowShipping();
+            replacePaypal = getFlag().isReplacePaypal();
+            hideAmount = getFlag().isHideAmount();
+            showTaxPercentage = getFlag().isShowTaxPercentage();
+            showUmColumn = getFlag().isShowUmColumn();
+            showQuantityColumn = !getFlag().isReplaceQuantity();
+            showPriceColumn = getFlag().isShowUPColumn();
+            showTaxColumn = getFlag().isShowTaxColumn();
+            poLabel = getFlag().getPoNumberLabel();
+
+//  @TO UNDO: PENTRU TESTARE       -------------------------------------------------------------------------------------
+//            showQuantityColumn = false; //TODO
+//            showUmColumn =       true; //getFlag().isShowUmColumn();//true;//
+//            showPriceColumn =    true; //TODO        
+//            showTaxColumn =      true; //TODO 
+//			showTaxPercentage =  false; //getFlag().isShowTaxPercentage();
+/////// 1 ///////////////////////////////////////////////////            
+//            showQuantityColumn = false; //TODO
+//            showPriceColumn =    false; //TODO        
+//            showTaxColumn =      false; //TODO       
+/////// 2 ///////////////////////////////////////////////////            
+//            showQuantityColumn = true; //TODO
+//            showPriceColumn =    false; //TODO        
+//            showTaxColumn =      false; //TODO      
+/////// 3 ////////////////////////////////////////////////////            
+//            showQuantityColumn = true; //TODO
+//            showPriceColumn =    true; //TODO        
+//            showTaxColumn =      false; //TODO             
+/////// 4 /////////////////////////////////////////////////////            
+//            showQuantityColumn = true; //TODO
+//            showPriceColumn =    true; //TODO        
+//            showTaxColumn =      true; //TODO    
+//
+//----------------------------------------------------------------------------------------------------------------------
+        }
+
+        int generalPrecision = getFlag() == null ? Common.PRECISION : getFlag().getDecimals();
+        NumberFormat nfGeneral = NumberFormat.getInstance();
+        nfGeneral.setMinimumFractionDigits(generalPrecision);
+        nfGeneral.setMaximumFractionDigits(generalPrecision);
+
+        int totalPrecision = totalWithoutDecimals ? 0 : (getFlag() == null ? Common.PRECISION : getFlag().getDecimals());
+        NumberFormat nfTotal = NumberFormat.getInstance();
+        nfTotal.setMinimumFractionDigits(totalPrecision);
+        nfTotal.setMaximumFractionDigits(totalPrecision);
+
+        CompanyDetailsEntity cd = companyDetails;
+        Map<String, Object> params = new HashMap<String, Object>();
+
+        //*********************************************************************************************************
+//      DETAIL    
+        params.put("detail_no", "No");
+        params.put("detail_product", flag.getProductLabel());
+        params.put("detail_quantity", flag.getQuantityLabel());
+        params.put("detail_um", flag.getUmLabel());
+        params.put("detail_price", flag.getPriceLabel());
+        params.put("detail_amount", "Amount");
+        params.put("detail_tax", flag.getTaxLabel());
+        params.put("show_ship_to", flag.isShowAddress());
+        params.put("show_tax_percentage", showTaxPercentage);
+        params.put("show_um_column", showUmColumn);
+        params.put("show_price_column", showPriceColumn);
+        params.put("show_quantity_column", showQuantityColumn);
+        params.put("show_tax_column", showTaxColumn);
+
+        if (cd.getCurrency() != null) {
+            params.put("currency_symbol", cd.getCurrency().getSymbol());
+        } else {
+            params.put("currency_symbol", "");
+        }
+//*********************************************************************************************************
+//      SUBREPORT TITLE
+        if (type.equals(TYPE_STANDARD)) {
+            params.put("title_txt_document", SBStringUtils.capitalizeWords(flag.getInvoiceLabel()));
+        } else if (type.equals(TYPE_TAX)) {
+            params.put("title_txt_document", "Tax Invoice");
+        } else if (type.equals(TYPE_RETAIL)) {
+            params.put("title_txt_document", "Retail Invoice");
+        } else if (type.equals(TYPE_EXCISE)) {
+            params.put("title_txt_document", "Excise Invoice");
+        }
+        if (this.number != null) {
+            // construct invoice number
+            StringBuilder invoiceNumber = new StringBuilder();
+            if (this.numberPrefix != null
+                    && this.numberPrefix.length() > 0) {
+                invoiceNumber.append(this.numberPrefix);
+            }
+
+            if (this.flag.getPrefixSeparator() != null) {
+                invoiceNumber.append(this.flag.getPrefixSeparator());
+            }
+
+            invoiceNumber.append(this.number);
+            if (this.secondNumber != null
+                    && this.secondNumber.length() > 0) {
+                invoiceNumber.append("-");
+                invoiceNumber.append(this.secondNumber);
+            }
+            params.put("title_document_numbrer", invoiceNumber.toString());
+        } else {
+            params.put("title_document_numbrer", "");
+        }
+        params.put("title_txt_amount_due", "Amount Due");
+        if (this.totalAll != null) {
+            String aDue = payment != null ? SBStringUtils.numberSeparators(getFlag().isIndianFormat(), nfTotal.format(totalAll.subtract(payment.getAmount()).setScale(totalPrecision, RoundingMode.HALF_UP))) : SBStringUtils.numberSeparators(getFlag().isIndianFormat(), nfTotal.format(totalAll.subtract(InvoicePayment.getTotalPaidById(mainConnection, formerId != 0 ? formerId : id, totalPrecision)).setScale(totalPrecision, RoundingMode.HALF_UP)));
+            params.put("title_amount_due", isPaid ? aDue : SBStringUtils.numberSeparators(getFlag().isIndianFormat(), nfTotal.format(totalAll.setScale(totalPrecision, RoundingMode.HALF_UP))));
+        } else {
+            params.put("title_amount_due", totalWithoutDecimals ? "0" : "0.00");
+        }
+        params.put("showAmountDue", true);
+        if (hideAmount) {
+            params.put("title_amount_due", null);
+            params.put("showAmountDue", false);
+            params.put("title_txt_amount_due", null);
+        }
+
+        params.put("title_txt_document_date", SBStringUtils.capitalizeWords(flag.getInvoiceLabel()) + " Date");
+        if (this.issueDate != null) {
+            params.put("title_document_date", Common.jasperDateFormatter.format(this.issueDate));
+        } else {
+            params.put("title_document_date", "");
+        }
+
+        if (this.dueDate != null) {
+            params.put("title_txt_due_date", "Due Date");
+            params.put("title_due_date", Common.jasperDateFormatter.format(this.dueDate));
+        } else {
+            params.put("title_txt_due_date", "");
+            params.put("title_due_date", "");
+        }
+        if (this.poNumber != null && !this.poNumber.isEmpty()) {
+            params.put("title_txt_po_number", poLabel);
+            params.put("title_po_number", this.poNumber);
+        } else {
+            params.put("title_txt_po_number", "");
+            params.put("title_po_number", "");
+        }
+        if (this.companyDetails != null) {
+            String logo = getLogo();
+            if (logo != null && logo.equals("smart_edit_mode")) {
+                this.logo = "";
+            }
+            if (getId() <= 0 && (getLogo() == null || getLogo().isEmpty())) {
+                logo = (logo != null && logo.equals("smart_edit_mode")) ? "" : this.companyDetails.getLogo();
+            }
+            this.logo = logo;
+            if (logo != null && !logo.isEmpty() && (new File(Common.SAVED_LOGOS_PATH + logo)).isFile()) {
+                params.put("title_logo", Common.SAVED_LOGOS_PATH + logo);
+            } else {
+                params.put("title_logo", "");
+            }
+
+            String zip = (this.companyDetails.getZip() == null || this.companyDetails.getZip().isEmpty()) ? "" : ", " + (Common.country.equals("Canada") || Common.country.equals("United Kingdom") ? "Postal Code" : "Zip") + " " + this.companyDetails.getZip();
+            String address = "";
+            if (this.companyDetails.getAddress() != null && !this.companyDetails.getAddress().isEmpty()) {
+                address = this.companyDetails.getAddress();
+            }
+
+            params.put("title_provider_company_name", this.companyDetails.getName());
+            params.put("title_provider_address", address);
+            params.put("title_provider_phone", this.companyDetails.getTelephone()); //"Phone (408) 400-7399 | Fax (408) 400-7399");
+            params.put("title_provider_fax", "");
+            params.put("title_provider_email", this.companyDetails.getEmail());//
+            params.put("title_provider_web", this.companyDetails.getWebsite());//"http://www.slickbill.com/win8/" + "\n" + "http://www.slickbill.com/win8/our-team/");
+            StateEntity state = this.companyDetails.getState();
+            if (state != null) {
+                String s = "";
+                if (state.getCity() != null && !state.getCity().isEmpty()) {
+                    s = state.getCity();
+                }
+                if (state.getState() != null && !state.getState().isEmpty()) {
+                    s += ", " + state.getState();
+                }
+                if (s.isEmpty()) {
+                    zip = zip.replace(", ", "");
+                }
+                s += zip;
+                if (state.getCountry() != null && !state.getCountry().isEmpty()) {
+                    s += ", " + state.getCountry();
+                }
+                params.put("title_provider_location", s);
+            }
+
+            String details = "";
+            if (this.companyDetails.getDetails() != null && !this.companyDetails.getDetails().isEmpty()) {
+                details = this.companyDetails.getDetails();
+            }
+
+            if (this.companyDetails.getTin() != null && !this.companyDetails.getTin().isEmpty()) {
+                details += (!details.isEmpty() ? "\nTIN: " : "TIN: ") + companyDetails.getTin();
+            }
+
+            if (this.companyDetails.getStn() != null && !this.companyDetails.getStn().isEmpty()) {
+                details += (!details.isEmpty() ? "\nService Tax No: " : "Service Tax No: ") + companyDetails.getStn();
+            }
+
+            if (this.companyDetails.getPan() != null && !this.companyDetails.getPan().isEmpty()) {
+                details += (!details.isEmpty() ? "\nPAN: " : "PAN: ") + companyDetails.getPan();
+            }
+            params.put("title_provider_additional_details", details);
+        } else {
+            params.put("title_logo", "");
+            params.put("title_provider_company_name", "");
+            params.put("title_provider_address", "");
+            params.put("title_provider_location", "");
+            params.put("title_provider_phone", "");
+            params.put("title_provider_fax", "");
+            params.put("title_provider_web", "");
+            params.put("title_provider_email", "");
+        }
+
+        if (this.clientName != null) {
+            params.put("title_billing_company_name", this.clientName);//"Company Name");
+        } else {
+            params.put("title_billing_company_name", "");
+        }
+        String zipB = (this.clientBillingZip == null || this.clientBillingZip.isEmpty()) ? "" : ", " + (Common.country.equals("Canada") || Common.country.equals("United Kingdom") ? "Postal Code" : "Zip") + " " + this.clientBillingZip;
+        if (this.clientBillingAddress != null && !this.clientBillingAddress.isEmpty()) {
+            params.put("title_billing_address", this.clientBillingAddress);//"972 Rincon Circle, San Jose, CA 90123");
+        } else {
+            params.put("title_billing_address", "");
+        }
+        if (this.clientTelephone != null) {
+            params.put("title_billing_phone", this.clientTelephone);//"");
+        } else {
+            params.put("title_billing_phone", "");
+        }
+        params.put("title_billing_email", this.clientEmail);//
+        params.put("title_billing_fax", "");
+        params.put("title_billing_web", "");
+        params.put("title_billing_location", "");
+        if (this.client != null) {
+            StateEntity state = this.getClientBillingState();
+            if (state != null) {
+                String s = "";
+                if (state.getCity() != null && !state.getCity().isEmpty()) {
+                    s = state.getCity();
+                }
+                if (state.getState() != null && !state.getState().isEmpty()) {
+                    s += ", " + state.getState();
+                }
+                if (s.isEmpty()) {
+                    zipB = zipB.replace(", ", "");
+                }
+                s += zipB;
+                if (state.getCountry() != null && !state.getCountry().isEmpty()) {
+                    s += ", " + state.getCountry();
+                }
+                params.put("title_billing_location", s);
+            }
+
+            String clientDetails = "";
+            if (this.client.getDetailsPublic() != null && !this.client.getDetailsPublic().isEmpty()) {
+                clientDetails += this.client.getDetailsPublic();
+            }
+
+            if (this.client.getTin() != null && !this.client.getTin().isEmpty()) {
+                clientDetails += (!clientDetails.isEmpty() ? "\nTIN: " : "TIN: ") + this.client.getTin();
+            }
+            params.put("title_client_additional_details", clientDetails);//"Will appear on your documents");
+        }
+
+        if (this.clientName != null) {
+            params.put("title_shipping_company_name", this.clientName);//"Company Name");
+        } else {
+            params.put("title_shipping_company_name", "");
+        }
+        String zipS = (this.clientShippingZip == null || this.clientShippingZip.isEmpty()) ? "" : ", " + (Common.country.equals("Canada") || Common.country.equals("United Kingdom") ? "Postal Code" : "Zip") + " " + this.clientShippingZip;
+        if (this.clientShippingAddress != null && !this.clientShippingAddress.isEmpty()) {
+            params.put("title_shipping_address", this.clientShippingAddress);//"972 Rincon del Bonette, San Jose de Mayo, CA 78123");
+        } else {
+            params.put("title_shipping_address", "");
+        }
+        if (this.clientTelephone != null) {
+            params.put("title_shipping_phone", this.clientTelephone);//"Phone (408) 400-7399 | Fax (408) 400-7399");
+        } else {
+            params.put("title_shipping_phone", "");
+        }
+        params.put("title_shipping_fax", "");
+        params.put("title_shipping_web", "");
+        params.put("title_shipping_location", "");
+        params.put("title_shipping_email", this.clientEmail);//
+        if (this.client != null) {
+            StateEntity state = this.getClientShippingState();
+            if (state != null) {
+                String s = "";
+                if (state.getCity() != null && !state.getCity().isEmpty()) {
+                    s = state.getCity();
+                }
+                if (state.getState() != null && !state.getState().isEmpty()) {
+                    s += ", " + state.getState();
+                }
+                if (s.isEmpty()) {
+                    zipS = zipS.replace(", ", "");
+                }
+                s += zipS;
+                if (state.getCountry() != null && !state.getCountry().isEmpty()) {
+                    s += ", " + state.getCountry();
+                }
+                params.put("title_shipping_location", s);
+            }
+        }//Common.SAVED_LOGOS_PATH + logo  D:\proiecte\SleekBillUSA\images\icons
+        String iColor = "./images/icons/" + this.getColorText();
+        params.put("icon_address", iColor + "-1.png");
+        params.put("icon_web", iColor + "-2.png");
+        params.put("icon_email", iColor + "-3.png");
+        params.put("icon_phone", iColor + "-4.png");
+        params.put("icon_mail", iColor + "-5.png");
+        params.put("icon_details", iColor + "-6.png");
+
+//*********************************************************************************************************            
+//      SUBREPORT BOTTOM
+//		params.put("bottom_notes", "Here is de the Invoice #000178 for November" + "\n" + "Thank you for you business" + "\n" 
+//                  + "!! Max 3 lines of notes -........................................................1");
+        params.put("bottom_txt_subtotal", "Subtotal");
+
+        if (this.invoiceNotes != null) {
+            params.put("bottom_notes", this.invoiceNotes);
+        } else {
+            params.put("bottom_notes", "");
+        }
+        params.put("bottom_conditions", "");//"Payment conditions 28 days ???");
+        params.put("bottom_txt_total_document", "Total " + SBStringUtils.capitalizeWords(flag.getInvoiceLabel()));
+        if (this.totalNoTax != null) {
+            params.put("bottom_subtotal", SBStringUtils.numberSeparators(getFlag().isIndianFormat(), nfGeneral.format(this.totalNoTax.setScale(generalPrecision, RoundingMode.HALF_UP)))); //"100708.10");
+        } else {
+            params.put("bottom_subtotal", "");
+        }
+
+        BigDecimal exciseTotal = BigDecimal.ZERO;
+        if (this.totalTax != null) {
+            BigDecimal dv = BigDecimal.ZERO;
+            BigDecimal dp = BigDecimal.ZERO;
+            LinkedHashMap<String, BigDecimal> taxes = new LinkedHashMap<String, BigDecimal>();
+
+            BigDecimal discountAmountTotal = BigDecimal.ZERO;
+            BigDecimal discountAmount = BigDecimal.ZERO;
+            BigDecimal excisePercentage = BigDecimal.ZERO;
+            if (getType().equals(TYPE_EXCISE) && getFlag() != null) {
+                excisePercentage = new BigDecimal(getFlag().getExciseDuty());
+            }
+            if (this.invoiceProducts != null) {
+                for (InvoiceProductEntity invEntity : this.invoiceProducts) {
+                    TaxEntity t = invEntity.getTax();
+                    BigDecimal exciseAmount = excisePercentage.divide(new BigDecimal(100)).multiply(invEntity.getTotalNoTax());
+                    exciseTotal = exciseTotal.add(exciseAmount);
+                    if (t.getId() == Common.noTax.getId()) {
+                        continue;
+                    }
+                    discountAmount = invEntity.getDiscountPercentage().divide(new BigDecimal(100)).multiply(invEntity.getPrice()).multiply(invEntity.getQuantity());
+                    invEntity.setTotalNoTax(invEntity.getTotalNoTax().add(exciseAmount));
+                    discountAmountTotal = discountAmountTotal.add(discountAmount);
+
+                    if (t.getType().equals(Tax.TYPE_COMBINED)) {
+                        try {
+                            BigDecimal value = invEntity.getTotalNoTax().subtract(dp.divide(new BigDecimal(100)).multiply(invEntity.getTotalNoTax()));
+                            BigDecimal taxValue = BigDecimal.ZERO;
+
+                            List<TaxEntity> combined = Tax.getCombined(Common.connection.getConnection(), t.getId());
+                            taxValue = value;
+                            for (TaxEntity taxEntity : combined) {
+                                BigDecimal auxValue = taxValue.subtract(Tax.calculateTax(taxValue, taxEntity.getTaxPercentage()));
+                                taxEntity.setTaxValue(taxValue.subtract(auxValue));
+                                if (t.isExplicitOrder()) {
+                                    taxValue = auxValue;
+                                }
+
+                                BigDecimal val = taxes.get(taxEntity.getTaxName() + " (" + taxEntity.getTaxPercentage() + "%)");
+                                BigDecimal taxToAdd = taxEntity.getTaxValue();
+                                if (val == null) {
+                                    taxes.put(taxEntity.getTaxName() + " (" + taxEntity.getTaxPercentage() + "%)", taxToAdd);
+                                } else {
+                                    taxes.put(taxEntity.getTaxName() + " (" + taxEntity.getTaxPercentage() + "%)", val.add(taxToAdd));
+                                }
+                            }
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    } else if (t.getType().equals(Tax.TYPE_NORMAL)) {
+                        BigDecimal val = taxes.get(t.getTaxName() + " (" + t.getTaxPercentage() + "%)");
+                        BigDecimal calculatedTax = Tax.calculateTax(invEntity.getTotalNoTax(), t.getTaxPercentage());
+                        BigDecimal taxToAdd = calculatedTax.subtract(dp.divide(new BigDecimal(100)).multiply(calculatedTax));
+                        if (val == null) {
+                            taxes.put(t.getTaxName() + " (" + t.getTaxPercentage() + "%)", taxToAdd);
+                        } else {
+                            taxes.put(t.getTaxName() + " (" + t.getTaxPercentage() + "%)", val.add(taxToAdd));
+                        }
+                    } else {
+                        try {
+                            BigDecimal value = invEntity.getTotalNoTax().subtract(dp.divide(new BigDecimal(100)).multiply(invEntity.getTotalNoTax()));
+                            BigDecimal taxValue = BigDecimal.ZERO;
+
+                            List<TaxEntity> combined = Tax.getMulti(Common.connection.getConnection(), t.getId());
+                            taxValue = value.multiply(combined.get(0).getTaxPercentage()).divide(new BigDecimal("100"));
+                            combined.get(0).setTaxValue(taxValue);
+                            TaxEntity taxEntity = combined.get(0);
+
+                            BigDecimal val = taxes.get(taxEntity.getTaxName() + " (" + taxEntity.getTaxPercentage() + "%)");
+                            BigDecimal taxToAdd = taxEntity.getTaxValue();
+                            if (val == null) {
+                                taxes.put(taxEntity.getTaxName() + " (" + taxEntity.getTaxPercentage() + "%)", taxToAdd);
+                            } else {
+                                taxes.put(taxEntity.getTaxName() + " (" + taxEntity.getTaxPercentage() + "%)", val.add(taxToAdd));
+                            }
+
+                            for (int i = 1; i < combined.size(); i++) {
+                                taxEntity = combined.get(i);
+                                BigDecimal tv = taxValue.multiply(taxEntity.getTaxPercentage()).divide(new BigDecimal("100"));
+                                taxEntity.setTaxValue(tv);
+                                taxValue = taxValue.add(tv);
+
+                                val = taxes.get(taxEntity.getTaxName() + " (" + taxEntity.getTaxPercentage() + "%)");
+                                taxToAdd = taxEntity.getTaxValue();
+                                if (val == null) {
+                                    taxes.put(taxEntity.getTaxName() + " (" + taxEntity.getTaxPercentage() + "%)", taxToAdd);
+                                } else {
+                                    taxes.put(taxEntity.getTaxName() + " (" + taxEntity.getTaxPercentage() + "%)", val.add(taxToAdd));
+                                }
+                            }
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                    invEntity.setTotalNoTax(invEntity.getTotalNoTax().subtract(exciseAmount));
+                }
+            } else if (this.lazyProducts != null) {
+                for (InvoiceProduct invEntity : this.lazyProducts) {
+                    TaxEntity t = invEntity.getTax();
+                    BigDecimal exciseAmount = excisePercentage.divide(new BigDecimal(100)).multiply(invEntity.getTotalNoTax());
+                    exciseTotal = exciseTotal.add(exciseAmount);
+                    if (t.getId() == Common.noTax.getId()) {
+                        continue;
+                    }
+                    discountAmount = invEntity.getDiscountPercentage().divide(new BigDecimal(100)).multiply(invEntity.getPrice()).multiply(invEntity.getQuantity());
+                    invEntity.setTotalNoTax(invEntity.getTotalNoTax().add(exciseAmount));
+                    discountAmountTotal = discountAmountTotal.add(discountAmount);
+
+                    if (t.getType().equals(Tax.TYPE_COMBINED)) {
+                        try {
+                            BigDecimal value = invEntity.getTotalNoTax().subtract(dp.divide(new BigDecimal(100)).multiply(invEntity.getTotalNoTax()));
+                            BigDecimal taxValue = BigDecimal.ZERO;
+
+                            List<TaxEntity> combined = Tax.getCombined(Common.connection.getConnection(), t.getId());
+                            taxValue = value;
+                            for (TaxEntity taxEntity : combined) {
+                                BigDecimal auxValue = taxValue.subtract(Tax.calculateTax(taxValue, taxEntity.getTaxPercentage()));
+                                taxEntity.setTaxValue(taxValue.subtract(auxValue));
+                                if (t.isExplicitOrder()) {
+                                    taxValue = auxValue;
+                                }
+
+                                BigDecimal val = taxes.get(taxEntity.getTaxName() + " (" + taxEntity.getTaxPercentage() + "%)");
+                                BigDecimal taxToAdd = taxEntity.getTaxValue();
+                                if (val == null) {
+                                    taxes.put(taxEntity.getTaxName() + " (" + taxEntity.getTaxPercentage() + "%)", taxToAdd);
+                                } else {
+                                    taxes.put(taxEntity.getTaxName() + " (" + taxEntity.getTaxPercentage() + "%)", val.add(taxToAdd));
+                                }
+                            }
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    } else if (t.getType().equals(Tax.TYPE_NORMAL)) {
+                        BigDecimal val = taxes.get(t.getTaxName() + " (" + t.getTaxPercentage() + "%)");
+                        BigDecimal calculatedTax = Tax.calculateTax(invEntity.getTotalNoTax(), t.getTaxPercentage());
+                        BigDecimal taxToAdd = calculatedTax.subtract(dp.divide(new BigDecimal(100)).multiply(calculatedTax));
+                        if (val == null) {
+                            taxes.put(t.getTaxName() + " (" + t.getTaxPercentage() + "%)", taxToAdd);
+                        } else {
+                            taxes.put(t.getTaxName() + " (" + t.getTaxPercentage() + "%)", val.add(taxToAdd));
+                        }
+                    } else {
+                        try {
+                            BigDecimal value = invEntity.getTotalNoTax().subtract(dp.divide(new BigDecimal(100)).multiply(invEntity.getTotalNoTax()));
+                            BigDecimal taxValue = BigDecimal.ZERO;
+
+                            List<TaxEntity> combined = Tax.getMulti(Common.connection.getConnection(), t.getId());
+                            taxValue = value.multiply(combined.get(0).getTaxPercentage()).divide(new BigDecimal("100"));
+                            combined.get(0).setTaxValue(taxValue);
+                            TaxEntity taxEntity = combined.get(0);
+
+                            BigDecimal val = taxes.get(taxEntity.getTaxName() + " (" + taxEntity.getTaxPercentage() + "%)");
+                            BigDecimal taxToAdd = taxEntity.getTaxValue();
+                            if (val == null) {
+                                taxes.put(taxEntity.getTaxName() + " (" + taxEntity.getTaxPercentage() + "%)", taxToAdd);
+                            } else {
+                                taxes.put(taxEntity.getTaxName() + " (" + taxEntity.getTaxPercentage() + "%)", val.add(taxToAdd));
+                            }
+
+                            for (int i = 1; i < combined.size(); i++) {
+                                taxEntity = combined.get(i);
+                                BigDecimal tv = taxValue.multiply(taxEntity.getTaxPercentage()).divide(new BigDecimal("100"));
+                                taxEntity.setTaxValue(tv);
+                                taxValue = taxValue.add(tv);
+
+                                val = taxes.get(taxEntity.getTaxName() + " (" + taxEntity.getTaxPercentage() + "%)");
+                                taxToAdd = taxEntity.getTaxValue();
+                                if (val == null) {
+                                    taxes.put(taxEntity.getTaxName() + " (" + taxEntity.getTaxPercentage() + "%)", taxToAdd);
+                                } else {
+                                    taxes.put(taxEntity.getTaxName() + " (" + taxEntity.getTaxPercentage() + "%)", val.add(taxToAdd));
+                                }
+                            }
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                    invEntity.setTotalNoTax(invEntity.getTotalNoTax().subtract(exciseAmount));
+                }
+            }
+
+            if (discountAmountTotal.compareTo(BigDecimal.ZERO) != 0) {
+                taxes.put("Discount", discountAmountTotal.negate().setScale(getFlag().getDecimals(), RoundingMode.HALF_UP));
+            }
+
+            try {
+                BigDecimal discountValue = this.discount.divide(new BigDecimal(100));
+                discountValue = discountValue.multiply(totalTax.add(totalNoTax)).multiply(new BigDecimal(-1));
+                taxes.put("Extra Discount" + " (" + discount + "%)", discountValue);
+            } catch (Exception e) {
+            }
+
+            BigDecimal shippingPrice = BigDecimal.ZERO;
+            if (showShipping) {
+                shippingPrice = getFlag().getShippingPrice();
+                taxes.put(getFlag().getShippingLabel(), getFlag().getShippingPrice());
+            }
+
+//        	if(taxes.size() > 1) {
+            StringBuffer sbTaxes = new StringBuffer();
+            StringBuffer sbValues = new StringBuffer();
+            for (String key : taxes.keySet()) {
+                if (sbTaxes.length() > 0) {
+                    sbTaxes.append("\n");
+                }
+                sbTaxes.append(key);
+                if (sbValues.length() > 0) {
+                    sbValues.append("\n");
+                }
+                sbValues.append(SBStringUtils.numberSeparators(getFlag().isIndianFormat(), nfGeneral.format(taxes.get(key).setScale(generalPrecision, RoundingMode.HALF_UP))));
+            }
+
+            if (type.equals(TYPE_EXCISE)) {
+                if (sbTaxes.length() > 0) {
+                    sbTaxes.append("\n");
+                }
+                sbTaxes.append("Excise Duty" + " (" + excisePercentage + "%)");
+                if (sbValues.length() > 0) {
+                    sbValues.append("\n");
+                }
+                sbValues.append(exciseTotal.setScale(generalPrecision, BigDecimal.ROUND_HALF_UP).toPlainString());
+            }
+
+            if (totalWithoutDecimals) {
+                BigDecimal totalRounded = this.totalAll.setScale(totalPrecision, RoundingMode.HALF_UP);
+                BigDecimal totalGeneral = this.totalAll.setScale(generalPrecision, RoundingMode.HALF_UP);
+                if (sbTaxes.length() > 0) {
+                    sbTaxes.append("\n");
+                }
+                sbTaxes.append("Rounded off");
+                if (sbValues.length() > 0) {
+                    sbValues.append("\n");
+                }
+                sbValues.append(SBStringUtils.numberSeparators(getFlag().isIndianFormat(), nfGeneral.format(totalRounded.subtract(totalGeneral).setScale(generalPrecision, BigDecimal.ROUND_HALF_UP))));
+            }
+
+            params.put("bottom_txt_total_tax", sbTaxes.toString());
+            if (sbTaxes.toString().isEmpty()) {
+                params.put("bottom_txt_subtotal", "");
+                params.put("bottom_subtotal", "");
+            }
+            params.put("bottom_tax", sbValues.toString());
+//        	} else {
+//        		params.put("bottom_txt_total_tax", "TAX");
+//        		params.put("bottom_tax", this.totalTax.setScale(precision, RoundingMode.HALF_UP).toPlainString()); //"125.60");
+//        	}
+        } else {
+            params.put("bottom_tax", "");
+        }
+        if (this.totalAll != null) {
+            params.put("bottom_total_document", SBStringUtils.numberSeparators(getFlag().isIndianFormat(), nfTotal.format(this.totalAll.setScale(totalPrecision, RoundingMode.HALF_UP)))); //"1869773853.50");
+            if (totalInWords) {
+                String total = this.totalAll.setScale(totalPrecision, RoundingMode.HALF_UP).toPlainString();
+                params.put("bottom_string_total_document", SBStringUtils.numberToWordsExtra(getFlag().isIndianFormat(), total, cd, totalWithoutDecimals));
+            } else {
+                params.put("bottom_string_total_document", "");
+            }
+        } else {
+            params.put("bottom_total_document", "");
+            params.put("bottom_string_total_document", "");
+        }
+
+        String exAmount = "";
+        if (type.equals(TYPE_EXCISE)) {
+            String total = exciseTotal.setScale(totalPrecision, RoundingMode.HALF_UP).toPlainString();
+            exAmount = SBStringUtils.numberToWordsExtra(getFlag().isIndianFormat(), total, cd, false);
+            exAmount = "Excise Duty: " + exAmount + (showSignature ? "\n\n" : "");
+        }
+        exciseTotal = BigDecimal.ZERO;
+
+        params.put("bottom_txt_signature", showSignature ? (exAmount + "Authorized Signatory") : exAmount);
+
+        params.put("pay_link", "");
+        if (isPayOnline) {
+            String currency = "USD";
+            if (cd.getCurrency() != null) {
+                currency = getCompanyDetails().getCurrency().getCurrencySymbol();
+            }
+            String link = "";
+            if (!replacePaypal) {
+                link = PayPalUtilities.getLink(getPayEmail(), currency, getTotalAll(), capitalize(getDocumentTypeName()) + " " + getNumber());
+            } else {
+                link = getPayEmail();
+            }
+            params.put("pay_link", link);
+            params.put("pay_text", replacePaypal ? "Pay Online Now" : "Pay Now with PayPal");
+        }
+
+        return params;
+    }
+
+    @Override
+    public Integer getLayout() {
+        return super.getLayout();
+    }
+
+    @Override
+    public void setLayout(Integer layout) {
+        super.setLayout(layout);
+    }
+
+    String capitalize(String input) {
+        return input.substring(0, 1).toUpperCase() + input.substring(1);
+    }
+
+    @Override
+    public String getDocumentTypeName() {
+        return DOCUMENT_TYPE_NAME;
+    }
+
+    @Override
+    public String getSaveFilePath() {
+        return Common.selectedCompanyConfig.get(Config.INVOICES_SAVE_PATH);
+    }
+
+    @Override
+    public void setSaveFilePath(String path) {
+        Common.selectedCompanyConfig.set(Config.INVOICES_SAVE_PATH, path);
+    }
+
+    @Override
+    public int getClientId() {
+        return client.getId();
+    }
+
+    @Override
+    public String getColorText() {
+        return color;
+    }
+
+    @Override
+    public void setColorText(String color) {
+        this.color = color;
+    }
+
+    public Estimate getEstimate() {
+        return estimate;
+    }
+
+    public void setEstimate(Estimate estimate) {
+        this.estimate = estimate;
+    }
+
+    @Override
+    public String getPageSizeText() {
+        return pageSize.getFormat();
+    }
+
+    public Integer getFormerId() {
+        return formerId;
+    }
+
+    public void setFormerId(Integer formerId) {
+        this.formerId = formerId;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 61 * hash + this.id;
+        hash = 61 * hash + (this.number != null ? this.number.hashCode() : 0);
+        hash = 61 * hash + (this.numberPrefix != null ? this.numberPrefix.hashCode() : 0);
+        hash = 61 * hash + (this.secondNumber != null ? this.secondNumber.hashCode() : 0);
+        hash = 61 * hash + (this.issueDate != null ? this.issueDate.hashCode() : 0);
+        hash = 61 * hash + (this.dueDate != null ? this.dueDate.hashCode() : 0);
+        hash = 61 * hash + (this.companyDetails != null ? this.companyDetails.hashCode() : 0);
+        hash = 61 * hash + (this.client != null ? this.client.hashCode() : 0);
+        hash = 61 * hash + (this.clientName != null ? this.clientName.hashCode() : 0);
+        hash = 61 * hash + (this.clientCode != null ? this.clientCode.hashCode() : 0);
+        hash = 61 * hash + (this.clientEmail != null ? this.clientEmail.hashCode() : 0);
+        hash = 61 * hash + (this.clientTelephone != null ? this.clientTelephone.hashCode() : 0);
+        hash = 61 * hash + (this.clientContact != null ? this.clientContact.hashCode() : 0);
+        hash = 61 * hash + (this.clientBillingAddress != null ? this.clientBillingAddress.hashCode() : 0);
+        hash = 61 * hash + (this.clientBillingZip != null ? this.clientBillingZip.hashCode() : 0);
+        hash = 61 * hash + (this.clientBillingCity != null ? this.clientBillingCity.hashCode() : 0);
+        hash = 61 * hash + (this.clientShippingAddress != null ? this.clientShippingAddress.hashCode() : 0);
+        hash = 61 * hash + (this.clientShippingZip != null ? this.clientShippingZip.hashCode() : 0);
+        hash = 61 * hash + (this.clientShippingCity != null ? this.clientShippingCity.hashCode() : 0);
+        hash = 61 * hash + (this.isPaid ? 1 : 0);
+        hash = 61 * hash + (this.isDraft ? 1 : 0);
+        hash = 61 * hash + (this.totalNoTax != null ? this.totalNoTax.hashCode() : 0);
+        hash = 61 * hash + (this.totalTax != null ? this.totalTax.hashCode() : 0);
+        hash = 61 * hash + (this.totalAll != null ? this.totalAll.hashCode() : 0);
+        hash = 61 * hash + (this.internalNotes != null ? this.internalNotes.hashCode() : 0);
+        hash = 61 * hash + (this.invoiceNotes != null ? this.invoiceNotes.hashCode() : 0);
+        hash = 61 * hash + (this.deleted != null ? this.deleted.hashCode() : 0);
+        hash = 61 * hash + (this.color != null ? this.color.hashCode() : 0);
+        hash = 61 * hash + (this.poNumber != null ? this.poNumber.hashCode() : 0);
+        hash = 61 * hash + (this.logo != null ? this.logo.hashCode() : 0);
+        hash = 61 * hash + (this.pageSize != null ? this.pageSize.hashCode() : 0);
+        hash = 61 * hash + (this.clientBillingState != null ? this.clientBillingState.hashCode() : 0);
+        hash = 61 * hash + (this.clientShippingState != null ? this.clientShippingState.hashCode() : 0);
+        hash = 61 * hash + (this.payEmail != null ? this.payEmail.hashCode() : 0);
+        hash = 61 * hash + (this.isPayOnline ? 1 : 0);
+        hash = 61 * hash + (this.flag != null ? this.flag.hashCode() : 0);
+        hash = 61 * hash + (this.layout != null ? this.layout.hashCode() : 0);
+        hash = 61 * hash + (this.printId != null ? this.printId.hashCode() : 0);
+        hash = 61 * hash + (this.discount != null ? this.discount.hashCode() : 0);
+        hash = 61 * hash + (this.sent ? 1 : 0);
+        hash = 61 * hash + (this.type != null ? this.type.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Invoice other = (Invoice) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if ((this.number == null) ? (other.number != null) : !this.number.equals(other.number)) {
+            return false;
+        }
+        if ((this.numberPrefix == null) ? (other.numberPrefix != null) : !this.numberPrefix.equals(other.numberPrefix)) {
+            return false;
+        }
+        if ((this.secondNumber == null) ? (other.secondNumber != null) : !this.secondNumber.equals(other.secondNumber)) {
+            return false;
+        }
+        if (this.issueDate != other.issueDate && (this.issueDate == null || !this.issueDate.equals(other.issueDate))) {
+            return false;
+        }
+        if (this.dueDate != other.dueDate && (this.dueDate == null || !this.dueDate.equals(other.dueDate))) {
+            return false;
+        }
+        if (this.companyDetails != other.companyDetails && (this.companyDetails == null || !this.companyDetails.equals(other.companyDetails))) {
+            return false;
+        }
+        if (this.client != other.client && (this.client == null || !this.client.equals(other.client))) {
+            return false;
+        }
+        if ((this.clientName == null) ? (other.clientName != null) : !this.clientName.equals(other.clientName)) {
+            return false;
+        }
+        if ((this.clientCode == null) ? (other.clientCode != null) : !this.clientCode.equals(other.clientCode)) {
+            return false;
+        }
+        if ((this.clientEmail == null) ? (other.clientEmail != null) : !this.clientEmail.equals(other.clientEmail)) {
+            return false;
+        }
+        if ((this.clientTelephone == null) ? (other.clientTelephone != null) : !this.clientTelephone.equals(other.clientTelephone)) {
+            return false;
+        }
+        if ((this.clientContact == null) ? (other.clientContact != null) : !this.clientContact.equals(other.clientContact)) {
+            return false;
+        }
+        if ((this.clientBillingAddress == null) ? (other.clientBillingAddress != null) : !this.clientBillingAddress.equals(other.clientBillingAddress)) {
+            return false;
+        }
+        if ((this.clientBillingZip == null) ? (other.clientBillingZip != null) : !this.clientBillingZip.equals(other.clientBillingZip)) {
+            return false;
+        }
+        if ((this.clientBillingCity == null) ? (other.clientBillingCity != null) : !this.clientBillingCity.equals(other.clientBillingCity)) {
+            return false;
+        }
+        if ((this.clientShippingAddress == null) ? (other.clientShippingAddress != null) : !this.clientShippingAddress.equals(other.clientShippingAddress)) {
+            return false;
+        }
+        if ((this.clientShippingZip == null) ? (other.clientShippingZip != null) : !this.clientShippingZip.equals(other.clientShippingZip)) {
+            return false;
+        }
+        if ((this.clientShippingCity == null) ? (other.clientShippingCity != null) : !this.clientShippingCity.equals(other.clientShippingCity)) {
+            return false;
+        }
+        if (this.isPaid != other.isPaid) {
+            return false;
+        }
+        if (this.isDraft != other.isDraft) {
+            return false;
+        }
+        if (this.totalNoTax != other.totalNoTax && (this.totalNoTax == null || !this.totalNoTax.equals(other.totalNoTax))) {
+            return false;
+        }
+        if (this.totalTax != other.totalTax && (this.totalTax == null || !this.totalTax.equals(other.totalTax))) {
+            return false;
+        }
+        if (this.totalAll != other.totalAll && (this.totalAll == null || !this.totalAll.equals(other.totalAll))) {
+            return false;
+        }
+        if ((this.internalNotes == null) ? (other.internalNotes != null) : !this.internalNotes.equals(other.internalNotes)) {
+            return false;
+        }
+        if ((this.invoiceNotes == null) ? (other.invoiceNotes != null) : !this.invoiceNotes.equals(other.invoiceNotes)) {
+            return false;
+        }
+        if ((this.deleted == null) ? (other.deleted != null) : !this.deleted.equals(other.deleted)) {
+            return false;
+        }
+        if ((this.color == null) ? (other.color != null) : !this.color.equals(other.color)) {
+            return false;
+        }
+        if ((this.poNumber == null) ? (other.poNumber != null) : !this.poNumber.equals(other.poNumber)) {
+            return false;
+        }
+        if ((this.logo == null) ? (other.logo != null) : !this.logo.equals(other.logo)) {
+            return false;
+        }
+        if (this.pageSize != other.pageSize && (this.pageSize == null || !this.pageSize.equals(other.pageSize))) {
+            return false;
+        }
+        if (this.clientBillingState != other.clientBillingState && (this.clientBillingState == null || !this.clientBillingState.equals(other.clientBillingState))) {
+            return false;
+        }
+        if (this.clientShippingState != other.clientShippingState && (this.clientShippingState == null || !this.clientShippingState.equals(other.clientShippingState))) {
+            return false;
+        }
+        if ((this.payEmail == null) ? (other.payEmail != null) : !this.payEmail.equals(other.payEmail)) {
+            return false;
+        }
+        if (this.isPayOnline != other.isPayOnline) {
+            return false;
+        }
+        if (this.flag != other.flag && (this.flag == null || !this.flag.equals(other.flag))) {
+            return false;
+        }
+        if (this.layout != other.layout && (this.layout == null || !this.layout.equals(other.layout))) {
+            return false;
+        }
+        if (this.printId != other.printId && (this.printId == null || !this.printId.equals(other.printId))) {
+            return false;
+        }
+        if (this.discount != other.discount && (this.discount == null || !this.discount.equals(other.discount))) {
+            return false;
+        }
+        if (this.sent != other.sent) {
+            return false;
+        }
+
+        return !((this.type == null) ? (other.type != null) : !this.type.equals(other.type));
+    }
+
+    public void setPayment(Payment p) {
+        this.payment = p;
+    }
+
+    public void setInvoicePayment(InvoicePayment ip) {
+        this.invoicePayment = ip;
+    }
+
+    @Override
+    public String getDocumentLogo() {
+        return this.logo;
+    }
+
+    @Override
+    public void setDocumentLogo(String logo) {
+        this.logo = logo;
+    }
+
+    @Override
+    public boolean isShowResend() {
+        return formerId != 0 && sent;
+    }
+
+}

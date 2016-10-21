@@ -1,0 +1,110 @@
+package sleekbill.beans;
+
+
+import sleekbill.Common;
+import sleekbill.entities.TaxComboEntity;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.stmt.PreparedQuery;
+
+public class TaxCombo extends TaxComboEntity {
+
+    private Dao<TaxComboEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+
+    public TaxCombo(TaxComboEntity taxComboEntity) {
+        this(0);
+        this.id = taxComboEntity.getId();
+        this.mainTax = taxComboEntity.getMainTax();
+        this.componentTax = taxComboEntity.getComponentTax();
+    }
+
+    public TaxCombo() {
+        this(0);
+    }
+
+    public TaxCombo(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager
+                        .createDao(mainConnection, TaxComboEntity.class);
+
+                if (id != null && id != 0) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void refreshDao() {
+        try {
+            mainDao = DaoManager
+                    .createDao(Common.connection.getConnection(), TaxComboEntity.class);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void create() throws Exception {
+        mainDao.create(this);
+    }
+
+    public TaxComboEntity read(Integer id) throws Exception {
+        return mainDao.queryForId(id);
+    }
+
+    public void update() throws Exception {
+        mainDao.update(this);
+    }
+
+    public void delete() throws Exception {
+        mainDao.delete(this);
+    }
+
+    public Dao<TaxComboEntity, Integer> getMainDao() {
+        return mainDao;
+    }
+
+    public void setMainDao(Dao<TaxComboEntity, Integer> mainDao) {
+        this.mainDao = mainDao;
+    }
+	
+	@Override
+	public int hashCode() {
+		int hash = 7;
+		hash = 97 * hash + this.id;
+		hash = 97 * hash + (this.mainTax != null ? this.mainTax.hashCode() : 0);
+		hash = 97 * hash + (this.componentTax != null ? this.componentTax.hashCode() : 0);
+		return hash;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final TaxCombo other = (TaxCombo) obj;
+		if (this.id != other.id) {
+			return false;
+		}
+		if (this.mainTax != other.mainTax && (this.mainTax == null || !this.mainTax.equals(other.mainTax))) {
+			return false;
+		}
+		if (this.componentTax != other.componentTax && (this.componentTax == null || !this.componentTax.equals(other.componentTax))) {
+			return false;
+		}
+		return true;
+	}
+}

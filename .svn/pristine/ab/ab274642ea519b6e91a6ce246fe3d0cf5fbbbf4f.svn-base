@@ -1,0 +1,131 @@
+package sleekbill.beans;
+
+import java.sql.SQLException;
+import java.util.List;
+
+import sleekbill.Common;
+import sleekbill.entities.EstimateConversionEntity;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.stmt.PreparedQuery;
+
+public class EstimateConversion extends EstimateConversionEntity {
+
+    private Dao<EstimateConversionEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+
+     public EstimateConversion(EstimateConversionEntity estimateConversionEntity) {
+        this(0);
+        this.id = estimateConversionEntity.getId();
+        this.estimate = estimateConversionEntity.getEstimate();
+        this.invoice = estimateConversionEntity.getInvoice();
+    }
+    
+    public EstimateConversion() {
+        this(0);
+    }
+
+    public EstimateConversion(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager
+                        .createDao(mainConnection, EstimateConversionEntity.class);
+
+                if (id != null && id != 0) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    
+     public void refreshDao(){
+            try {
+                mainDao = DaoManager
+                        .createDao(Common.connection.getConnection(), EstimateConversionEntity.class);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+    }
+
+    public void create() throws Exception {
+        mainDao.create(this);
+    }
+
+    public EstimateConversionEntity read(Integer id) throws Exception {
+        return mainDao.queryForId(id);
+    }
+
+    public void update() throws Exception {
+        mainDao.update(this);
+    }
+
+    public void delete() throws Exception {
+        mainDao.delete(this);
+    }
+    
+    public static void add(JdbcConnectionSource connectionSource, EstimateConversion taxes) throws SBDaoException, SQLException {
+
+        Dao<EstimateConversionEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, EstimateConversionEntity.class);
+
+        taxesDao.create(taxes);
+    }
+    
+     public static EstimateConversion getByEstimateId(JdbcConnectionSource connectionSource, int id) throws SBDaoException, SQLException {
+
+    	Dao<EstimateConversionEntity, Integer> ecDao = DaoManager.createDao(connectionSource, EstimateConversionEntity.class);
+        PreparedQuery<EstimateConversionEntity> pq = ecDao.queryBuilder().where().eq(EstimateConversion.ESTIMATE, id).prepare();
+        List<EstimateConversionEntity> list = ecDao.query(pq);
+
+        if (list.size() > 0) {
+            return new EstimateConversion(list.get(0));
+        }
+        return null;
+    }
+
+       @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 41 * hash + this.id;
+        hash = 41 * hash + (this.estimate != null ? this.estimate.hashCode() : 0);
+        hash = 41 * hash + (this.invoice != null ? this.invoice.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final EstimateConversion other = (EstimateConversion) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (this.estimate != other.estimate && (this.estimate == null || !this.estimate.equals(other.estimate))) {
+            return false;
+        }
+        if (this.invoice != other.invoice && (this.invoice == null || !this.invoice.equals(other.invoice))) {
+            return false;
+        }
+        return true;
+    }
+    
+     public Dao<EstimateConversionEntity, Integer> getMainDao() {
+        return mainDao;
+    }
+
+    public void setMainDao(Dao<EstimateConversionEntity, Integer> mainDao) {
+        this.mainDao = mainDao;
+    }
+}

@@ -1,0 +1,52 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package sleekbill.frames.autosuggesterdata.actionlisteners;
+
+import java.awt.event.ActionEvent;
+import javax.swing.JDialog;
+import sleekbill.beans.Tax;
+import sleekbill.frames.JDialogCombinedTax;
+import sleekbill.frames.JDialogEditTax;
+import sleekbill.swingutils.autosuggesters.AutosuggesterItem;
+import sleekbill.swingutils.autosuggesters.EditActionListener;
+import sleekbill.swingutils.autosuggesters.SBACPanelTextField;
+
+/**
+ *
+ * @author Andrei
+ */
+public class EditTaxActionListener implements EditActionListener {
+
+	private SBACPanelTextField sBACPanelTaxes;
+	private JDialog main;
+
+	public EditTaxActionListener(SBACPanelTextField sBACPanelTaxes, JDialog main) {
+		this.sBACPanelTaxes = sBACPanelTaxes;
+		this.main = main;
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e, AutosuggesterItem item) {
+		Tax tax = new Tax(item.getId());
+		if (tax.getType().equals(Tax.TYPE_NORMAL)) {
+			JDialogEditTax jDialogEditTax = new JDialogEditTax(main, true, tax);
+			jDialogEditTax.setVisible(true);
+			tax = jDialogEditTax.getTax();
+		} else {
+			JDialogCombinedTax jDialogCombinedTax = new JDialogCombinedTax(main, true, tax);
+			jDialogCombinedTax.setVisible(true);
+			tax = jDialogCombinedTax.lastTax;
+		}
+
+		if (tax != null) {
+			sBACPanelTaxes.setSelectedItem(
+					new AutosuggesterItem(tax.getId(), tax.getTaxName() + " %", tax.getTaxPercentage() + "", tax),
+					tax.getTaxPercentage() + "");
+			sBACPanelTaxes.getSbTextField().selectAll();
+		}
+	}
+}

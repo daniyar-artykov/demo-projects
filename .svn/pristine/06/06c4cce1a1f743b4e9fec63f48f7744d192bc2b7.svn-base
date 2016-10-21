@@ -1,0 +1,205 @@
+/*
+ * BevelArrowIcon.java
+ *
+ * Created on November 19, 2007, 2:38 PM
+ */
+
+package sleekbill.swingutils;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Paint;
+import java.awt.RenderingHints;
+import java.awt.geom.Path2D;
+
+import javax.swing.Icon;
+import javax.swing.UIManager;
+
+public class BevelArrowIcon implements Icon {
+    public static final int UP = 0; // direction
+    
+    public static final int DOWN = 1;
+    
+    private static final int DEFAULT_SIZE = 12;
+    
+    private Color edge1;
+    
+    private Color edge2;
+    
+    private Color fill;
+    
+    private int size;
+    
+    private int direction;
+    
+    public BevelArrowIcon(int direction,boolean isPressedView) {
+      if (isPressedView) {
+        init(UIManager.getColor("controlDkShadow"),
+            UIManager.getColor("controlLtHighlight"), 
+            UIManager.getColor("controlShadow"), DEFAULT_SIZE, direction);
+      } else {
+        init(UIManager.getColor("controlShadow"), 
+             UIManager.getColor("controlLtHighlight"),
+             UIManager.getColor("control"), DEFAULT_SIZE, direction);
+      }
+    }
+
+	public BevelArrowIcon(int direction, Color fromColor, Color toColor) {
+		init(fromColor, toColor, fromColor, DEFAULT_SIZE, direction);
+    }
+    
+    public BevelArrowIcon(Color edge1, Color edge2, Color fill, int size,int direction) {
+        init(edge1, edge2, fill, size, direction);
+    }
+    
+    public void paintIcon(Component c, Graphics g, int x, int y) {
+        switch (direction) {
+            case DOWN:
+//                drawDownArrow(g, x, y);
+            	drawDownArrowNew(g, x, y);
+                break;
+            case UP:
+//                drawUpArrow(g, x, y);
+            	drawUpArrowNew(g, x, y);
+                break;
+        }
+    }
+    
+    public int getIconWidth() {
+        return size;
+    }
+    
+    public int getIconHeight() {
+        return size;
+    }
+    
+    private void init(Color edge1, Color edge2, Color fill, int size,int direction) {
+        this.edge1 = edge1;
+        this.edge2 = edge2;
+        this.fill = fill;
+        this.size = size;
+        this.direction = direction;
+    }
+    
+    private void drawDownArrow(Graphics g, int xo, int yo) {
+	  	Graphics2D g2d = (Graphics2D)g;
+		g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+		g2d.setColor(edge1);
+        g2d.drawLine(xo, yo, xo + size - 1, yo);
+        g2d.drawLine(xo, yo + 1, xo + size - 3, yo + 1);
+        g2d.setColor(edge2);
+        g2d.drawLine(xo + size - 2, yo + 1, xo + size - 1, yo + 1);
+        int x = xo + 1;
+        int y = yo + 2;
+        int dx = size - 6;
+        while (y + 1 < yo + size) {
+            g2d.setColor(edge1);
+            g2d.drawLine(x, y, x + 1, y);
+            g2d.drawLine(x, y + 1, x + 1, y + 1);
+            if (0 < dx) {
+                g2d.setColor(fill);
+                g2d.drawLine(x + 2, y, x + 1 + dx, y);
+                g2d.drawLine(x + 2, y + 1, x + 1 + dx, y + 1);
+            }
+            g2d.setColor(edge2);
+            g2d.drawLine(x + dx + 2, y, x + dx + 3, y);
+            g2d.drawLine(x + dx + 2, y + 1, x + dx + 3, y + 1);
+            x += 1;
+            y += 2;
+            dx -= 2;
+        }
+        g2d.setColor(edge1);
+        g2d.drawLine(xo + (size / 2), yo + size - 1, xo + (size / 2), yo + size
+                - 1);
+    }
+    
+    private void drawUpArrow(Graphics g, int xo, int yo) {
+	  	Graphics2D g2d = (Graphics2D)g;
+		g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+		g2d.setColor(edge1);
+        int x = xo + (size / 2);
+        g2d.drawLine(x, yo, x, yo);
+        x--;
+        int y = yo + 1;
+        int dx = 0;
+        while (y + 3 < yo + size) {
+            g2d.setColor(edge1);
+            g2d.drawLine(x, y, x + 1, y);
+            g2d.drawLine(x, y + 1, x + 1, y + 1);
+            if (0 < dx) {
+                g2d.setColor(fill);
+                g2d.drawLine(x + 2, y, x + 1 + dx, y);
+                g2d.drawLine(x + 2, y + 1, x + 1 + dx, y + 1);
+            }
+            g2d.setColor(edge2);
+            g2d.drawLine(x + dx + 2, y, x + dx + 3, y);
+            g2d.drawLine(x + dx + 2, y + 1, x + dx + 3, y + 1);
+            x -= 1;
+            y += 2;
+            dx += 2;
+        }
+        g2d.setColor(edge1);
+        g2d.drawLine(xo, yo + size - 3, xo + 1, yo + size - 3);
+        g2d.setColor(edge2);
+        g2d.drawLine(xo + 2, yo + size - 2, xo + size - 1, yo + size - 2);
+        g2d.drawLine(xo, yo + size - 1, xo + size, yo + size - 1);
+    }
+ 
+    private void drawDownArrowNew(Graphics g, int xo, int yo) {
+	  	
+	  	Graphics2D g2d = (Graphics2D)g;
+		g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+		Paint oldPaint = g2d.getPaint();
+
+		g2d.setPaint(Color.WHITE);
+		Path2D.Double path = new Path2D.Double();
+
+//		int margin = size/5;
+//		path.moveTo(xo, yo+margin);
+//		path.lineTo(xo+size/2, yo+size-margin);
+//		path.lineTo(xo+size, yo+margin);
+
+	  	int margin = size/6;
+		path.moveTo(xo+margin/2, yo+margin*2);
+		path.lineTo(xo+size/2, yo+size/2+margin);
+		path.lineTo(xo+size-margin/2, yo+margin*2);
+		path.closePath();
+		g2d.fill(path);
+		
+		g2d.setPaint(oldPaint);
+		
+  }
+  
+  private void drawUpArrowNew(Graphics g, int xo, int yo) {
+		int margin = size/6;
+	  	
+	  	Graphics2D g2d = (Graphics2D)g;
+		g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+		Paint oldPaint = g2d.getPaint();
+
+		g2d.setPaint(Color.WHITE);
+		Path2D.Double path = new Path2D.Double();
+
+//		int margin = size/5;
+//		path.moveTo(xo, yo+size-margin);
+//		path.lineTo(xo+size/2, yo+margin);
+//		path.lineTo(xo+size, yo+size-margin);
+
+		path.moveTo(xo+margin/2, yo+size/2+margin);
+		path.lineTo(xo+size/2, yo+margin*2);
+		path.lineTo(xo+size-margin/2, yo+size/2+margin);
+
+		path.closePath();
+		g2d.fill(path);
+
+		g2d.setPaint(oldPaint);        
+  }
+  
+}

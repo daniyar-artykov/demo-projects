@@ -1,0 +1,45 @@
+package sleekbill.swingutils;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Graphics;
+
+import javax.swing.border.AbstractBorder;
+
+/**
+ *
+ * @author  Oli P
+ */
+public class RoundLineBorder extends AbstractBorder {
+
+    protected Color lineColor;
+    int arcW;
+    int arcH;
+
+    public RoundLineBorder(Color color) {
+        lineColor = color;
+        arcW = 10;
+        arcH = 10;
+    }
+
+    public RoundLineBorder(Color lineColor, int arcW, int arcH) {
+        this.lineColor = lineColor;
+        this.arcW = arcW;
+        this.arcH = arcH;
+    }
+
+    public void paintBorder(Component c,
+        Graphics g, int x, int y, int width,
+        int height) {
+        g.setColor(lineColor);
+        g.drawRoundRect(x, y, width - 1, height - 1, arcW, arcH);
+    }
+
+//    public Insets getBorderInsets(Component c) {
+//        return new Insets(3, 3, 3, 3);
+//    }
+
+    public boolean isBorderOpaque() {
+        return false;
+    }
+}

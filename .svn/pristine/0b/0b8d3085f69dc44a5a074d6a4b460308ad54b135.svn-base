@@ -1,0 +1,1330 @@
+/*
+ * Updates.java
+ *
+ * Created on April 11, 2008, 11:56 AM
+ */
+package sleekbill;
+
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.Callable;
+
+import sleekbill.beans.Currency;
+import sleekbill.beans.PageSize;
+import sleekbill.beans.Version;
+import sleekbill.db.SBConnection;
+import sleekbill.entities.AliasEmailEntity;
+import sleekbill.entities.CompanyDetailsEntity;
+import sleekbill.entities.CurrencyEntity;
+import sleekbill.entities.EstimateConversionEntity;
+import sleekbill.entities.EstimateEntity;
+import sleekbill.entities.EstimateProductEntity;
+import sleekbill.entities.FacturiStornateEntity;
+import sleekbill.entities.PageSizeEntity;
+import sleekbill.frames.JDialogError;
+import sleekbill.frames.BackupRestore.BackupRestore;
+import sleekbill.jasper.DocumentType;
+import sleekbill.updatedata.CurrencyList;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.dao.GenericRawResults;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.misc.TransactionManager;
+import com.j256.ormlite.stmt.PreparedQuery;
+import com.j256.ormlite.stmt.UpdateBuilder;
+import com.j256.ormlite.table.TableUtils;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import sleekbill.beans.Release;
+import sleekbill.beans.Tax;
+import sleekbill.entities.ClientEntity;
+import sleekbill.entities.ConfigEntity;
+import sleekbill.entities.FlagEntity;
+import sleekbill.entities.InvoiceEntity;
+import sleekbill.entities.InvoicePaymentEntity;
+import sleekbill.entities.InvoiceProductEntity;
+import sleekbill.entities.PaymentEntity;
+import sleekbill.entities.ProductEntity;
+import sleekbill.entities.ReleaseEntity;
+import sleekbill.entities.StockEntity;
+import sleekbill.entities.TaxComboEntity;
+import sleekbill.entities.TaxEntity;
+import sleekbill.entities.TipEntity;
+import sleekbill.updatedata.Tips;
+
+/**
+ *
+ * @author flaviu m
+ */
+public class Updates {
+
+    public final static String UPDATE_USER = "_TEMP_";
+
+    /**
+     * Creates a new instance of Updates
+     */
+    public Updates() {
+    }
+
+    public static void updateDB(SBConnection connection, Company company) {
+
+        final JdbcConnectionSource connectionSource = connection.getConnection();
+
+        Version ver = null;
+        String v = "";
+        String y = "";
+        try {
+            ver = Version.get(connection);
+        } catch (Exception e) {
+            e.printStackTrace();
+            new JDialogError(Common.mainFrame, e).setVisible(true);
+            System.exit(0);
+        }
+        if (ver == null) {
+            new JDialogError(Common.mainFrame, new Exception("Version error")).setVisible(true);
+            System.exit(0);
+        }
+        v = ver.getVersion();
+        y = ver.getYear();
+
+        String majorVer = v.substring(0, v.indexOf("."));
+        String mVer = v.substring(v.indexOf(".") + 1, v.length());
+        int version = 0;
+        int year = 2015;
+        try {
+            version = Integer.parseInt(mVer.replace(".", ""));
+        } catch (NumberFormatException e) {
+        }
+        try {
+            year = Integer.parseInt(y);
+        } catch (NumberFormatException e) {
+        }
+
+        switch (year) {
+            case 2013:
+
+                try {
+                    switch (version) {
+                        case 0:
+                        case 100:
+
+                            Dao<FacturiStornateEntity, Integer> facDao = DaoManager.createDao(connectionSource, FacturiStornateEntity.class);
+                            if (!facDao.isTableExists()) {
+                                TableUtils.createTableIfNotExists(connectionSource, FacturiStornateEntity.class);
+                            }
+
+                            Dao<AliasEmailEntity, Integer> aliasDao = DaoManager.createDao(connectionSource, AliasEmailEntity.class);
+                            if (!aliasDao.isTableExists()) {
+                                TableUtils.createTableIfNotExists(connectionSource, AliasEmailEntity.class);
+                            }
+
+                            ver.setVersion(majorVer + ".1.4.0");
+                            Version.update(connection, ver);
+                            v = ver.getVersion();
+                            mVer = v.substring(v.indexOf(".") + 1, v.length());
+                            try {
+                                version = Integer.parseInt(mVer.replace(".", ""));
+                            } catch (NumberFormatException e) {
+                            }
+
+                        case 140:
+                            BackupRestore.autosave("140");
+                            Dao<CompanyDetailsEntity, Integer> cdDao = DaoManager.createDao(connectionSource, CompanyDetailsEntity.class);
+
+                            try {
+                                cdDao.executeRaw("ALTER TABLE company_details ADD COLUMN details varchar(1024) DEFAULT ''");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                            //set USD currency
+                            try {
+                                cdDao.executeRaw("UPDATE company_details SET currency_id = (select id from currencies where currency_symbol like 'USD' LIMIT 1) WHERE currency_id IS NULL");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                            final Dao<CurrencyEntity, Integer> cDao = DaoManager.createDao(connectionSource, CurrencyEntity.class);
+
+                            try {
+                                cDao.executeRaw("ALTER TABLE currencies ADD COLUMN symbol varchar(10)");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                            try {
+                                TransactionManager.callInTransaction(connectionSource, new Callable() {
+                                    CurrencyList cl = new CurrencyList();
+
+                                    @Override
+                                    public Void call() throws Exception {
+                                        try {
+                                            for (String[] c : cl.currencies) {
+                                                Currency aux = Currency.getByCode(connectionSource, c[0]);
+                                                if (aux == null) {
+                                                    aux = new Currency();
+                                                    aux.setCurrencyName(c[3]);
+                                                    aux.setCurrencySymbol(c[0]);
+                                                    aux.setSymbol(c[1]);
+//	                                                aux.create();
+                                                    Currency.add(connectionSource, aux);
+                                                } else {
+                                                    UpdateBuilder<CurrencyEntity, Integer> updateBuilder = cDao.updateBuilder();
+                                                    updateBuilder.updateColumnValue(Currency.SYMBOL, c[1]);
+                                                    updateBuilder.where().eq(Currency.CURRENCY_SYMBOL, c[0]);
+                                                    updateBuilder.update();
+                                                }
+                                            }
+
+                                            cDao.executeRaw("update currencies set symbol = currencies.currency_symbol where symbol is null or symbol = ''");
+
+                                            UpdateBuilder<CurrencyEntity, Integer> updateBuilder = cDao.updateBuilder();
+                                            updateBuilder.updateColumnValue(Currency.IS_USED, null);
+                                            updateBuilder.update();
+
+                                            return null;
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                            throw e;
+                                        }
+                                    }
+                                });
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                            //stergere duplicate
+                            try {
+                                TransactionManager.callInTransaction(connectionSource, new Callable() {
+                                    @Override
+                                    public Void call() throws Exception {
+                                        List<CurrencyEntity> queryForAll = cDao.queryBuilder().orderBy(Currency.CURRENCY_SYMBOL, true).query();
+
+                                        for (int i = queryForAll.size() - 1; i > 0; i--) {
+                                            if (queryForAll.get(i).getCurrencySymbol().equals(queryForAll.get(i - 1).getCurrencySymbol())) {
+                                                cDao.delete(queryForAll.get(i));
+                                            }
+                                        }
+                                        return null;
+                                    }
+                                });
+
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                            try {
+                                cdDao.executeRaw("update invoices "
+                                        + "set client_billing_state_id = (select billing_state_id from clients where clients.name = invoices.client_name) "
+                                        + "where client_billing_state_id is null or client_billing_state_id = ''");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                            try {
+                                cdDao.executeRaw("update invoices "
+                                        + "set client_shipping_state_id = coalesce((select shipping_state_id from clients where clients.name = invoices.client_name),(select billing_state_id from clients where clients.name = invoices.client_name)) "
+                                        + "where client_shipping_state_id is null or client_shipping_state_id = ''");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                            Dao<EstimateEntity, Integer> eDao = DaoManager.createDao(connectionSource, EstimateEntity.class);
+                            if (!eDao.isTableExists()) {
+                                TableUtils.createTableIfNotExists(connectionSource, EstimateEntity.class);
+                            }
+
+                            Dao<EstimateProductEntity, Integer> epDao = DaoManager.createDao(connectionSource, EstimateProductEntity.class);
+                            if (!epDao.isTableExists()) {
+                                TableUtils.createTableIfNotExists(connectionSource, EstimateProductEntity.class);
+                            }
+
+                            Dao<EstimateConversionEntity, Integer> ecDao = DaoManager.createDao(connectionSource, EstimateConversionEntity.class);
+                            if (!ecDao.isTableExists()) {
+                                TableUtils.createTableIfNotExists(connectionSource, EstimateConversionEntity.class);
+                            }
+
+                            Dao<PageSizeEntity, Integer> psDao = DaoManager.createDao(connectionSource, PageSizeEntity.class);
+                            if (!psDao.isTableExists()) {
+                                TableUtils.createTableIfNotExists(connectionSource, PageSizeEntity.class);
+
+                                PageSizeEntity a4 = new PageSizeEntity();
+                                a4.setId(PageSize.A4);
+                                a4.setFormat(DocumentType.PAGE_SIZE_A4);
+                                PageSize.add(connectionSource, a4);
+
+                                PageSizeEntity letter = new PageSizeEntity();
+                                letter.setId(PageSize.LETTER);
+                                letter.setFormat(DocumentType.PAGE_SIZE_LETTER);
+                                PageSize.add(connectionSource, letter);
+                            }
+
+                            try {
+                                cdDao.executeRaw("ALTER TABLE invoices ADD COLUMN color VARCHAR(10) DEFAULT E58B00");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                            try {
+                                cdDao.executeRaw("ALTER TABLE invoices ADD COLUMN page_size_id integer DEFAULT 1");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                            try {
+                                cdDao.executeRaw("ALTER TABLE invoices ADD COLUMN po_number varchar(50) DEFAULT ''");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                            ver.setVersion(majorVer + ".1.4.1");
+                            Version.update(connection, ver);
+                            v = ver.getVersion();
+                            mVer = v.substring(v.indexOf(".") + 1, v.length());
+                            try {
+                                version = Integer.parseInt(mVer.replace(".", ""));
+                            } catch (NumberFormatException e) {
+                            }
+
+                        case 141:
+                            BackupRestore.autosave("141");
+                            ver.setVersion(majorVer + ".1.4.2");
+                            Version.update(connection, ver);
+                            v = ver.getVersion();
+                            mVer = v.substring(v.indexOf(".") + 1, v.length());
+                            try {
+                                version = Integer.parseInt(mVer.replace(".", ""));
+                            } catch (NumberFormatException e) {
+                            }
+
+                        case 142:
+                            BackupRestore.autosave("142");
+
+                            Dao<TaxEntity, Integer> taxDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+
+                            //146 fix
+                            try {
+                                taxDao.executeRaw("ALTER TABLE taxes ADD COLUMN type VARCHAR DEFAULT 'normal'");
+                                taxDao.executeRaw("ALTER TABLE taxes ADD COLUMN explicit_order BOOLEAN DEFAULT 0");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            TaxEntity tax = new TaxEntity();
+                            tax.setDeleted("y");
+                            tax.setTaxName("None");
+                            tax.setTaxPercentage(BigDecimal.ZERO);
+                            taxDao.create(tax);
+
+                            Dao<InvoiceEntity, Integer> invoiceDao = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+
+                            try {
+                                invoiceDao.executeRaw("ALTER TABLE invoices ADD COLUMN pay_online BOOLEAN");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                            try {
+                                invoiceDao.executeRaw("ALTER TABLE invoices ADD COLUMN pay_email VARCHAR DEFAULT ''");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                            Dao<PaymentEntity, Integer> pDao = DaoManager.createDao(connectionSource, PaymentEntity.class);
+                            if (!pDao.isTableExists()) {
+                                TableUtils.createTableIfNotExists(connectionSource, PaymentEntity.class);
+                            }
+
+                            Dao<InvoicePaymentEntity, Integer> ipDao = DaoManager.createDao(connectionSource, InvoicePaymentEntity.class);
+                            if (!ipDao.isTableExists()) {
+                                TableUtils.createTableIfNotExists(connectionSource, InvoicePaymentEntity.class);
+                            }
+
+//                            //from 1.4.4
+//                            try {
+//                                final Dao<EstimateEntity, Integer> daoEstimate = DaoManager.createDao(connectionSource, EstimateEntity.class);
+//                                daoEstimate.executeRaw("ALTER TABLE estimate ADD COLUMN logo VARCHAR DEFAULT ''");
+//                            } catch (Exception ex) {
+//                                ex.printStackTrace();
+//                            }
+//
+//                            //from 1.4.4
+//                            try {
+//                                final Dao<InvoiceEntity, Integer> daoInvoice = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+//                                daoInvoice.executeRaw("ALTER TABLE invoices ADD COLUMN logo VARCHAR DEFAULT ''");
+//                            } catch (Exception ex) {
+//                                ex.printStackTrace();
+//                            }
+//                            List<InvoiceEntity> query = invoiceDao.queryBuilder().where().eq(Invoice.DELETED, "n").and().eq(Invoice.IS_PAID, true).query();
+//
+//                            for (InvoiceEntity i : query) {
+//                                PaymentEntity p = new PaymentEntity();
+//                                p.setAmount(i.getTotalAll());
+//                                p.setPayDate(i.getIssueDate());
+//                                p.setType("");
+//                                p.setNote("");
+//                                pDao.create(p);
+//
+//                                InvoicePaymentEntity ip = new InvoicePaymentEntity();
+//                                ip.setAmount(i.getTotalAll());
+//                                ip.setInvoice(i);
+//                                ip.setPayment(p);
+//                                ipDao.create(ip);
+//                            }
+                            GenericRawResults<String[]> rawResults = invoiceDao.queryRaw("SELECT i.total_all, i.issue_date, i.id "
+                                    + "FROM invoices AS i WHERE i.deleted = 'n' AND i.is_paid = '1'");
+                            for (String[] resultArray : rawResults) {
+                                BigDecimal totalAll = new BigDecimal(resultArray[0]);
+                                Date issueDate = Common.SQLITE_DATE_FORMAT.parse(resultArray[1]);
+                                PaymentEntity p = new PaymentEntity();
+                                p.setAmount(totalAll);
+                                p.setPayDate(issueDate);
+                                p.setType("");
+                                p.setNote("");
+                                pDao.create(p);
+
+                                InvoicePaymentEntity ip = new InvoicePaymentEntity();
+                                ip.setAmount(totalAll);
+                                InvoiceEntity i = new InvoiceEntity();
+                                i.setId(Integer.valueOf(resultArray[2]));
+                                ip.setInvoice(i);
+                                ip.setPayment(p);
+                                ipDao.create(ip);
+                            }
+                            rawResults.close();
+
+                            final Dao<TipEntity, Integer> tipsDao = DaoManager.createDao(connectionSource, TipEntity.class);
+                            if (!tipsDao.isTableExists()) {
+                                TableUtils.createTableIfNotExists(connectionSource, TipEntity.class);
+
+                                try {
+                                    TransactionManager.callInTransaction(connectionSource, new Callable() {
+                                        @Override
+                                        public Void call() throws Exception {
+                                            try {
+
+                                                for (int i = 0; i < Tips.tips.length; i++) {
+                                                    TipEntity t = new TipEntity();
+                                                    t.setText(Tips.tips[i]);
+                                                    t.setPriority(Tips.priorities[i]);
+                                                    tipsDao.create(t);
+                                                }
+
+                                                return null;
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
+                                                throw e;
+                                            }
+                                        }
+                                    });
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+
+                            ver.setVersion(majorVer + ".1.4.3");
+                            Version.update(connection, ver);
+                            v = ver.getVersion();
+                            mVer = v.substring(v.indexOf(".") + 1, v.length());
+                            try {
+                                version = Integer.parseInt(mVer.replace(".", ""));
+                            } catch (NumberFormatException e) {
+                            }
+
+                        case 143:
+                            BackupRestore.autosave("143");
+
+                            //add new columns 1.4.4
+                            try {
+                                final Dao<EstimateEntity, Integer> daoEstimate = DaoManager.createDao(connectionSource, EstimateEntity.class);
+                                daoEstimate.executeRaw("ALTER TABLE estimate ADD COLUMN logo VARCHAR DEFAULT ''");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            try {
+                                final Dao<InvoiceEntity, Integer> daoInvoice = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+                                daoInvoice.executeRaw("ALTER TABLE invoices ADD COLUMN logo VARCHAR DEFAULT ''");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            try {
+                                final Dao<ClientEntity, Integer> daoClient = DaoManager.createDao(connectionSource, ClientEntity.class);
+                                daoClient.executeRaw("ALTER TABLE clients ADD COLUMN details_public VARCHAR DEFAULT ''");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            //create flags
+                            final Dao<FlagEntity, Integer> daoFlag1 = DaoManager.createDao(connectionSource, FlagEntity.class);
+                            //TableUtils.createTableIfNotExists(connectionSource, FlagEntity.class);
+                            daoFlag1.executeRaw("CREATE TABLE IF NOT EXISTS `flags` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE, `value_with_tax` BOOLEAN NOT NULL)");
+                            daoFlag1.executeRaw("INSERT INTO flags (value_with_tax) VALUES ('1')");
+//                                daoFlag1.executeRaw("INSERT INTO flags (value_with_tax) VALUES ('0')");
+
+                            //add new columns 1.4.5
+                            try {
+                                final Dao<EstimateEntity, Integer> dao = DaoManager.createDao(connectionSource, EstimateEntity.class);
+                                dao.executeRaw("ALTER TABLE estimate ADD COLUMN discount VARCHAR");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            try {
+                                final Dao<InvoiceEntity, Integer> dao = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+                                dao.executeRaw("ALTER TABLE invoices ADD COLUMN discount VARCHAR");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            try {
+                                final Dao<FlagEntity, Integer> dao = DaoManager.createDao(connectionSource, FlagEntity.class);
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN invoice_label VARCHAR DEFAULT 'Invoice'");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN estimate_label VARCHAR DEFAULT '" + Common.sbProperties.get("estimate_title").toString() + "'");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN product_label VARCHAR DEFAULT 'Product/Service Name'");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN quantity_label VARCHAR DEFAULT 'Quantity'");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN price_label VARCHAR DEFAULT 'Unit Price'");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN show_address BOOLEAN DEFAULT 1");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+                            //end add new columns 1.4.5
+
+                            try {
+                                final Dao<InvoiceEntity, Integer> daoInvoice = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+                                daoInvoice.executeRaw("ALTER TABLE invoices ADD COLUMN flag_id INTEGER REFERENCES flags ( id )");
+                                daoInvoice.executeRaw("UPDATE invoices SET flag_id = 1");
+                                daoInvoice.executeRaw("ALTER TABLE invoices ADD COLUMN layout INTEGER NOT NULL DEFAULT (1)");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            final Dao<EstimateEntity, Integer> daoEstimate = DaoManager.createDao(connectionSource, EstimateEntity.class);
+                            try {
+                                daoEstimate.executeRaw("ALTER TABLE estimate ADD COLUMN flag_id INTEGER REFERENCES flags ( id )");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+                            daoEstimate.executeRaw("UPDATE estimate SET flag_id = 1");
+                            try {
+                                daoEstimate.executeRaw("ALTER TABLE estimate ADD COLUMN layout INTEGER NOT NULL DEFAULT (1)");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            final Dao<ConfigEntity, Integer> configDao = DaoManager.createDao(connectionSource, ConfigEntity.class);
+                            configDao.executeRaw("PRAGMA foreign_keys = OFF;");
+
+                            //database repair
+                            TransactionManager.callInTransaction(connectionSource, new Callable() {
+                                @Override
+                                public Void call() throws Exception {
+
+                                    final Dao<ClientEntity, Integer> dao1 = DaoManager.createDao(connectionSource, ClientEntity.class);
+                                    final Dao<CompanyDetailsEntity, Integer> dao2 = DaoManager.createDao(connectionSource, CompanyDetailsEntity.class);
+                                    final Dao<EstimateConversionEntity, Integer> dao3 = DaoManager.createDao(connectionSource, EstimateConversionEntity.class);
+                                    final Dao<EstimateEntity, Integer> dao4 = DaoManager.createDao(connectionSource, EstimateEntity.class);
+                                    final Dao<EstimateProductEntity, Integer> dao5 = DaoManager.createDao(connectionSource, EstimateProductEntity.class);
+                                    final Dao<InvoiceEntity, Integer> dao6 = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+                                    final Dao<InvoicePaymentEntity, Integer> dao7 = DaoManager.createDao(connectionSource, InvoicePaymentEntity.class);
+                                    final Dao<InvoiceProductEntity, Integer> dao8 = DaoManager.createDao(connectionSource, InvoiceProductEntity.class);
+                                    final Dao<ProductEntity, Integer> dao9 = DaoManager.createDao(connectionSource, ProductEntity.class);
+
+                                    //clients
+                                    List<ClientEntity> queryForAll = dao1.queryForAll();
+                                    dao1.executeRaw("DROP TABLE IF EXISTS clients_old;");
+                                    dao1.executeRaw("ALTER TABLE clients RENAME TO clients_old");
+                                    if (!dao1.isTableExists()) {
+                                        TableUtils.createTableIfNotExists(connectionSource, ClientEntity.class);
+                                    }
+                                    for (ClientEntity client : queryForAll) {
+                                        dao1.create(client);
+                                    }
+                                    dao1.executeRaw("DROP TABLE IF EXISTS clients_old;");
+
+                                    //company_details
+                                    List<CompanyDetailsEntity> queryForAll1 = dao2.queryForAll();
+                                    dao2.executeRaw("DROP TABLE IF EXISTS company_details_old;");
+                                    dao2.executeRaw("ALTER TABLE company_details RENAME TO company_details_old");
+                                    if (!dao2.isTableExists()) {
+                                        TableUtils.createTableIfNotExists(connectionSource, CompanyDetailsEntity.class);
+                                    }
+                                    for (CompanyDetailsEntity cd : queryForAll1) {
+                                        dao2.create(cd);
+                                    }
+                                    dao2.executeRaw("DROP TABLE IF EXISTS company_details_old;");
+
+                                    //estimate_conversions
+                                    List<EstimateConversionEntity> queryForAll2 = dao3.queryForAll();
+                                    dao3.executeRaw("DROP TABLE IF EXISTS estimate_conversions_old;");
+                                    dao3.executeRaw("ALTER TABLE estimate_conversions RENAME TO estimate_conversions_old");
+                                    if (!dao3.isTableExists()) {
+                                        TableUtils.createTableIfNotExists(connectionSource, EstimateConversionEntity.class);
+                                    }
+                                    for (EstimateConversionEntity ec : queryForAll2) {
+                                        dao3.create(ec);
+                                    }
+                                    dao3.executeRaw("DROP TABLE IF EXISTS estimate_conversions_old;");
+
+                                    //estimate
+                                    List<EstimateEntity> queryForAll3 = dao4.queryForAll();
+                                    dao4.executeRaw("ALTER TABLE estimate RENAME TO estimate_old");
+                                    dao4.executeRaw("DROP TABLE IF EXISTS estimate_old;");
+                                    if (!dao4.isTableExists()) {
+                                        TableUtils.createTableIfNotExists(connectionSource, EstimateEntity.class);
+                                    }
+                                    for (EstimateEntity e : queryForAll3) {
+                                        dao4.create(e);
+                                    }
+                                    dao4.executeRaw("DROP TABLE IF EXISTS estimate_old;");
+
+                                    //estimate_products
+                                    List<EstimateProductEntity> queryForAll4 = dao5.queryForAll();
+                                    dao5.executeRaw("DROP TABLE IF EXISTS estimate_products_old;");
+                                    dao5.executeRaw("ALTER TABLE estimate_products RENAME TO estimate_products_old");
+                                    if (!dao5.isTableExists()) {
+                                        TableUtils.createTableIfNotExists(connectionSource, EstimateProductEntity.class);
+                                    }
+                                    for (EstimateProductEntity ep : queryForAll4) {
+                                        dao5.create(ep);
+                                    }
+                                    dao5.executeRaw("DROP TABLE IF EXISTS estimate_products_old;");
+
+                                    //invoices
+                                    List<InvoiceEntity> queryForAll5 = dao6.queryForAll();
+                                    dao6.executeRaw("DROP TABLE IF EXISTS invoices_old;");
+                                    dao6.executeRaw("ALTER TABLE invoices RENAME TO invoices_old");
+                                    if (!dao6.isTableExists()) {
+                                        TableUtils.createTableIfNotExists(connectionSource, InvoiceEntity.class);
+                                    }
+                                    for (InvoiceEntity i : queryForAll5) {
+                                        dao6.create(i);
+                                    }
+                                    dao6.executeRaw("DROP TABLE IF EXISTS invoices_old;");
+
+                                    //invoice_payments
+                                    List<InvoicePaymentEntity> queryForAll6 = dao7.queryForAll();
+                                    dao7.executeRaw("DROP TABLE IF EXISTS invoice_payments_old;");
+                                    dao7.executeRaw("ALTER TABLE invoice_payments RENAME TO invoice_payments_old");
+                                    if (!dao7.isTableExists()) {
+                                        TableUtils.createTableIfNotExists(connectionSource, InvoicePaymentEntity.class);
+                                    }
+                                    for (InvoicePaymentEntity ip : queryForAll6) {
+                                        dao7.create(ip);
+                                    }
+                                    dao7.executeRaw("DROP TABLE IF EXISTS invoice_payments_old;");
+
+                                    //invoice_products
+                                    List<InvoiceProductEntity> queryForAll7 = dao8.queryForAll();
+                                    dao8.executeRaw("DROP TABLE IF EXISTS invoice_products_old;");
+                                    dao8.executeRaw("ALTER TABLE invoice_products RENAME TO invoice_products_old");
+                                    if (!dao8.isTableExists()) {
+                                        TableUtils.createTableIfNotExists(connectionSource, InvoiceProductEntity.class);
+                                    }
+                                    for (InvoiceProductEntity ip : queryForAll7) {
+                                        dao8.create(ip);
+                                    }
+                                    dao8.executeRaw("DROP TABLE IF EXISTS invoice_products_old;");
+
+                                    //products
+                                    List<ProductEntity> queryForAll8 = dao9.queryForAll();
+                                    dao9.executeRaw("DROP TABLE IF EXISTS products_old;");
+                                    dao9.executeRaw("ALTER TABLE products RENAME TO products_old");
+                                    if (!dao9.isTableExists()) {
+                                        TableUtils.createTableIfNotExists(connectionSource, ProductEntity.class);
+                                    }
+                                    for (ProductEntity p : queryForAll8) {
+                                        dao9.create(p);
+                                    }
+                                    dao9.executeRaw("DROP TABLE IF EXISTS products_old;");
+
+                                    return null;
+                                }
+                            });
+
+                            //update new columns
+                            try {
+//                                final Dao<EstimateEntity, Integer> daoEstimate = DaoManager.createDao(connectionSource, EstimateEntity.class);
+                                daoEstimate.executeRaw("update estimate set logo = (select logo from company_details where id = company_details_id)");
+
+                                final Dao<InvoiceEntity, Integer> daoInvoice = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+                                daoInvoice.executeRaw("update invoices set logo = (select logo from company_details where id = company_details_id)");
+
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            ver.setVersion(majorVer + ".1.4.4");
+                            Version.update(connection, ver);
+                            v = ver.getVersion();
+                            mVer = v.substring(v.indexOf(".") + 1, v.length());
+                            try {
+                                version = Integer.parseInt(mVer.replace(".", ""));
+                            } catch (NumberFormatException e) {
+                            }
+                            configDao.executeRaw("PRAGMA foreign_keys = ON;");
+
+                        case 144:
+                            BackupRestore.autosave("144");
+
+                            final Dao<StockEntity, Integer> stockDao = DaoManager.createDao(connectionSource, StockEntity.class);
+                            if (!stockDao.isTableExists()) {
+                                TableUtils.createTableIfNotExists(connectionSource, StockEntity.class);
+                            }
+
+                            //add new columns 1.4.5
+                            try {
+                                final Dao<EstimateEntity, Integer> dao = DaoManager.createDao(connectionSource, EstimateEntity.class);
+                                dao.executeRaw("ALTER TABLE estimate ADD COLUMN discount VARCHAR");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            try {
+                                final Dao<InvoiceEntity, Integer> dao = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+                                dao.executeRaw("ALTER TABLE invoices ADD COLUMN discount VARCHAR");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            try {
+                                final Dao<FlagEntity, Integer> dao = DaoManager.createDao(connectionSource, FlagEntity.class);
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN invoice_label VARCHAR DEFAULT 'Invoice'");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN estimate_label VARCHAR DEFAULT '" + Common.sbProperties.get("estimate_title").toString() + "'");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN product_label VARCHAR DEFAULT 'Product/Service Name'");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN quantity_label VARCHAR DEFAULT 'Quantity'");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN price_label VARCHAR DEFAULT 'Unit Price'");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN show_address BOOLEAN DEFAULT 1");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            try {
+                                final Dao<TipEntity, Integer> dao = DaoManager.createDao(connectionSource, TipEntity.class);
+                                TipEntity t1 = new TipEntity();
+                                TipEntity t2 = new TipEntity();
+                                TipEntity t3 = new TipEntity();
+                                TipEntity t4 = new TipEntity();
+                                TipEntity t5 = new TipEntity();
+
+                                t1.setPriority(6);
+                                t2.setPriority(5);
+                                t3.setPriority(5);
+                                t4.setPriority(4);
+                                t5.setPriority(4);
+
+                                t1.setText("<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> To start using the program, you can add all your input directly from the <b>new document form</b> with no hassle at all. You can also opt to import initial data in the Clients and Products reports using the sample Excel files. </p>");
+                                t2.setText("<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> You can keep track of your inventory. Enable or disable this feature by navigating to <b>Settings > Preferences</b>. </p>");
+                                t3.setText("<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> You can add/edit the current stock value for each product in the <b>Products/Services</b> report by enabling the feature in the <b>Preferences</b> screen. </p>");
+                                t4.setText("<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> When you add a new product in the <b>Products/Services</b> report, you can add a current stock value by enabling the feature in the <b>Preferences</b> screen. The program will automatically adjust the values when you invoice the products. </p>");
+                                t5.setText("<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> To customize the labels that appear on printed documents, go to <b>Settings > Document Preferences</b>. </br>. For example, you can choose to display <b>Services</b> rather than <b>Products</b>, <b>Rate</b> rather than <b>Unit Price</b>, <b>Quotation</b> rather than <b>Estimate</b> a.s.o. </p>");
+
+                                dao.create(t1);
+                                dao.create(t2);
+                                dao.create(t3);
+                                dao.create(t4);
+                                dao.create(t5);
+
+                            } catch (Exception e) {
+                            }
+
+                            ver.setVersion(majorVer + ".1.4.5");
+                            Version.update(connection, ver);
+                            v = ver.getVersion();
+                            mVer = v.substring(v.indexOf(".") + 1, v.length());
+                            try {
+                                version = Integer.parseInt(mVer.replace(".", ""));
+                            } catch (NumberFormatException e) {
+                            }
+
+                        case 145:
+                            BackupRestore.autosave("145");
+
+                            //stergere si reinserare tips din cauza la proofreader
+                            try {
+                                final Dao<TipEntity, Integer> tipsDao1 = DaoManager.createDao(connectionSource, TipEntity.class);
+
+                                tipsDao1.executeRaw("delete from tips");
+
+                                TipEntity t1 = new TipEntity();
+                                TipEntity t2 = new TipEntity();
+                                TipEntity t3 = new TipEntity();
+                                TipEntity t4 = new TipEntity();
+                                TipEntity t5 = new TipEntity();
+
+                                t1.setPriority(6);
+                                t2.setPriority(5);
+                                t3.setPriority(5);
+                                t4.setPriority(4);
+                                t5.setPriority(4);
+
+                                t1.setText("<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> To start using the program, you can add all your input directly from the <b>new document form</b> with no hassle at all. You can also opt to import initial data in the Clients and Products reports using the sample Excel files. </p>");
+                                t2.setText("<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> You can keep track of your inventory. Enable or disable this feature by navigating to <b>Settings > Preferences</b>. </p>");
+                                t3.setText("<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> You can add/edit the current stock value for each product in the <b>Products/Services</b> report by enabling the feature in the <b>Preferences</b> screen. </p>");
+                                t4.setText("<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> When you add a new product in the <b>Products/Services</b> report, you can add a current stock value by enabling the feature in the <b>Preferences</b> screen. The program will automatically adjust the values when you invoice the products. </p>");
+                                t5.setText("<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> To customize the labels that appear on printed documents, go to <b>Settings > Document Preferences</b>. </br>. For example, you can choose to display <b>Services</b> rather than <b>Products</b>, <b>Rate</b> rather than <b>Unit Price</b>, <b>Quotation</b> rather than <b>Estimate</b> a.s.o. </p>");
+
+                                tipsDao1.create(t1);
+                                tipsDao1.create(t2);
+                                tipsDao1.create(t3);
+                                tipsDao1.create(t4);
+                                tipsDao1.create(t5);
+
+                                if (!tipsDao1.isTableExists()) {
+                                    TableUtils.createTableIfNotExists(connectionSource, TipEntity.class);
+
+                                    try {
+                                        TransactionManager.callInTransaction(connectionSource, new Callable() {
+                                            @Override
+                                            public Void call() throws Exception {
+                                                try {
+
+                                                    for (int i = 0; i < Tips.tips.length; i++) {
+                                                        TipEntity t = new TipEntity();
+                                                        t.setText(Tips.tips[i]);
+                                                        t.setPriority(Tips.priorities[i]);
+                                                        tipsDao1.create(t);
+                                                    }
+
+                                                    return null;
+                                                } catch (Exception e) {
+                                                    e.printStackTrace();
+                                                    throw e;
+                                                }
+                                            }
+                                        });
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+
+                            } catch (Exception e) {
+                            }
+
+                            //modificare GBP
+                            final Dao<CurrencyEntity, Integer> currencyDao = DaoManager.createDao(connectionSource, CurrencyEntity.class);
+                            PreparedQuery<CurrencyEntity> prepare = currencyDao.queryBuilder().where().eq(Currency.CURRENCY_SYMBOL, "GBP").prepare();
+                            List<CurrencyEntity> query = currencyDao.query(prepare);
+
+                            if (query.size() > 0) {
+                                CurrencyEntity ce = query.get(0);
+                                ce.setCurrencyName("United Kingdom pound");
+                                currencyDao.update(ce);
+                            }
+
+                            //modificare rupee 
+                            prepare = currencyDao.queryBuilder().where().eq(Currency.CURRENCY_SYMBOL, "INR").prepare();
+                            List<CurrencyEntity> query2 = currencyDao.query(prepare);
+
+                            if (query2.size() > 0) {
+                                CurrencyEntity ce = query2.get(0);
+                                ce.setSymbol("₹");
+                                currencyDao.update(ce);
+                            }
+
+                            final Dao<TaxComboEntity, Integer> taxComboDao = DaoManager.createDao(connectionSource, TaxComboEntity.class);
+                            if (!taxComboDao.isTableExists()) {
+                                TableUtils.createTableIfNotExists(connectionSource, TaxComboEntity.class);
+                            }
+                            try {
+                                taxComboDao.executeRaw("ALTER TABLE taxes ADD COLUMN type VARCHAR DEFAULT 'normal'");
+                                taxComboDao.executeRaw("ALTER TABLE taxes ADD COLUMN explicit_order BOOLEAN DEFAULT 0");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            try {
+                                final Dao<EstimateEntity, Integer> daoEstimate1 = DaoManager.createDao(connectionSource, EstimateEntity.class);
+                                daoEstimate1.executeRaw("ALTER TABLE estimate ADD COLUMN sent BOOLEAN DEFAULT 0");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            try {
+                                final Dao<InvoiceEntity, Integer> daoInvoice1 = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+                                daoInvoice1.executeRaw("ALTER TABLE invoices ADD COLUMN sent BOOLEAN DEFAULT 0");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            ver.setVersion(majorVer + ".1.4.6");
+                            ver.setYear("2014");
+                            Version.update(connection, ver);
+                            v = ver.getVersion();
+                            mVer = v.substring(v.indexOf(".") + 1, v.length());
+                            try {
+                                version = Integer.parseInt(mVer.replace(".", ""));
+                            } catch (NumberFormatException e) {
+                            }
+                        //break;
+                        case 146:
+                            ver.setVersion("2.2.0.0");
+                            ver.setYear("2015");
+                            Version.update(connection, ver);
+                            v = ver.getVersion();
+                            mVer = v.substring(v.indexOf(".") + 1, v.length());
+                            try {
+                                version = Integer.parseInt(mVer.replace(".", ""));
+                            } catch (NumberFormatException e) {
+                            }
+                        //break;
+
+                        default:
+//                            final Dao<FlagEntity, Integer> daoFlag1 = DaoManager.createDao(connectionSource, FlagEntity.class);
+//                            if (!daoFlag1.isTableExists()) {
+//                                TableUtils.createTableIfNotExists(connectionSource, FlagEntity.class);
+//                                daoFlag1.executeRaw("INSERT INTO flags (value_with_tax) VALUES ('true')");
+//                            }
+//                            try {
+//                                final Dao<InvoiceEntity, Integer> daoInvoice = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+//                                daoInvoice.executeRaw("ALTER TABLE invoices ADD COLUMN flag_id INTEGER REFERENCES flags ( id )");
+//                            } catch (Exception ex) {
+//                                ex.printStackTrace();
+//                            }
+                        //break;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    new JDialogError(Common.mainFrame, e).setVisible(true);
+                    System.exit(0);
+                } finally {
+                }
+
+            //break;
+            case 2014:
+
+                try {
+                    switch (version) {
+                        case 146:
+                            ver.setVersion("2.2.0.0");
+                            ver.setYear("2015");
+                            Version.update(connection, ver);
+                            v = ver.getVersion();
+                            mVer = v.substring(v.indexOf(".") + 1, v.length());
+                            try {
+                                version = Integer.parseInt(mVer.replace(".", ""));
+                            } catch (NumberFormatException e) {
+                            }
+                        //break;
+
+                        default:
+
+                        //break;
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    new JDialogError(Common.mainFrame, e).setVisible(true);
+                    System.exit(0);
+                } finally {
+                }
+            //break;
+            case 2015:
+
+                try {
+                    switch (version) {
+                        case 200:
+                            final Dao<CurrencyEntity, Integer> currencyDao = DaoManager.createDao(connectionSource, CurrencyEntity.class);
+                            PreparedQuery<CurrencyEntity> prepare = currencyDao.queryBuilder().where().eq(Currency.CURRENCY_SYMBOL, "INR").prepare();
+                            List<CurrencyEntity> query2 = currencyDao.query(prepare);
+
+                            if (query2.size() > 0) {
+                                CurrencyEntity ce = query2.get(0);
+                                ce.setSymbol("₹");
+                                currencyDao.update(ce);
+                            }
+
+                            ver.setVersion("2.2.0.1");
+                            ver.setYear("2015");
+                            Version.update(connection, ver);
+                            v = ver.getVersion();
+                            mVer = v.substring(v.indexOf(".") + 1, v.length());
+                            try {
+                                version = Integer.parseInt(mVer.replace(".", ""));
+                            } catch (NumberFormatException e) {
+                            }
+                        //break;
+
+                        case 201:
+
+                            try {
+                                final Dao<TipEntity, Integer> dao = DaoManager.createDao(connectionSource, TipEntity.class);
+                                TipEntity t1 = new TipEntity();
+                                t1.setPriority(7);
+                                t1.setText("<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> If you would like to change the title of <b>Quotation Documents</b>, you can do so by going to <b>Settings > Document Preferences</b>. You can choose to display <b>Quotation</b> rather than <b>Estimate</b>.</p>");
+                                dao.create(t1);
+
+                                TipEntity t2 = new TipEntity();
+                                t2.setPriority(6);
+                                t2.setText("<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> You can display the amount in words. You can set this in <b>Preferences > Document Preferences</b>.</p>");
+                                dao.create(t2);
+
+                                TipEntity t3 = new TipEntity();
+                                t3.setPriority(6);
+                                t3.setText("<div style=\"font-family:Verdana;font-size:12;margin:5px;\"><p> You can round off the decimal points in the total amount on a document. The program will round off mathematically: decrease to next integer value for decimals smaller than or equal to .49, and increase to next integer value for decimals greater than or equal to .50.</p>");
+                                dao.create(t3);
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            try {
+                                final Dao<ClientEntity, Integer> daoClient = DaoManager.createDao(connectionSource, ClientEntity.class);
+                                daoClient.executeRaw("ALTER TABLE clients ADD COLUMN tin VARCHAR DEFAULT ''");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            try {
+                                final Dao<CompanyDetailsEntity, Integer> cdDao = DaoManager.createDao(connectionSource, CompanyDetailsEntity.class);
+                                cdDao.executeRaw("ALTER TABLE company_details ADD COLUMN tin VARCHAR DEFAULT ''");
+                                cdDao.executeRaw("ALTER TABLE company_details ADD COLUMN pan VARCHAR DEFAULT ''");
+                                cdDao.executeRaw("ALTER TABLE company_details ADD COLUMN stn VARCHAR DEFAULT ''");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                            try {
+                                final Dao<FlagEntity, Integer> dao = DaoManager.createDao(connectionSource, FlagEntity.class);
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN total_without_decimals BOOLEAN DEFAULT 0");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN total_in_words BOOLEAN DEFAULT 0");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN show_signature BOOLEAN DEFAULT 1");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            try {
+                                final Dao<InvoiceEntity, Integer> daoInvoice = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+                                daoInvoice.executeRaw("ALTER TABLE invoices ADD COLUMN print_id INTEGER NOT NULL DEFAULT (1)");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+                            try {
+                                final Dao<EstimateEntity, Integer> daoEstimate = DaoManager.createDao(connectionSource, EstimateEntity.class);
+                                daoEstimate.executeRaw("ALTER TABLE estimate ADD COLUMN print_id INTEGER NOT NULL DEFAULT (1)");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            try {
+                                PageSizeEntity a5 = new PageSizeEntity();
+                                a5.setId(PageSize.A5);
+                                a5.setFormat(DocumentType.PAGE_SIZE_A5);
+                                PageSize.add(connectionSource, a5);
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            ver.setVersion("2.2.0.2");
+                            ver.setYear("2015");
+                            Version.update(connection, ver);
+                            v = ver.getVersion();
+                            mVer = v.substring(v.indexOf(".") + 1, v.length());
+                            try {
+                                version = Integer.parseInt(mVer.replace(".", ""));
+                            } catch (NumberFormatException e) {
+                            }
+                        //break;
+
+                        case 202:
+
+                            try {
+                                final Dao<FlagEntity, Integer> dao = DaoManager.createDao(connectionSource, FlagEntity.class);
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN shipping_price INTEGER DEFAULT 0");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN replace_quantity BOOLEAN DEFAULT 0");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN show_shipping BOOLEAN DEFAULT 0");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN shipping_label VARCHAR DEFAULT 'Shipping & Packaging'");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            Dao<TaxEntity, Integer> taxDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+
+                            TaxEntity educationCess = new TaxEntity();
+                            educationCess.setDeleted("n");
+                            educationCess.setTaxName(Tax.EDUCATION_CESS);
+                            educationCess.setTaxPercentage(new BigDecimal(2));
+                            taxDao.create(educationCess);
+
+                            TaxEntity sheCess = new TaxEntity();
+                            sheCess.setDeleted("n");
+                            sheCess.setTaxName(Tax.SHE_CESS);
+                            sheCess.setTaxPercentage(new BigDecimal(1));
+                            taxDao.create(sheCess);
+
+                            BigDecimal percentage = new BigDecimal(14);
+                            BigDecimal she = percentage.divide(new BigDecimal(100)).multiply(sheCess.getTaxPercentage());
+                            BigDecimal education = percentage.divide(new BigDecimal(100)).multiply(educationCess.getTaxPercentage());
+
+                            TaxEntity tax = new TaxEntity();
+                            tax.setTaxName("Service Tax");
+                            tax.setTaxPercentage(percentage.add(she).add(education).setScale(2, RoundingMode.HALF_UP));
+                            tax.setType(Tax.TYPE_MULTI);
+                            tax.setExplicitOrder(false);
+                            if (0 == Tax.getCountWithoutCess(connectionSource)) {
+                                tax.setIsDefaultTax(true);
+                            }
+                            taxDao.create(tax);
+
+                            TaxEntity taxEntity = new TaxEntity();
+                            taxEntity.setTaxName("Service Tax");
+                            taxEntity.setTaxPercentage(percentage.setScale(2, RoundingMode.HALF_UP));
+                            taxEntity.setDeleted("y");
+                            taxDao.create(taxEntity);
+
+                            Dao<TaxComboEntity, Integer> taxComboDao = DaoManager.createDao(connectionSource, TaxComboEntity.class);
+                            TaxComboEntity tc0 = new TaxComboEntity();
+                            tc0.setComponentTax(taxEntity);
+                            tc0.setMainTax(tax);
+                            taxComboDao.create(tc0);
+
+                            TaxComboEntity tc1 = new TaxComboEntity();
+                            tc1.setComponentTax(educationCess);
+                            tc1.setMainTax(tax);
+                            taxComboDao.create(tc1);
+
+                            TaxComboEntity tc2 = new TaxComboEntity();
+                            tc2.setComponentTax(sheCess);
+                            tc2.setMainTax(tax);
+                            taxComboDao.create(tc2);
+
+                            ver.setVersion("2.2.0.3");
+                            ver.setYear("2015");
+                            Version.update(connection, ver);
+                            v = ver.getVersion();
+                            mVer = v.substring(v.indexOf(".") + 1, v.length());
+                            try {
+                                version = Integer.parseInt(mVer.replace(".", ""));
+                            } catch (NumberFormatException e) {
+                            }
+
+                        case 203:
+
+                            try {
+                                Dao<EstimateEntity, Integer> estimateDao = DaoManager.createDao(connectionSource, EstimateEntity.class);
+                                estimateDao.executeRaw("ALTER TABLE estimate ADD COLUMN type VARCHAR DEFAULT 'q'");//default q=quotation
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                            try {
+                                Dao<InvoiceEntity, Integer> invoiceDao = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+                                invoiceDao.executeRaw("ALTER TABLE invoices ADD COLUMN type VARCHAR DEFAULT 's'");//default s=standard
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+
+                            try {
+                                final Dao<FlagEntity, Integer> dao = DaoManager.createDao(connectionSource, FlagEntity.class);
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN indian_format INTEGER DEFAULT 0");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN show_up_column INTEGER DEFAULT 1");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN decimals INTEGER DEFAULT 2");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN show_um_column INTEGER DEFAULT 0");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN show_tax_column INTEGER DEFAULT 0");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN show_tax_percentage INTEGER DEFAULT 0");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN excise_duty VARCHAR DEFAULT '12.5'");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN hide_amount INTEGER DEFAULT 0");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN um_label VARCHAR DEFAULT 'UoM'");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN tax_label VARCHAR DEFAULT 'Tax'");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN replace_paypal INTEGER DEFAULT 0");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            //inceput taxe
+                            try {
+                                Dao<TaxEntity, Integer> td = DaoManager.createDao(connectionSource, TaxEntity.class);
+
+                                td.executeRaw("update taxes set deleted='y' where tax_name = 'Service Tax'");
+
+                                TaxEntity eCess = Tax.getEducationCess(connectionSource);
+                                TaxEntity sCess = Tax.getSheCess(connectionSource);
+
+                                BigDecimal p = new BigDecimal(12);
+                                BigDecimal s = p.divide(new BigDecimal(100)).multiply(sCess.getTaxPercentage());
+                                BigDecimal e = p.divide(new BigDecimal(100)).multiply(eCess.getTaxPercentage());
+
+                                TaxEntity t = new TaxEntity();
+                                t.setTaxName("Service Tax");
+                                t.setTaxPercentage(p.add(s).add(e).setScale(2, RoundingMode.HALF_UP));
+                                t.setType(Tax.TYPE_MULTI);
+                                t.setExplicitOrder(false);
+                                td.create(t);
+
+                                TaxEntity te = new TaxEntity();
+                                te.setTaxName("Service Tax");
+                                te.setTaxPercentage(p.setScale(2, RoundingMode.HALF_UP));
+                                te.setDeleted("y");
+                                td.create(te);
+
+                                Dao<TaxComboEntity, Integer> tcd = DaoManager.createDao(connectionSource, TaxComboEntity.class);
+                                TaxComboEntity tce0 = new TaxComboEntity();
+                                tce0.setComponentTax(te);
+                                tce0.setMainTax(t);
+                                tcd.create(tce0);
+
+                                TaxComboEntity tce1 = new TaxComboEntity();
+                                tce1.setComponentTax(eCess);
+                                tce1.setMainTax(t);
+                                tcd.create(tce1);
+
+                                TaxComboEntity tce2 = new TaxComboEntity();
+                                tce2.setComponentTax(sCess);
+                                tce2.setMainTax(t);
+                                tcd.create(tce2);
+
+                                TaxEntity t2 = new TaxEntity();
+                                t2.setTaxName("Service Tax");
+                                t2.setTaxPercentage(new BigDecimal(14));
+                                td.create(t2);
+
+                                TaxEntity sbCess = new TaxEntity();
+                                sbCess.setDeleted("n");
+                                sbCess.setTaxName(Tax.SB_CESS);
+                                sbCess.setTaxPercentage(new BigDecimal(0.5));
+                                td.create(sbCess);
+
+                                TaxEntity te1 = new TaxEntity();
+                                te1.setTaxName("Service Tax");
+                                te1.setTaxPercentage(new BigDecimal(14.5));
+                                te1.setType(Tax.TYPE_COMBINED);
+                                te1.setExplicitOrder(false);
+                                if (null == Tax.getDefault(connectionSource)) {
+                                    te1.setIsDefaultTax(true);
+                                }
+                                td.create(te1);
+
+                                TaxComboEntity tce4 = new TaxComboEntity();
+                                tce4.setComponentTax(t2);
+                                tce4.setMainTax(te1);
+                                tcd.create(tce4);
+
+                                TaxComboEntity tce5 = new TaxComboEntity();
+                                tce5.setComponentTax(sbCess);
+                                tce5.setMainTax(te1);
+                                tcd.create(tce5);
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+                            //sf taxe
+
+                            ver.setVersion("2.2.1.0");
+                            ver.setYear("2016");
+                            Version.update(connection, ver);
+                            v = ver.getVersion();
+                            mVer = v.substring(v.indexOf(".") + 1, v.length());
+                            try {
+                                version = Integer.parseInt(mVer.replace(".", ""));
+                            } catch (NumberFormatException e) {
+                            }
+
+                        default:
+                            ver.setVersion("2.2.1.0");
+                            ver.setYear("2016");
+                            Version.update(connection, ver);
+                            v = ver.getVersion();
+                            mVer = v.substring(v.indexOf(".") + 1, v.length());
+                            try {
+                                version = Integer.parseInt(mVer.replace(".", ""));
+                            } catch (NumberFormatException e) {
+                            }
+
+                        //break;
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    new JDialogError(Common.mainFrame, e).setVisible(true);
+                    System.exit(0);
+                } finally {
+                }
+
+            case 2016:
+
+                try {
+                    switch (version) {
+                        case 210:
+                            try {
+                                final Dao<FlagEntity, Integer> dao = DaoManager.createDao(connectionSource, FlagEntity.class);
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN fisc_year_start VARCHAR NULL");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN end_fisc_year BOOLEAN DEFAULT 0");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN use_document_prefix BOOLEAN DEFAULT 0");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN prefix_separator VARCHAR");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN use_date_prefix BOOLEAN DEFAULT 0");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN show_delivery_note_amount INTEGER DEFAULT 0");
+                                dao.executeRaw("ALTER TABLE flags ADD COLUMN po_number_label VARCHAR DEFAULT 'P.O. Number'");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            try {
+                                final Dao<InvoiceEntity, Integer> dao = DaoManager.createDao(connectionSource, InvoiceEntity.class);
+                                dao.executeRaw("ALTER TABLE invoices ADD COLUMN fiscal_year VARCHAR NULL");
+                                dao.executeRaw("ALTER TABLE invoices ADD COLUMN number_prefix VARCHAR");
+                                dao.executeRaw("ALTER TABLE invoices ADD COLUMN second_number VARCHAR");
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            try {
+                                final Dao<ReleaseEntity, Integer> dao = DaoManager.createDao(connectionSource, ReleaseEntity.class);
+//                                dao.executeRaw("ALTER TABLE version ADD COLUMN release_notes VARCHAR NULL");
+//                                dao.executeRaw("ALTER TABLE version ADD COLUMN show_notes BOOLEAN DEFAULT 0");
+                                dao.executeRaw("CREATE TABLE IF NOT EXISTS `release_notes` ("
+                                        + "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE, "
+                                        + "version VARCHAR NOT NULL, "
+                                        + "year VARCHAR NOT NULL, "
+                                        + "release_notes VARCHAR NULL, "
+                                        + "show_notes BOOLEAN DEFAULT 0"
+                                        + ")");
+
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
+                            Release r = new Release();
+                            r.setVersion("2.2.1.1");
+                            r.setYear("2016");
+                            r.addReleaseNote(" - filter by city in Clients and Invoice Reports;");
+                            r.addReleaseNote(" - added multiple email templates to choose from when sending a document;");
+                            r.addReleaseNote(" - Prefix and second number can now be added to your Invoice Number;");
+                            r.addReleaseNote(" - Amount Due is now updated on the invoice documents as you make payment;");
+                            r.addReleaseNote(" - PO number field name can be customized;");
+                            r.addReleaseNote(" - Amount column can be removed from Delivery Notes;");
+                            r.addReleaseNote(" - You can now reset the invoicing number (reset fiscal year).");
+
+                            r.setShowNotes(true);
+
+                            Release.add(connectionSource, r);
+
+                            ver.setVersion("2.2.1.1");
+                            ver.setYear("2016");
+
+                            Version.update(connection, ver);
+                            v = ver.getVersion();
+                            mVer = v.substring(v.indexOf(".") + 1, v.length());
+                            try {
+                                version = Integer.parseInt(mVer.replace(".", ""));
+                            } catch (NumberFormatException e) {
+                            }
+                            break;
+                        default:
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    new JDialogError(Common.mainFrame, e).setVisible(true);
+                    System.exit(0);
+                } finally {
+                }
+            //break;
+            default:
+            //break;
+        }
+
+    }
+
+    public static void main(String[] args) {
+//        updateDB(UPDATE_USER);
+    }
+}

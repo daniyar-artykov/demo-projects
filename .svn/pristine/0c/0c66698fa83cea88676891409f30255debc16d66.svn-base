@@ -1,0 +1,601 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="in_t_1" pageWidth="555" pageHeight="421" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="15" uuid="b739fed3-32f6-46af-b5ad-c4ad4caf7786">
+	<property name="ireport.zoom" value="1.8150000000000057"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="195"/>
+	<template><![CDATA["styleTemplate2.jrtx"]]></template>
+	<style name="style1" hAlign="Left" vAlign="Middle" fontName="Roboto" fontSize="10"/>
+	<style name="style2" fontName="Roboto" fontSize="10"/>
+	<style name="deleted" fontName="Roboto" fontSize="8"/>
+	<style name="styleShowShipTo" markup="styled">
+		<paragraph firstLineIndent="30" leftIndent="50" rightIndent="30" spacingBefore="30" spacingAfter="30" tabStopWidth="60"/>
+	</style>
+	<style name="styleInvoice">
+            <conditionalStyle>
+                <conditionExpression><![CDATA[$P{title_document_numbrer}.length() <= 8]]></conditionExpression>
+                <style fontName="Roboto" fontSize="21" forecolor="#B82D2D" hAlign="Center" isBold="true" isItalic="false" isStrikeThrough="false" isUnderline="false" vAlign="Middle"/>
+            </conditionalStyle>
+            <conditionalStyle>
+                <conditionExpression><![CDATA[$P{title_document_numbrer}.length() > 8 && $P{title_document_numbrer}.length() < 14]]></conditionExpression>
+                <style fontName="Roboto" fontSize="18" forecolor="#B82D2D" hAlign="Center" isBold="true" isItalic="false" isStrikeThrough="false" isUnderline="false" vAlign="Middle"/>
+            </conditionalStyle>
+            <conditionalStyle>
+                <conditionExpression><![CDATA[$P{title_document_numbrer}.length() > 13]]></conditionExpression>
+                <style fontName="Roboto" fontSize="14" forecolor="#B82D2D" hAlign="Center" isBold="true" isItalic="false" isStrikeThrough="false" isUnderline="false" vAlign="Middle"/>
+            </conditionalStyle>
+        </style>
+	<parameter name="title_txt_document" class="java.lang.String"/>
+	<parameter name="title_document_numbrer" class="java.lang.String"/>
+	<parameter name="title_txt_amount_due" class="java.lang.String"/>
+	<parameter name="title_amount_due" class="java.lang.String"/>
+	<parameter name="title_txt_document_date" class="java.lang.String"/>
+	<parameter name="title_document_date" class="java.lang.String"/>
+	<parameter name="title_txt_due_date" class="java.lang.String"/>
+	<parameter name="title_due_date" class="java.lang.String"/>
+	<parameter name="title_logo" class="java.lang.String"/>
+	<parameter name="title_provider_company_name" class="java.lang.String"/>
+	<parameter name="title_provider_address" class="java.lang.String"/>
+	<parameter name="title_provider_location" class="java.lang.String"/>
+	<parameter name="title_provider_phone" class="java.lang.String"/>
+	<parameter name="title_provider_fax" class="java.lang.String"/>
+	<parameter name="title_provider_web" class="java.lang.String"/>
+	<parameter name="title_provider_additional_details" class="java.lang.String"/>
+	<parameter name="title_billing_company_name" class="java.lang.String"/>
+	<parameter name="title_billing_address" class="java.lang.String"/>
+	<parameter name="title_billing_location" class="java.lang.String"/>
+	<parameter name="title_billing_phone" class="java.lang.String"/>
+	<parameter name="title_billing_fax" class="java.lang.String"/>
+	<parameter name="title_billing_web" class="java.lang.String"/>
+	<parameter name="title_shipping_company_name" class="java.lang.String"/>
+	<parameter name="title_shipping_address" class="java.lang.String"/>
+	<parameter name="title_shipping_location" class="java.lang.String"/>
+	<parameter name="title_shipping_phone" class="java.lang.String"/>
+	<parameter name="title_shipping_fax" class="java.lang.String"/>
+	<parameter name="title_shipping_web" class="java.lang.String"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="title_txt_po_number" class="java.lang.String"/>
+	<parameter name="title_po_number" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="icon_address" class="java.lang.String"/>
+	<parameter name="icon_phone" class="java.lang.String"/>
+	<parameter name="icon_web" class="java.lang.String"/>
+	<parameter name="icon_mail" class="java.lang.String"/>
+	<parameter name="icon_details" class="java.lang.String"/>
+	<parameter name="title_client_additional_details" class="java.lang.String"/>
+	<parameter name="title_provider_email" class="java.lang.String"/>
+	<parameter name="show_ship_to" class="java.lang.Boolean"/>
+	<variable name="shipTo" class="java.lang.String">
+		<variableExpression><![CDATA[$V{showShipTo}? "Ship to:": "Bill to:"]]></variableExpression>
+		<initialValueExpression><![CDATA[]]></initialValueExpression>
+	</variable>
+	<variable name="shipCompanyName" class="java.lang.String">
+		<variableExpression><![CDATA[$V{showShipTo}? $P{title_shipping_company_name}: $P{title_billing_company_name}]]></variableExpression>
+		<initialValueExpression><![CDATA[]]></initialValueExpression>
+	</variable>
+	<variable name="shipAddress" class="java.lang.String">
+		<variableExpression><![CDATA[$V{showShipTo}? $P{title_shipping_address}: $P{title_billing_address}]]></variableExpression>
+		<initialValueExpression><![CDATA[$P{title_shipping_address}]]></initialValueExpression>
+	</variable>
+	<variable name="shipLocation" class="java.lang.String">
+		<variableExpression><![CDATA[$V{showShipTo}? $P{title_shipping_company_name}: $P{title_billing_company_name}]]></variableExpression>
+		<initialValueExpression><![CDATA[$P{title_shipping_location}]]></initialValueExpression>
+	</variable>
+	<variable name="shipPhone" class="java.lang.String">
+		<variableExpression><![CDATA[$V{showShipTo}? $P{title_shipping_company_name}: $P{title_billing_company_name}]]></variableExpression>
+		<initialValueExpression><![CDATA[$P{title_shipping_phone}]]></initialValueExpression>
+	</variable>
+	<variable name="showShipTo4" class="java.lang.Boolean">
+		<variableExpression><![CDATA[!$P{title_billing_address}.equalsIgnoreCase( $P{title_shipping_address} )]]></variableExpression>
+		<initialValueExpression><![CDATA[!$P{title_billing_address}.equalsIgnoreCase( $P{title_shipping_address} )]]></initialValueExpression>
+	</variable>
+	<variable name="title_client_additional_details" class="java.lang.String">
+		<variableExpression><![CDATA[!$P{title_client_additional_details}.equalsIgnoreCase( $P{title_client_additional_details} )]]></variableExpression>
+		<initialValueExpression><![CDATA[!$P{title_client_additional_details}.equalsIgnoreCase( $P{title_client_additional_details} )]]></initialValueExpression>
+	</variable>
+	<variable name="showShipTo" class="java.lang.Boolean">
+		<variableExpression><![CDATA[$P{show_ship_to} || (!($P{title_billing_address}.equalsIgnoreCase( $P{title_shipping_address} ))  ||  !($P{title_shipping_location}.equalsIgnoreCase( $P{title_billing_location} )) )]]></variableExpression>
+		<initialValueExpression><![CDATA[$P{show_ship_to} || (!($P{title_billing_address}.equalsIgnoreCase( $P{title_shipping_address} ))  ||  !($P{title_shipping_location}.equalsIgnoreCase( $P{title_billing_location} )) )]]></initialValueExpression>
+	</variable>
+	<group name="test">
+		<groupExpression><![CDATA[$V{PAGE_NUMBER}]]></groupExpression>
+	</group>
+	<background>
+		<band height="96">
+			<image hAlign="Left" onErrorType="Blank">
+				<reportElement uuid="cf1eaeaf-caf9-4721-b2a9-34204acb3ed0" key="logoImage" x="0" y="0" width="260" height="83"/>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<imageExpression><![CDATA[$P{title_logo}]]></imageExpression>
+			</image>
+			<line>
+				<reportElement uuid="e7eecae5-3b9b-429b-a9cd-022f18387587" key="line_logo_E" style="styleNormalColor" positionType="Float" x="94" y="6" width="25" height="1">
+					<printWhenExpression><![CDATA[/*!($P{title_logo}.isEmpty()) && */ $P{title_logo}.equalsIgnoreCase( "./test_company/Sleek Bill Test Database/logos/logo_sleek_bill.png" )]]></printWhenExpression>
+				</reportElement>
+				<graphicElement>
+					<pen lineWidth="3.35"/>
+				</graphicElement>
+			</line>
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="c3bbc2c7-de6f-4f7e-9feb-0d7452f739a6" style="styleInvoice" positionType="Float" x="261" y="1" width="289" height="25" isPrintWhenDetailOverflows="true"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle" markup="styled"/>
+				<textFieldExpression><![CDATA[$P{title_txt_document}.toUpperCase() + " " + $P{title_document_numbrer}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="b95f03f8-5295-4a70-83c8-b9350e1137e8" style="style2" mode="Transparent" x="351" y="24" width="200" height="52" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true"/>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Bottom" markup="styled">
+					<paragraph lineSpacing="1_1_2"/>
+				</textElement>
+				<textFieldExpression><![CDATA["<style isBold='true'>" + $P{title_txt_document_date} + "</style>" + " " + $P{title_document_date}
+
++ ($P{title_due_date}.isEmpty() ? "" : "\n") +  "<style isBold='true'>" + $P{title_txt_due_date} + "</style>" + " " + $P{title_due_date}
+
++ ($P{title_po_number}.isEmpty() ? "" : "\n") +  "<style isBold='true'>" + $P{title_txt_po_number} + "</style>" + " " + $P{title_po_number}
+
+/*
+$P{title_due_date}.isEmpty() ? $P{title_po_number} : $P{title_due_date} + "\n" + $P{title_po_number}
+*/]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="08af2ba1-d018-4978-8ac2-20cfbb830718" mode="Transparent" x="363" y="0" width="100" height="1" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true" backcolor="#CCFF00"/>
+				<box>
+					<pen lineWidth="0.0"/>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement>
+					<font fontName="Roboto"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($P{title_due_date}.isEmpty() ? "\n" : "")
++ ($P{title_po_number}.isEmpty() ? "\n" : "")]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement uuid="94b9a70f-e25b-4cfc-aff3-bbd53064e8fd" key="line" x="0" y="94" width="555" height="1"/>
+				<graphicElement>
+					<pen lineWidth="1.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement uuid="189f0ee8-4bd9-4be0-89d2-c64ff67421c1" key="line_color" style="styleNormalColor" x="0" y="88" width="555" height="1"/>
+				<graphicElement>
+					<pen lineWidth="4.75"/>
+				</graphicElement>
+			</line>
+		</band>
+	</background>
+	<title>
+		<band height="110">
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="ffc7d368-6b02-40cb-a920-d51be27dfc80" x="83" y="62" width="389" height="38" isPrintWhenDetailOverflows="true" forecolor="#999999">
+					<printWhenExpression><![CDATA[new Boolean("FALSE")]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA["ATENTIE:          ( acest text nu este afisat la jasper )"                                       +
+"banda de TITLE trebuie sa fie fix de  heigth == 110"         +
+"logo si Invoice si datele aferente sunt pe banda Background"]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="100">
+			<printWhenExpression><![CDATA[!$V{showShipTo}]]></printWhenExpression>
+			<textField>
+				<reportElement uuid="30597da4-5a77-4ac3-9a12-5fb15111249d" key="line_space" positionType="Float" x="20" y="17" width="517" height="3"/>
+				<textElement/>
+				<textFieldExpression><![CDATA[]]></textFieldExpression>
+			</textField>
+			<frame>
+				<reportElement uuid="467cfe58-28f5-4957-b5a4-e0a79a1ccfea" key="billTo" positionType="Float" x="294" y="21" width="260" height="68"/>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="8bdbacf1-5a29-4f67-825a-cf037c4fce82" style="style1" positionType="Float" x="17" y="0" width="241" height="12" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_billing_company_name}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="a4fec5c2-1ace-4c87-a3be-66fd7d6bd2ce" style="style1" positionType="Float" x="17" y="39" width="241" height="12" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_billing_phone}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="d7c2b334-03f3-45a5-bd00-bf50f37d3a4a" style="style1" positionType="Float" x="17" y="13" width="241" height="12" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_billing_address}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="d65dc037-7e01-4109-99ac-032ca9402df4" style="style1" positionType="Float" x="17" y="26" width="241" height="12" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_billing_location}]]></textFieldExpression>
+				</textField>
+				<image>
+					<reportElement uuid="6086f1a0-3ff8-4022-89cb-885c10b88d99" style="style1" positionType="Float" x="0" y="40" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$P{title_billing_phone}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_phone}]]></imageExpression>
+				</image>
+				<image>
+					<reportElement uuid="51af6cc0-ac2d-44ec-bc34-bb1111d6b978" style="style1" positionType="Float" x="0" y="14" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$P{title_billing_address}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_address}]]></imageExpression>
+				</image>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="817ccf38-873d-4387-8f8e-798464f289d8" style="style1" positionType="Float" x="17" y="52" width="241" height="12" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_client_additional_details}]]></textFieldExpression>
+				</textField>
+				<image>
+					<reportElement uuid="379c8a36-a64f-4033-a4cf-df279985dc7e" style="style1" positionType="Float" x="0" y="53" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$P{title_client_additional_details}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_details}]]></imageExpression>
+				</image>
+			</frame>
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="ca02ec96-038c-4148-98af-021b2fe5c36a" style="styleSubTitle" x="311" y="0" width="241" height="15" isPrintWhenDetailOverflows="true"/>
+				<textElement/>
+				<textFieldExpression><![CDATA["Bill to:"]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="7ec89f58-b209-47fc-aff9-ad636c1fd83e" style="styleSubTitle" x="17" y="0" width="243" height="15" isPrintWhenDetailOverflows="true"/>
+				<box topPadding="0" leftPadding="0" bottomPadding="0" rightPadding="0">
+					<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+				</box>
+				<textElement/>
+				<textFieldExpression><![CDATA[$P{title_provider_company_name}]]></textFieldExpression>
+			</textField>
+			<frame>
+				<reportElement uuid="8a2f9416-c7dc-4d88-9b0e-870c6ae8922c" key="myCompany" positionType="Float" x="0" y="21" width="260" height="79"/>
+				<image>
+					<reportElement uuid="20ca50a0-f074-44bd-b43c-025cebf2ef3c" style="style1" positionType="Float" mode="Opaque" x="0" y="14" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true" backcolor="#CCFF00">
+						<printWhenExpression><![CDATA[!$P{title_billing_phone}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+				</image>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="3914a299-1608-4d34-a77c-1f8aae90b2cb" style="style1" positionType="Float" mode="Transparent" x="17" y="26" width="241" height="12" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement/>
+					<textFieldExpression><![CDATA[$P{title_provider_phone}]]></textFieldExpression>
+				</textField>
+				<image>
+					<reportElement uuid="733d8f15-df45-4fb4-a9d2-abea64ce69a4" style="style1" positionType="Float" x="0" y="66" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$P{title_provider_additional_details}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_details}]]></imageExpression>
+				</image>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="a7d12618-fb6e-4867-aff1-5389ab9ccc8c" style="style1" positionType="Float" mode="Transparent" x="17" y="65" width="241" height="12" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement/>
+					<textFieldExpression><![CDATA[$P{title_provider_additional_details}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="adbbce72-3ff0-4ce3-8240-ce37a8e711d4" style="style1" positionType="Float" mode="Transparent" x="17" y="0" width="241" height="12" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement/>
+					<textFieldExpression><![CDATA[$P{title_provider_address}]]></textFieldExpression>
+				</textField>
+				<image>
+					<reportElement uuid="0c2168d5-96c3-49c4-9084-3a5106584854" style="style1" positionType="Float" x="0" y="27" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$P{title_provider_phone}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_phone}]]></imageExpression>
+				</image>
+				<image>
+					<reportElement uuid="c3d42e69-7fa7-42ac-aad8-0639bac69fd9" style="style1" positionType="Float" x="0" y="1" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$P{title_provider_address}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_address}]]></imageExpression>
+				</image>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="3e5704ea-2a11-48fc-8063-3f0560d7c233" style="style1" positionType="Float" mode="Transparent" x="17" y="52" width="241" height="12" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement/>
+					<textFieldExpression><![CDATA[$P{title_provider_web}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="382f7572-eddc-4853-b8d8-09b929b25f94" style="style1" positionType="Float" mode="Transparent" x="17" y="13" width="241" height="12" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement/>
+					<textFieldExpression><![CDATA[$P{title_provider_location}]]></textFieldExpression>
+				</textField>
+				<image isUsingCache="false" evaluationTime="Report">
+					<reportElement uuid="6bfe602b-96b4-43a3-bdcf-8eca5539a65b" style="style1" positionType="Float" x="0" y="53" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$P{title_provider_web}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_web}]]></imageExpression>
+				</image>
+				<image>
+					<reportElement uuid="ae13c741-df49-41e1-8bab-b0c6cf1a60db" style="style1" positionType="Float" x="0" y="40" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$P{title_provider_email}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_mail}]]></imageExpression>
+				</image>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="d2a6ef99-de09-4d62-b5d5-e34a34528df4" style="style1" positionType="Float" mode="Transparent" x="17" y="39" width="241" height="12" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement/>
+					<textFieldExpression><![CDATA[$P{title_provider_email}]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="100" splitType="Stretch">
+			<printWhenExpression><![CDATA[$V{showShipTo}]]></printWhenExpression>
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="ecfa7fea-f14e-4d42-9aab-81f1ffcb9f20" style="styleSubTitle" x="17" y="0" width="152" height="15" isPrintWhenDetailOverflows="true"/>
+				<box topPadding="0" leftPadding="0" bottomPadding="0" rightPadding="0">
+					<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+				</box>
+				<textElement/>
+				<textFieldExpression><![CDATA[$P{title_provider_company_name}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="b5a16149-11fa-4025-a0c9-d46cbfdc4141" key="line_space" positionType="Float" x="19" y="17" width="517" height="3"/>
+				<textElement/>
+				<textFieldExpression><![CDATA[]]></textFieldExpression>
+			</textField>
+			<frame>
+				<reportElement uuid="124f481d-7dbd-4165-9d5a-97f4e42902e8" key="myCompany" positionType="Float" x="0" y="21" width="167" height="79"/>
+				<image>
+					<reportElement uuid="3a4277e0-a867-44ea-9b9d-cc280598464c" style="style1" positionType="Float" mode="Opaque" x="0" y="14" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true" backcolor="#CCFF00">
+						<printWhenExpression><![CDATA[!$P{title_billing_phone}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+				</image>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="0a337b16-2288-4459-a7f7-a6614f54a769" style="style1" positionType="Float" mode="Transparent" x="17" y="26" width="150" height="12" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement/>
+					<textFieldExpression><![CDATA[$P{title_provider_phone}]]></textFieldExpression>
+				</textField>
+				<image>
+					<reportElement uuid="4352b784-20aa-468f-b374-1eabf36981dd" style="style1" positionType="Float" x="0" y="66" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$P{title_provider_additional_details}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_details}]]></imageExpression>
+				</image>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="a3b0d34e-191f-4e1c-ba50-56e250635608" style="style1" positionType="Float" mode="Transparent" x="17" y="65" width="150" height="12" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement/>
+					<textFieldExpression><![CDATA[$P{title_provider_additional_details}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="e273ced2-22f4-486b-9e7a-683d541f6ef2" style="style1" positionType="Float" mode="Transparent" x="17" y="0" width="150" height="12" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement/>
+					<textFieldExpression><![CDATA[$P{title_provider_address}]]></textFieldExpression>
+				</textField>
+				<image>
+					<reportElement uuid="7e7a7abe-ba25-4353-a882-420b122e023b" style="style1" positionType="Float" x="0" y="27" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$P{title_provider_phone}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_phone}]]></imageExpression>
+				</image>
+				<image>
+					<reportElement uuid="7a513c8b-620b-4b02-8789-4d9e019dc286" style="style1" positionType="Float" x="0" y="1" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$P{title_provider_address}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_address}]]></imageExpression>
+				</image>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="2ab63e0c-1f95-46be-9388-8394e665becc" style="style1" positionType="Float" mode="Transparent" x="17" y="52" width="150" height="12" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement/>
+					<textFieldExpression><![CDATA[$P{title_provider_web}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="19f310eb-ccc2-47a4-b993-2fa49b9b4a5d" style="style1" positionType="Float" mode="Transparent" x="17" y="13" width="150" height="12" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement/>
+					<textFieldExpression><![CDATA[$P{title_provider_location}]]></textFieldExpression>
+				</textField>
+				<image isUsingCache="false" evaluationTime="Report">
+					<reportElement uuid="0212bd69-2629-4732-98ff-de7f2e3dc03d" style="style1" positionType="Float" x="0" y="53" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$P{title_provider_web}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_web}]]></imageExpression>
+				</image>
+				<image>
+					<reportElement uuid="58057df5-6110-48b1-a3a8-ddb185922978" style="style1" positionType="Float" x="0" y="40" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$P{title_provider_email}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_mail}]]></imageExpression>
+				</image>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="81877f17-09c6-4f01-a11d-0395871f251e" style="style1" positionType="Float" mode="Transparent" x="17" y="39" width="150" height="12" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement/>
+					<textFieldExpression><![CDATA[$P{title_provider_email}]]></textFieldExpression>
+				</textField>
+			</frame>
+			<frame>
+				<reportElement uuid="14c03cd0-ba55-475c-81bf-ad8eec3ec651" key="billTo" positionType="Float" x="196" y="21" width="167" height="68"/>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="f2319709-2e69-4afa-a892-04e30205f432" style="style1" positionType="Float" x="17" y="0" width="150" height="12" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_billing_company_name}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="907bc32f-9c1d-4233-8131-6915d72576ae" style="style1" positionType="Float" x="17" y="39" width="150" height="12" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_billing_phone}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="308c23e7-c429-45d2-8766-7bd4ae27e7b6" style="style1" positionType="Float" x="17" y="13" width="150" height="12" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_billing_address}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="f66266d9-88fa-4b79-acb6-705d93f95db2" style="style1" positionType="Float" x="17" y="26" width="150" height="12" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_billing_location}]]></textFieldExpression>
+				</textField>
+				<image>
+					<reportElement uuid="759a6f26-f274-49bd-a7ba-7dce2505d1e7" style="style1" positionType="Float" x="0" y="40" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$P{title_billing_phone}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_phone}]]></imageExpression>
+				</image>
+				<image>
+					<reportElement uuid="d7f4a8cd-7c65-48da-9de1-855416d44204" style="style1" positionType="Float" x="0" y="14" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$P{title_billing_address}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_address}]]></imageExpression>
+				</image>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="392844d1-c518-4f0e-b33c-a7c76ac5ff18" style="style1" positionType="Float" x="17" y="52" width="150" height="12" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_client_additional_details}]]></textFieldExpression>
+				</textField>
+				<image>
+					<reportElement uuid="f145b01b-fb37-4e16-9512-293b0820290b" style="style1" positionType="Float" x="0" y="53" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$P{title_client_additional_details}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_details}]]></imageExpression>
+				</image>
+			</frame>
+			<frame>
+				<reportElement uuid="6fa15b41-85be-43b7-b6f0-c1db6814930e" key="shipTo" positionType="Float" x="385" y="21" width="167" height="68"/>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="05a99e3b-2980-43d4-ae79-665f3f612d46" style="style1" positionType="Float" mode="Transparent" x="17" y="39" width="150" height="12" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_shipping_phone}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="b710ec06-345f-4a1e-9242-71a6d9fe9ca0" style="style1" positionType="Float" mode="Transparent" x="17" y="13" width="150" height="12" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement markup="none">
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_shipping_address}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="e8683fad-f232-41f5-bd59-f3da94c085c4" style="style1" positionType="Float" mode="Transparent" x="17" y="26" width="150" height="12" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_shipping_location}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="011fe71d-9896-46d3-9fb7-520eaceca781" style="style1" positionType="Float" mode="Transparent" x="17" y="0" width="150" height="12" isPrintWhenDetailOverflows="true"/>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement markup="none">
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_billing_company_name}]]></textFieldExpression>
+				</textField>
+				<image>
+					<reportElement uuid="b65a542a-a48e-4c26-8aaa-08de80791fe3" style="style1" positionType="Float" x="1" y="40" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$P{title_shipping_phone}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_phone}]]></imageExpression>
+				</image>
+				<image>
+					<reportElement uuid="a690809e-fd4f-4a38-97e6-489c28133539" style="style1" positionType="Float" x="1" y="14" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$P{title_shipping_address}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_address}]]></imageExpression>
+				</image>
+				<textField isStretchWithOverflow="true">
+					<reportElement uuid="022236d2-460b-4b2c-a149-183dc4d091b8" style="style1" positionType="Float" x="17" y="52" width="150" height="12" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$V{showShipTo}]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="2" bottomPadding="0"/>
+					<textElement>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_client_additional_details}]]></textFieldExpression>
+				</textField>
+				<image>
+					<reportElement uuid="fae048e7-7096-4f42-94d4-8bd3350d2a9a" style="style1" positionType="Float" x="0" y="53" width="22" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true">
+						<printWhenExpression><![CDATA[!$V{showShipTo} && !$P{title_client_additional_details}.isEmpty()]]></printWhenExpression>
+					</reportElement>
+					<box topPadding="1" bottomPadding="0"/>
+					<imageExpression><![CDATA[$P{icon_details}]]></imageExpression>
+				</image>
+			</frame>
+			<textField isStretchWithOverflow="true" evaluationTime="Report">
+				<reportElement uuid="c169789f-90ef-4eb0-b376-c8abb8f96c56" style="styleSubTitle" x="402" y="0" width="150" height="17" isPrintWhenDetailOverflows="true"/>
+				<textElement/>
+				<textFieldExpression><![CDATA[$V{shipTo}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="e729aa47-5dbf-4a4e-ad81-ee882d0dcadd" style="styleSubTitle" x="213" y="0" width="150" height="15" isPrintWhenDetailOverflows="true"/>
+				<textElement/>
+				<textFieldExpression><![CDATA["Bill to:"]]></textFieldExpression>
+			</textField>
+		</band>
+	</columnHeader>
+	<columnFooter>
+		<band/>
+	</columnFooter>
+</jasperReport>

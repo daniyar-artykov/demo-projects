@@ -1,0 +1,25 @@
+package sleekbill.db;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.ParseException;
+
+import sleekbill.Common;
+
+/**
+ *
+ * @author  flaviu marcu
+ */
+public class OneDateResultSetHandler implements ResultSetHandler{
+
+    @Override
+    public Object handle(ResultSet rs) throws SQLException {
+        if(rs.next())
+            try {
+                return Common.SQLITE_DATE_FORMAT.parse(rs.getString(1));
+            } catch (ParseException ex) {
+                ex.printStackTrace();
+            }
+        return null;
+    }
+}

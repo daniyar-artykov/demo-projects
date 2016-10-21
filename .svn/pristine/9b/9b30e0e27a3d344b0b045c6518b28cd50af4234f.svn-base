@@ -1,0 +1,198 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.entities;
+
+import com.j256.ormlite.dao.ForeignCollection;
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.field.ForeignCollectionField;
+import com.j256.ormlite.table.DatabaseTable;
+
+/**
+ *
+ * @author Andrei
+ */
+@DatabaseTable(tableName = "states")
+public class StateEntity {
+    
+    public static final String CITY = "city";
+    public static final String COUNTY = "county";
+    public static final String STATE = "state";
+    public static final String COUNTRY = "country";
+    
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+    @DatabaseField(columnName = STATE, canBeNull = false)
+    protected String state;
+    @DatabaseField(columnName = COUNTY, canBeNull = true, defaultValue = "")
+    protected String county;
+    @DatabaseField(columnName = CITY, canBeNull = true, defaultValue = "")
+    protected String city;
+    @DatabaseField(columnName = COUNTRY, canBeNull = true, defaultValue = "")
+    protected String country;
+    
+    @ForeignCollectionField(foreignFieldName = "state")
+    protected ForeignCollection<CompanyDetailsEntity> companyDetails;
+    @ForeignCollectionField(foreignFieldName = "billingState")
+    protected ForeignCollection<ClientEntity> clientsBillingState;
+    @ForeignCollectionField(foreignFieldName = "shippingState")
+    protected ForeignCollection<ClientEntity> clientsShippingState;
+    @ForeignCollectionField(foreignFieldName = "clientBillingState")
+    protected ForeignCollection<InvoiceEntity> invoicesBillingState;
+    @ForeignCollectionField(foreignFieldName = "clientShippingState")
+    protected ForeignCollection<InvoiceEntity> invoicesShippingState;
+
+    public StateEntity(StateEntity statesEntity) {
+        this.id = statesEntity.id;
+        this.state = statesEntity.state;
+        this.county = statesEntity.county;
+        this.city = statesEntity.city;
+        this.country = statesEntity.country;
+        this.companyDetails = statesEntity.companyDetails;
+        this.clientsBillingState = statesEntity.clientsBillingState;
+        this.clientsShippingState = statesEntity.clientsShippingState;
+        this.invoicesBillingState = statesEntity.invoicesBillingState;
+        this.invoicesShippingState = statesEntity.invoicesShippingState;
+    }
+
+    public StateEntity() {
+    }
+
+    public StateEntity(String state) {
+        this.state = state;
+    }
+
+    public StateEntity(String state, String county, String city, String country) {
+        this.state = state;
+        this.county = county;
+        this.city = city;
+        this.country = country;
+    }
+
+    public StateEntity(int id, String state, String county, String city, String country) {
+        this.id = id;
+        this.state = state;
+        this.county = county;
+        this.city = city;
+        this.country = country;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public String getCounty() {
+        return county;
+    }
+
+    public void setCounty(String county) {
+        this.county = county;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
+    public ForeignCollection<CompanyDetailsEntity> getCompanyDetails() {
+        return companyDetails;
+    }
+
+    public void setCompanyDetails(ForeignCollection<CompanyDetailsEntity> companyDetails) {
+        this.companyDetails = companyDetails;
+    }
+
+    public ForeignCollection<ClientEntity> getClientsBillingState() {
+        return clientsBillingState;
+    }
+
+    public void setClientsBillingState(ForeignCollection<ClientEntity> clientsBillingState) {
+        this.clientsBillingState = clientsBillingState;
+    }
+
+    public ForeignCollection<ClientEntity> getClientsShippingState() {
+        return clientsShippingState;
+    }
+
+    public void setClientsShippingState(ForeignCollection<ClientEntity> clientsShippingState) {
+        this.clientsShippingState = clientsShippingState;
+    }
+
+    public ForeignCollection<InvoiceEntity> getInvoicesBillingState() {
+        return invoicesBillingState;
+    }
+
+    public void setInvoicesBillingState(ForeignCollection<InvoiceEntity> invoicesBillingState) {
+        this.invoicesBillingState = invoicesBillingState;
+    }
+
+    public ForeignCollection<InvoiceEntity> getInvoicesShippingState() {
+        return invoicesShippingState;
+    }
+
+    public void setInvoicesShippingState(ForeignCollection<InvoiceEntity> invoicesShippingState) {
+        this.invoicesShippingState = invoicesShippingState;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 79 * hash + this.id;
+        hash = 79 * hash + (this.state != null ? this.state.hashCode() : 0);
+        hash = 79 * hash + (this.county != null ? this.county.hashCode() : 0);
+        hash = 79 * hash + (this.city != null ? this.city.hashCode() : 0);
+        hash = 79 * hash + (this.country != null ? this.country.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final StateEntity other = (StateEntity) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if ((this.state == null) ? (other.state != null) : !this.state.equals(other.state)) {
+            return false;
+        }
+        if ((this.county == null) ? (other.county != null) : !this.county.equals(other.county)) {
+            return false;
+        }
+        if ((this.city == null) ? (other.city != null) : !this.city.equals(other.city)) {
+            return false;
+        }
+        if ((this.country == null) ? (other.country != null) : !this.country.equals(other.country)) {
+            return false;
+        }
+        return true;
+    }
+}

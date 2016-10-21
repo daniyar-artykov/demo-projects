@@ -1,0 +1,113 @@
+package sleekbill.swingutils;
+
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.ListCellRenderer;
+
+/**
+ *
+ * @author  tonia
+ */
+public class SBDeleteListCellRenderer extends JPanel
+    implements ListCellRenderer {
+
+    protected JLabel label = new JLabel();
+    protected JButton button = new JButton(new ImageIcon("./images/buttons/cross-small-enable.png"));
+
+    /**
+     * Constructs a default renderer object for an item
+     * in a list.
+     */
+    public SBDeleteListCellRenderer() {
+        super();
+        //setOpaque(true);
+        setLayout(new FlowLayout(FlowLayout.LEADING, 5, 0));
+        //label.setBorder(BorderFactory.createTitledBorder(""));
+        add(label);
+        button.setMinimumSize(new Dimension(20, 19));
+        button.setMaximumSize(new Dimension(20, 19));
+        button.setPreferredSize(new Dimension(20, 19));
+        button.setToolTipText("Stergeti delegatul");
+        add(button);
+    }
+
+    public Component getListCellRendererComponent(
+        JList list,
+        Object value,
+        int index,
+        boolean isSelected,
+        boolean cellHasFocus) {
+
+        button.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+               System.out.println("Button pressed from renderer");
+            }
+        });
+        label.setText((value==null)? "" : value.toString());
+
+        return this;
+    }
+
+    public void componentPressed(MouseEvent e){
+        if (e.getSource() instanceof JButton || e.getComponent() instanceof JButton) {
+            System.out.println("Button pressed from renderer");
+        }
+        if (e.getSource() instanceof JLabel || e.getComponent() instanceof JLabel) {
+            System.out.println("Label pressed from renderer");
+        }
+        if (e.getSource() instanceof JList || e.getComponent() instanceof JList) {
+            System.out.println("List pressed from renderer");
+        }
+    }
+    
+    public boolean isButtonClick(MouseEvent e){
+        int xClick = e.getPoint().x;
+        int yClick = e.getPoint().y;    //y e relativ la jlist (in functie de cat scroll faci)
+
+        this.getBounds();
+
+        JButton b = (JButton) getComponent(1);
+        Rectangle rectangle = b.getBounds();
+        
+        if((xClick > rectangle.x && xClick < (rectangle.x + rectangle.width))){ // && (yClick > rectangle.y && yClick < (rectangle.x + rectangle.height)))            
+            this.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            return true;
+        }
+        return false;
+    }
+
+    public void getButton(MouseEvent e){
+        if (isButtonClick(e)) {
+             ((JButton)getComponent(1)).setSelected(true);
+        } else deselectButtons();
+    }
+
+    public void deselectButtons(){
+        button.setSelected(false);
+    }
+
+    public void buttonEvent(){
+       JButton b = (JButton) getComponent(1);
+       b.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+               System.out.println("Button");
+            }
+        });
+    }
+}

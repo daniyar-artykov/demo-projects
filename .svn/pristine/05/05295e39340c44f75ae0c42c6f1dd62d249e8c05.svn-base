@@ -1,0 +1,186 @@
+package sleekbill.beans;
+
+import java.sql.SQLException;
+
+import sleekbill.Common;
+import sleekbill.entities.InvoiceProductEntity;
+import sleekbill.entities.ProductEntity;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+
+public class InvoiceProduct extends InvoiceProductEntity {
+
+    private Dao<InvoiceProductEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+    
+    public InvoiceProduct(InvoiceProductEntity invoiceProductsEntity) {
+        this(0);
+        this.id = invoiceProductsEntity.getId();
+        this.product = invoiceProductsEntity.getProduct();
+        this.invoice = invoiceProductsEntity.getInvoice();
+        this.name = invoiceProductsEntity.getName();
+        this.description = invoiceProductsEntity.getDescription();
+        this.measuringUnit = invoiceProductsEntity.getMeasuringUnit();
+        this.price = invoiceProductsEntity.getPrice();
+        this.quantity = invoiceProductsEntity.getQuantity();
+        this.hasTaxIncluded = invoiceProductsEntity.isHasTaxIncluded();
+        this.tax = invoiceProductsEntity.getTax();
+        this.totalNoTax = invoiceProductsEntity.getTotalNoTax();
+        this.totalTax = invoiceProductsEntity.getTotalTax();
+        this.totalAll = invoiceProductsEntity.getTotalAll();
+        this.isDiscount = invoiceProductsEntity.isDiscount();
+        this.discountPercentage = invoiceProductsEntity.getDiscountPercentage();
+    }
+
+    public InvoiceProduct() {
+        this(0);
+    }
+
+    public InvoiceProduct(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager
+                        .createDao(mainConnection, InvoiceProductEntity.class);
+
+                if (id != null && id != 0) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    
+     public void refreshDao(){
+            try {
+                mainDao = DaoManager
+                        .createDao(Common.connection.getConnection(), InvoiceProductEntity.class);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+    }
+
+    public void create() throws Exception {
+        mainDao.create(this);
+    }
+
+    public InvoiceProductEntity read(Integer id) throws Exception {
+        return mainDao.queryForId(id);
+    }
+
+    public void update() throws Exception {
+        mainDao.update(this);
+    }
+
+    public void delete() throws Exception {
+        mainDao.delete(this);
+    }
+    
+    public static void add(JdbcConnectionSource connectionSource, InvoiceProductEntity invoiceProducts) throws SBDaoException, SQLException {
+
+        Dao<InvoiceProductEntity, Integer> invoiceProductsDao = DaoManager.createDao(connectionSource, InvoiceProductEntity.class);
+
+        ProductEntity product = invoiceProducts.getProduct();
+
+        if (product.getId() <= 0) {
+
+            ProductEntity auxProduct = Product.get(connectionSource, product.getName(), product.getDescription());
+            invoiceProducts.setProduct(auxProduct == null ? invoiceProducts.getProduct() : auxProduct);
+        }
+        
+        invoiceProductsDao.create(invoiceProducts);
+    }
+    
+        @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 17 * hash + this.id;
+        hash = 17 * hash + (this.product != null ? this.product.hashCode() : 0);
+        hash = 17 * hash + (this.invoice != null ? this.invoice.hashCode() : 0);
+        hash = 17 * hash + (this.name != null ? this.name.hashCode() : 0);
+        hash = 17 * hash + (this.description != null ? this.description.hashCode() : 0);
+        hash = 17 * hash + (this.measuringUnit != null ? this.measuringUnit.hashCode() : 0);
+        hash = 17 * hash + (this.price != null ? this.price.hashCode() : 0);
+        hash = 17 * hash + (this.quantity != null ? this.quantity.hashCode() : 0);
+        hash = 17 * hash + (this.hasTaxIncluded ? 1 : 0);
+        hash = 17 * hash + (this.tax != null ? this.tax.hashCode() : 0);
+        hash = 17 * hash + (this.totalNoTax != null ? this.totalNoTax.hashCode() : 0);
+        hash = 17 * hash + (this.totalTax != null ? this.totalTax.hashCode() : 0);
+        hash = 17 * hash + (this.totalAll != null ? this.totalAll.hashCode() : 0);
+        hash = 17 * hash + (this.isDiscount ? 1 : 0);
+        hash = 17 * hash + (this.discountPercentage != null ? this.discountPercentage.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final InvoiceProduct other = (InvoiceProduct) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (this.product != other.product && (this.product == null || !this.product.equals(other.product))) {
+            return false;
+        }
+        if (this.invoice != other.invoice && (this.invoice == null || !this.invoice.equals(other.invoice))) {
+            return false;
+        }
+        if ((this.name == null) ? (other.name != null) : !this.name.equals(other.name)) {
+            return false;
+        }
+        if ((this.description == null) ? (other.description != null) : !this.description.equals(other.description)) {
+            return false;
+        }
+        if ((this.measuringUnit == null) ? (other.measuringUnit != null) : !this.measuringUnit.equals(other.measuringUnit)) {
+            return false;
+        }
+        if (this.price != other.price && (this.price == null || !this.price.equals(other.price))) {
+            return false;
+        }
+        if (this.quantity != other.quantity && (this.quantity == null || !this.quantity.equals(other.quantity))) {
+            return false;
+        }
+        if (this.hasTaxIncluded != other.hasTaxIncluded) {
+            return false;
+        }
+        if (this.tax != other.tax && (this.tax == null || !this.tax.equals(other.tax))) {
+            return false;
+        }
+        if (this.totalNoTax != other.totalNoTax && (this.totalNoTax == null || !this.totalNoTax.equals(other.totalNoTax))) {
+            return false;
+        }
+        if (this.totalTax != other.totalTax && (this.totalTax == null || !this.totalTax.equals(other.totalTax))) {
+            return false;
+        }
+        if (this.totalAll != other.totalAll && (this.totalAll == null || !this.totalAll.equals(other.totalAll))) {
+            return false;
+        }
+        if (this.isDiscount != other.isDiscount) {
+            return false;
+        }
+        if (this.discountPercentage != other.discountPercentage && (this.discountPercentage == null || !this.discountPercentage.equals(other.discountPercentage))) {
+            return false;
+        }
+        return true;
+    }
+    
+    public Dao<InvoiceProductEntity, Integer> getMainDao() {
+        return mainDao;
+    }
+
+    public void setMainDao(Dao<InvoiceProductEntity, Integer> mainDao) {
+        this.mainDao = mainDao;
+    }
+}

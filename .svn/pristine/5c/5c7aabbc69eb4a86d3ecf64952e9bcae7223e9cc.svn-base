@@ -1,0 +1,61 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.util.sleekdetection;
+
+/**
+ *
+ * @author Andrei
+ */
+public class SleekResponse {
+
+    String user = "";
+    String password = "";
+    String smtp = "";
+    String port = "";
+    boolean tls = false;
+
+    public SleekResponse() {
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getSmtp() {
+        return smtp;
+    }
+
+    public void setSmtp(String smtp) {
+        this.smtp = smtp;
+    }
+
+    public String getPort() {
+        return port;
+    }
+
+    public void setPort(String port) {
+        this.port = port;
+    }
+
+    public boolean isTls() {
+        return tls;
+    }
+
+    public void setTls(boolean tls) {
+        this.tls = tls;
+    }
+}

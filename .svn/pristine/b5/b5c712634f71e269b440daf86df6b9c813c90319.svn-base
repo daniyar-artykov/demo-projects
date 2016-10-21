@@ -1,0 +1,192 @@
+package sleekbill.swingutils;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
+import javax.swing.ImageIcon;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
+
+public class LabelGlassPane extends JComponent {
+
+    private final static Border MESSAGE_BORDER = new EmptyBorder(5, 5, 5, 5);
+    private JLabel message = new JLabel();
+    JPanel label = new JPanel();
+
+    public LabelGlassPane() {
+        setOpaque(false);
+        setLayout(new BorderLayout());
+
+        GridBagConstraints grid = new GridBagConstraints();
+        grid.anchor = GridBagConstraints.WEST;
+        grid.gridx = 0;
+        grid.gridy = 0;
+        grid.weightx = 0.1;
+        grid.insets = new Insets(0, 15, 0, 0);
+        
+        
+        label.setLayout(new GridBagLayout());
+        label.add(message, grid);
+        
+
+        add(label, BorderLayout.NORTH);
+        message.setOpaque(true);
+        message.setBorder(MESSAGE_BORDER);
+        
+        final JLabel close = new JLabel(new ImageIcon("./images/buttons/cross-small-disable.png"));
+        
+        close.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        close.addMouseListener(new MouseAdapter() {
+
+            @Override
+            public void mouseClicked(MouseEvent me) {
+                deactivate();
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent me) {
+                close.setIcon(new ImageIcon("./images/buttons/cross-small-enable.png"));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent me) {
+                close.setIcon(new ImageIcon("./images/buttons/cross-small-disable.png"));
+            }
+        });
+        grid = new GridBagConstraints();
+        grid.anchor = GridBagConstraints.EAST;
+        grid.gridx = 1;
+        grid.gridy = 0;
+        grid.weightx = 0.1;
+        grid.insets = new Insets(0, 0, 0, 15);
+        label.add(close, grid);
+
+
+    }
+
+    /*
+     *  The	background color of the message label will be the same as the
+     *  background of the glass pane without the alpha value
+     */
+    @Override
+    public void setBackground(Color background) {
+        super.setBackground(background);
+
+        Color messageBackground = new Color(background.getRGB());
+        message.setBackground(messageBackground);
+    }
+
+    public void showOK(String text) {
+        setBackground(new Color(0xE8, 0xFF, 0xCA));
+        label.setBackground(new Color(0xE8, 0xFF, 0xCA));
+        if (text != null && text.length() > 0) {
+            String formattedText = "<html><font color='black' size=\"4\"> ? </font></html>";
+            message.setIcon(new ImageIcon("./images/buttons/success.png"));
+            message.setVisible(true);
+            message.setText(formattedText.replace("?", text));
+            //message.setForeground(getForeground());
+        } else {
+            message.setVisible(false);
+        }
+
+        setVisible(true);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(3000);
+                    deactivate();
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }).start();
+    }
+    
+    public void showError(String text) {
+        setBackground(new Color(0xFF, 0xD6, 0xD6));
+        label.setBackground(new Color(0xFF, 0xD6, 0xD6));
+        if (text != null && text.length() > 0) {
+            String formattedText = "<html><font color='black' size=\"4\"> ?</font></html>";
+            message.setIcon(new ImageIcon("./images/buttons/error.png"));
+            message.setVisible(true);
+            message.setText(formattedText.replace("?", text));
+            //message.setForeground(getForeground());
+        } else {
+            message.setVisible(false);
+        }
+
+        setVisible(true);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(3000);
+                    deactivate();
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }).start();
+    }
+    
+    public void showWarning(String text) {
+       setBackground(new Color(0xFA, 0xFC, 0xBD));
+        label.setBackground(new Color(0xFA, 0xFC, 0xBD));
+        if (text != null && text.length() > 0) {
+            String formattedText = "<html><font color='black' size=\"3\"> ?</font></html>";
+            message.setIcon(new ImageIcon("./images/icons/warning.png"));
+            message.setVisible(true);
+            message.setText(formattedText.replace("?", text));
+            //message.setForeground(getForeground());
+        } else {
+            message.setVisible(false);
+        }
+
+        setVisible(true);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(5000);
+                    deactivate();
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }).start();
+    }
+    
+    public void showAlways(String text) {
+        setBackground(new Color(0xFA, 0xFC, 0xBD));
+        label.setBackground(new Color(0xFA, 0xFC, 0xBD));
+        if (text != null && text.length() > 0) {
+            String formattedText = "<html><font color='black' size=\"3\"> ?</font></html>";
+            message.setIcon(new ImageIcon("./images/buttons/error.png"));
+            message.setVisible(true);
+            message.setText(formattedText.replace("?", text));
+            //message.setForeground(getForeground());
+        } else {
+            message.setVisible(false);
+        }
+
+        setVisible(true);
+    }
+
+    public void deactivate() {
+        setCursor(null);
+        setVisible(false);
+    }
+}

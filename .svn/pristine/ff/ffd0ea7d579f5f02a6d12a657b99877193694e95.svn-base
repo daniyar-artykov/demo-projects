@@ -1,0 +1,24 @@
+package sleekbill.db;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ *
+ * @author  flaviu marcu
+ */
+public abstract class ListResultSetHandler implements ResultSetHandler{
+    
+    @Override
+    public List<Object> handle(ResultSet rs) throws SQLException {
+        List<Object> rows = new ArrayList<Object>();
+        while (rs.next()) {
+            rows.add(this.handleRow(rs));
+        }
+        return rows;
+    }    
+    
+    public abstract Object handleRow(ResultSet rs) throws SQLException;
+}

@@ -1,0 +1,122 @@
+package sleekbill.swingutils.autosuggesters;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.ListCellRenderer;
+
+/**
+ *
+ * @author  tonia
+ */
+public class IconListRendererEdit extends JPanel implements ListCellRenderer /*extends DefaultListCellRenderer*/ {
+	private static final long serialVersionUID = 1L;
+	
+    Map<Object, Icon> icons = new HashMap<Object, Icon>();
+    
+    boolean addNew = false;
+    boolean showEdit = false;
+
+//    public IconListRenderer() {
+//        icons.put("", new ImageIcon("./images/buttons/cross-small.png"));
+//        icons.put("add", new ImageIcon("./images/buttons/add-icon.gif"));
+//    }
+    
+     public IconListRendererEdit(boolean addNew, boolean showEdit) {
+        icons.put("", new ImageIcon("./images/buttons/edit-icon.png"));
+        icons.put("add", new ImageIcon("./images/buttons/add.png"));
+        this.addNew = addNew;
+        this.showEdit = showEdit;
+    }        
+
+    @Override
+    public Component getListCellRendererComponent(
+        JList list, Object value, int index,
+        boolean isSelected, boolean cellHasFocus) {
+
+        JPanel panel = new JPanel();
+        JLabel label = new JLabel();
+        JLabel iconLabel = new JLabel();
+        label.setText(value.toString());
+
+        //label.setHorizontalTextPosition(JLabel.LEFT);
+        if (isSelected && showEdit) {
+            Icon icon = icons.get("");
+            iconLabel.setIcon(icon);
+            if (!((AutosuggesterItem) list.getModel().getElementAt(index)).isDeletable()) {
+                iconLabel.setEnabled(false);
+            }
+        } else {
+            iconLabel.setIcon(null);
+            iconLabel.revalidate();
+        }
+
+        if (isSelected) {
+            panel.setBackground(list.getSelectionBackground());
+            panel.setForeground(list.getSelectionForeground());
+            label.setBackground(list.getSelectionBackground());
+            label.setForeground(list.getSelectionForeground());
+            label.setFont(list.getFont());
+            iconLabel.setBackground(list.getSelectionBackground());
+            iconLabel.setForeground(list.getSelectionForeground());
+        } else {
+            panel.setBackground(list.getBackground());
+            panel.setForeground(list.getForeground());
+            label.setBackground(list.getBackground());
+            label.setForeground(list.getForeground());
+            label.setFont(list.getFont());
+            iconLabel.setBackground(list.getBackground());
+            iconLabel.setForeground(list.getForeground());
+        }
+        
+        if (index == 0 && addNew) {
+            iconLabel.setIcon(null);
+            label.setIcon(icons.get("add"));
+            if (!isSelected) {
+                panel.setBackground(new Color(0xe5, 0xeb, 0xf2));
+                label.setBackground(new Color(0xe5, 0xeb, 0xf2));
+                iconLabel.setBackground(new Color(0xe5, 0xeb, 0xf2));
+            }
+        }
+
+        if (index == 1 && addNew && showEdit) {
+            iconLabel.setIcon(null);
+            label.setIcon(null);
+//            if (!isSelected) {
+//                panel.setBackground(new Color(0xe5, 0xeb, 0xf2));
+//                label.setBackground(new Color(0xe5, 0xeb, 0xf2));
+//                iconLabel.setBackground(new Color(0xe5, 0xeb, 0xf2));
+//            }
+        }
+
+        panel.setLayout(new GridBagLayout());
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 0;
+        c.anchor = GridBagConstraints.WEST;
+        c.fill = GridBagConstraints.BOTH;
+        c.weightx = 0.1;
+        c.weighty = 0.0;
+        panel.add(label, c);
+
+        c.gridx = 1;
+        c.gridy = 0;
+        c.anchor = GridBagConstraints.EAST;
+        c.fill = GridBagConstraints.NONE;
+        c.weightx = 0.0;
+        c.weighty = 0.0;
+        panel.add(iconLabel, c);
+       
+        return panel;
+
+    }
+}

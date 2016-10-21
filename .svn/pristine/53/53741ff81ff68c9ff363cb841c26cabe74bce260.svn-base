@@ -1,0 +1,10 @@
+#
+#Tue Apr 05 18:05:36 ALMT 2016
+company=Sleek Bill Test Database
+version=1
+port=8090
+rf=generic
+estimate_title=Quotation
+server=192.168.1.148
+test_update=false
+invoices_save_path=C\:\\Users\\dani\\workspace\\SleekBillUSA\\reports\\aaa test ioana/

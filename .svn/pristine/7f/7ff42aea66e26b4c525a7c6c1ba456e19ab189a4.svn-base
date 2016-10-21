@@ -1,0 +1,2028 @@
+package sleekbill.jasper;
+
+import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Vector;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.swing.JDialog;
+import javax.swing.SwingUtilities;
+import javax.swing.table.DefaultTableModel;
+
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRPrintElement;
+import net.sf.jasperreports.engine.JRPrintFrame;
+import net.sf.jasperreports.engine.JRPrintPage;
+import net.sf.jasperreports.engine.JRStyle;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.data.JRTableModelDataSource;
+import sleekbill.Common;
+import sleekbill.Config;
+import sleekbill.Messages;
+import sleekbill.SBConstants;
+import sleekbill.beans.Estimate;
+import sleekbill.beans.Flag;
+import sleekbill.beans.PageSize;
+import sleekbill.beans.SBDaoException;
+import sleekbill.entities.FlagEntity;
+import sleekbill.frames.JDialogError;
+import sleekbill.utils.SBStringUtils;
+
+public class ReportGenerator {
+
+    private String smbSpot = "Generata cu Sleek Bill - www.program-facturi.ro";
+
+    private boolean isFinalized;
+    boolean inAlb = false;
+//    private DocumentType documentType = DocumentType.ONE_INVOICE;
+
+    private Document document;
+    public Map<String, Object> params;
+
+//    private String reportTitle;
+//    private ArrayList<Articol> articol;
+    private boolean nextDoc;
+    private String logo = "";
+    private String background = "";
+    private String stamp = "";
+
+//    private int r_count = 0;//used in ResolveArticles()
+//    private DefaultTableModel table;
+////    private int row_height = 19;
+//    private Map<String, String> flags;
+//    private Map<String, String> date_firma;
+//    
+//    private char platitor_tva = 'n';
+//    String tipFactura = "n";
+//    
+//    int gprintid;
+    public String mesageOverFlow = "";
+//    /** Creates new form ReportGenerator */
+//    public ReportGenerator(Factura f) {
+//        fact = f;
+//        report_title = "Factura";
+//
+//        init();
+//    }//ReportGenerator
+    private FlagEntity activeFlag;
+    private int jasperDetailIndex = 3;
+
+    public ReportGenerator(Document doc) {
+        this.document = doc;
+//        reportTitle = doc.getReportTitle();
+
+        init();
+    }
+
+    private Map<String, Object> getDocStocParams(Document documentStoc) {
+        Map<String, Object> lparams;
+        lparams = new HashMap<String, Object>();
+//        lparams.put("serie_doc", documentStoc.getSerie());
+//        lparams.put("numar_doc", documentStoc.getNumar());
+//        if ("".equals(documentStoc.getFurnizor().getDenumire().trim())) {
+//            inAlb = true;
+//        }
+//
+//        lparams.put("data_doc", !inAlb ? Common.ROMANIAN_DATE_FORMAT.format(documentStoc.getTranzactie().getData()).toString() : "");
+//        lparams.put("predator", documentStoc.getPredator().getDenumire());
+//        lparams.put("primitor", documentStoc.getPrimitor().getDenumire());
+//        lparams.put("nume_primitor", documentStoc.getAngajat().getNume());
+//        lparams.put("nume_furnizor", !inAlb ? documentStoc.getFurnizor().getDenumire() : ".................");
+//        lparams.put("nr_factura", !inAlb ? (documentStoc.getTranzactie().getNumarFactura().isEmpty() ? "......." : documentStoc.getTranzactie().getNumarFactura()) : "...........");
+//        lparams.put("draw_line", Boolean.FALSE);
+//        lparams.put("comisie_receptie", !inAlb ? (documentStoc.getTranzactie().getComisie_receptie().isEmpty() ? "\r\n\r\n" : documentStoc.getTranzactie().getComisie_receptie()) : "\r\n\r\n");
+//        lparams.put("mentiuni", !inAlb ? (documentStoc.getTranzactie().getMentiuni().isEmpty() ? "" : documentStoc.getTranzactie().getMentiuni()) : " ");
+//        lparams.put("auto", !inAlb ? (documentStoc.getTranzactie().getAuto().isEmpty() ? ".........." : documentStoc.getTranzactie().getAuto()) : "...........");
+//        lparams.put("delegat", !inAlb ? (documentStoc.getTranzactie().getDelegat().isEmpty() ? "......................................." : documentStoc.getTranzactie().getDelegat()) : ".............................................");
+//        lparams.put("total", !inAlb ? documentStoc.getTotal().toPlainString() : "                 ");
+//        //cod | denumire
+//        lparams.put("showCod", Boolean.FALSE);
+//        lparams.put("cota_tva", BigDecimal.valueOf(documentStoc.getCotaTva()));
+//        lparams.put("precizie", documentStoc.getPrecizie());
+//        lparams.put("gestionar", documentStoc.getTranzactie().getGestionar());
+//        lparams.put("nume_firma", Common.getDenumireFirma());
+        return lparams;
+    }
+
+    
+    private void init() {
+//        articol = fact.getLista_articole();
+
+        try {
+
+            prepareImages();
+
+            //TODO de creat cu culoare aleasa ca default si salvata in config. Eventual si un test daca exista fisierul
+            //create styles files
+//            JRViewerPlus.changeStyleColor("styleTitle2", document.getColorText());
+//            JRViewerPlus.changeStyleColor("styleSubTitle2", document.getColorText());
+            JRViewerPlus.changeStyleColor("styleTemplate" + document.getLayout(), document.getColorText());
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+    }
+
+    public void prepareImages() {
+//        File lf = new File(Common.SAVED_LOGOS_PATH + date_firma.get("logo"));
+//        if (lf.exists()) {
+//            logo = date_firma.get("logo");
+//        } else if (!lf.exists() && Common.isClient()) {
+//            sleekbill.xmlrpc.Client.fetch(lf);
+//            logo = date_firma.get("logo");
+//        }
+//        File bf = (new File(Common.SAVED_BACKGROUNDS_PATH + date_firma.get("background")));
+//        if (bf.exists()) {
+//            background = date_firma.get("background");
+//        } else if (!bf.exists() && Common.isClient()) {
+//            sleekbill.xmlrpc.Client.fetch(bf);
+//            background = date_firma.get("background");
+//        }
+//        File sf = (new File(Common.SAVED_STAMPS_PATH + date_firma.get("stamp")));
+//        if (sf.exists()) {
+//            stamp = date_firma.get("stamp");
+//        } else if (!sf.exists() && Common.isClient()) {
+//            sleekbill.xmlrpc.Client.fetch(sf);
+//            stamp = date_firma.get("stamp");
+//        }
+    }
+
+    public JasperPrint getJasperPrint(String pageSize, int printId, int layoutId, boolean showErrMessage) {
+
+//        r_count=0;// BILL-323
+//        boolean model3 = layoutId == 3 ? false : true;//;)Esteban: format 3 colorat
+        //for 2 docs in same page the row height is 4 px smaller
+        params = new HashMap<String, Object>();
+
+        params.putAll(document.getJasperParams());
+        params.put("SUBREPORT_DIR", Common.TEMPLATES_PATH);
+        params.put("show_column", getJasperReportDetailIndex());
+        JasperPrint jasperPrint = null;
+
+//        if (flags.get("f_logo").toCharArray()[0] == 'y' && !logo.equals("")) {
+//            params.put("img_logo", Common.SAVED_LOGOS_PATH + logo);
+//        }
+//        if (flags.get("f_background").toCharArray()[0] == 'y' && !"".equals(background)) {
+//            params.put("img_background", Common.SAVED_BACKGROUNDS_PATH + background);
+//        }
+//        if (flags.get("f_stamp").toCharArray()[0] == 'y' && !stamp.equals("") && !"".equals(fact.getClient().getDenumire().trim())) {
+//            params.put("txt_title_fcif", Common.SAVED_STAMPS_PATH + stamp);
+//        }
+//        if (printId < 3 && (chitanta == null || chitanta.isToDelete())) {
+//            printId += 2;
+//            fact.setPrint_id(printId);
+//        }
+//        articol_table = getArticolTable();
+//        Verificare pt a avita sa apara 2 facturi daca nu este modelul small nu   se treaca nucio data la 2 facturi pe pagina 
+        if (!pageSize.equals(DocumentType.PAGE_SIZE_A5)) {
+            printId = 1;
+        }
+
+        String text = "";
+        long t = System.currentTimeMillis();
+        switch (printId) {
+            case Document.FORMAT_1INVOICE://o factura normala\
+            {
+                jasperPrint = getJasperPrint1Invoice(layoutId, showErrMessage);
+                text = "**************** time A4: ";// + (t1-t));
+            }
+            break;
+            case Document.FORMAT_2INVOICE://2 facturi A5 pe foaie A4
+            {
+                jasperPrint = getJasperPrint2Invoice(layoutId, showErrMessage);
+                text = "**************** time A5: ";// + (t1-t));
+            }
+            break;
+        }
+        if (jasperPrint == null) {//deobicei bine null daca nu incape
+            document.setPageSize(new PageSize(PageSize.A4));
+            document.setLayout(2);
+            document.setDocumentPrintId(1);
+            jasperPrint = getJasperPrint1Invoice(2/*layoutId*/, showErrMessage);
+            text = "**************** time A4: ";
+        }
+        long t1 = System.currentTimeMillis();
+        System.out.println(text + (t1 - t));
+
+        return jasperPrint;
+    }
+
+    public JasperPrint getJasperPrintLogo(String pageSize, int printId, int layoutId, boolean showErrMessage, String logoName) {
+
+//        r_count=0;// BILL-323
+//        boolean model3 = layoutId == 3 ? false : true;//;)Esteban: format 3 colorat
+        //for 2 docs in same page the row height is 4 px smaller
+        params = new HashMap<String, Object>();
+        params.put("SUBREPORT_DIR", Common.TEMPLATES_PATH);
+        params.put("show_column", getJasperReportDetailIndex());
+        params.putAll(document.getJasperParams());
+        params.put("title_logo", (logoName == null || logoName.isEmpty()) ? "" : (Common.SAVED_LOGOS_PATH + logoName));
+
+        JasperPrint jasperPrint = null;
+
+//        if (flags.get("f_logo").toCharArray()[0] == 'y' && !logo.equals("")) {
+//            params.put("img_logo", Common.SAVED_LOGOS_PATH + logo);
+//        }
+//        if (flags.get("f_background").toCharArray()[0] == 'y' && !"".equals(background)) {
+//            params.put("img_background", Common.SAVED_BACKGROUNDS_PATH + background);
+//        }
+//        if (flags.get("f_stamp").toCharArray()[0] == 'y' && !stamp.equals("") && !"".equals(fact.getClient().getDenumire().trim())) {
+//            params.put("txt_title_fcif", Common.SAVED_STAMPS_PATH + stamp);
+//        }
+//        if (printId < 3 && (chitanta == null || chitanta.isToDelete())) {
+//            printId += 2;
+//            fact.setPrint_id(printId);
+//        }
+//        articol_table = getArticolTable();
+        String text = "";
+        long t = System.currentTimeMillis();
+        switch (printId) {
+            case Document.FORMAT_1INVOICE://o factura normala\
+            {
+                jasperPrint = getJasperPrint1Invoice(layoutId, showErrMessage);
+                text = "**************** time A4: ";// + (t1-t));
+            }
+            break;
+        }
+        long t1 = System.currentTimeMillis();
+        System.out.println(text + (t1 - t));
+
+        return jasperPrint;
+    }
+
+    public JasperPrint getJasperPrint1Invoice(int layoutId, boolean showErrMessage) {
+
+        JasperPrint jasperPrint = null;
+        boolean isA5 = false;
+        DocumentType documentType = DocumentType.ONE_INVOICE_A4;
+
+        String pageSize = document.getPageSizeText();
+
+        if (pageSize.equals(DocumentType.PAGE_SIZE_LETTER)) {
+            documentType = DocumentType.ONE_INVOICE_LETTER;
+        } else if (pageSize.equals(DocumentType.PAGE_SIZE_A4)) {
+            documentType = DocumentType.ONE_INVOICE_A4;
+        } else if (pageSize.equals(DocumentType.PAGE_SIZE_A5)) {
+            documentType = DocumentType.ONE_INVOICE_A5;
+            isA5 = true;
+        }
+
+        String ftemplate = getReportName(documentType.getTemplate(layoutId));
+//        ftemplate = "./template/blank.jasper";
+        String title = getReportName(documentType.getTitleTemplate(layoutId));
+        String bottom = getReportName(documentType.getBottomTemplate(layoutId));
+
+        params.put("subReportTop", title);
+        params.put("subReportBottom", document.getType().equals(Estimate.TYPE_DELIVERY) ? null : bottom);
+
+        String[] columnNames = document.getColumnsNames();
+        Object[][] data = document.getDataForPrint();
+
+        DefaultTableModel table = new DefaultTableModel(data, columnNames);
+
+//        ftemplate = "./template/testStyle.jasper";
+//        params.put("style1_path", "./template/StyleTemplate1_1.jrtx");
+//		params.put("style2_path", "./template/StyleTemplate2.jrtx");
+//        params.put("style1_path", "./template/StyleTemplate1 - Copy.jrtx");
+        params.put("styleTitle2Path", "./template/StyleTitle2.jrtx");
+        boolean indiaFree = Common.IS_INDIA && Common.selectedCompanyConfig.get(Config.INDIA).equals("free");
+        params.put("footer_info_sb", indiaFree ? SBConstants.FOOTER_INFO_SB : "");
+        try {
+//			JasperReport jasperReport1 = 
+//				(JasperReport)JRLoader.loadObjectFromFile(ftemplate);
+//			JRStyle style1 = getStyle(jasperReport1, "styleText1");
+//			style1.setForecolor(Color.MAGENTA);
+//			style1.setBackcolor(Color.PINK);
+//			
+//			jasperPrint = 
+//				JasperFillManager.fillReport(
+//					jasperReport1, 
+//					params,
+//					new JRTableModelDataSource(table));
+
+            jasperPrint = JasperFillManager.fillReport(ftemplate, params, new JRTableModelDataSource(table));
+        } catch (JRException jre) {
+            jre.printStackTrace();
+            return null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            new JDialogError(null, e).setVisible(true);//finalizare emitere/modificare/vizualizare    factura/aviz/prof
+            throw new RuntimeException(e.getMessage());
+        }
+        if (isA5 && isPageOverflow(1, 1, jasperPrint, showErrMessage)) {
+            return null;
+        }
+
+        jasperPrint = resolveArticlesNew(ftemplate, jasperPrint, table, true);
+
+        return jasperPrint;
+    }
+
+    public JasperPrint getJasperPrint2Invoice(int layoutId, boolean showErrMessage) {
+        boolean isA5 = false;
+        JasperPrint jasperPrint = null;
+        JasperPrint jasperPrint1 = null;
+        JasperPrint jasperPrint2 = null;
+
+        DocumentType documentType = DocumentType.ONE_INVOICE_A5;
+
+        String pageSize = document.getPageSizeText();
+
+        if (pageSize.equals(DocumentType.PAGE_SIZE_A4)) {
+            documentType = DocumentType.ONE_INVOICE_A4;
+        } else if (pageSize.equals(DocumentType.PAGE_SIZE_A5)) {
+            documentType = DocumentType.ONE_INVOICE_A5;
+            isA5 = true;
+        }
+
+        String ftemplate = getReportName(documentType.getTemplate(layoutId));
+
+        String title = getReportName(documentType.getTitleTemplate(layoutId));
+        String bottom = getReportName(documentType.getBottomTemplate(layoutId));
+
+        params.put("subReportTop", title);
+        params.put("subReportBottom", document.getType().equals(Estimate.TYPE_DELIVERY) ? null : bottom);
+
+        String[] columnNames = document.getColumnsNames();
+        Object[][] data = document.getDataForPrint();
+
+        DefaultTableModel table = new DefaultTableModel(data, columnNames);
+
+        params.put("styleTitle2Path", "./template/StyleTitle2.jrtx");
+        boolean indiaFree = Common.IS_INDIA && Common.selectedCompanyConfig.get(Config.INDIA).equals("free");
+        params.put("footer_info_sb", indiaFree ? SBConstants.FOOTER_INFO_SB : "");
+
+        try {
+            jasperPrint1 = JasperFillManager.fillReport(ftemplate, params, new JRTableModelDataSource(table));
+        } catch (JRException jre) {
+            jre.printStackTrace();
+            return null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            new JDialogError(null, e).setVisible(true);//finalizare emitere/modificare/vizualizare    factura/aviz/prof
+            throw new RuntimeException(e.getMessage());
+        }
+
+        if (isA5 && isPageOverflow(1, 1, jasperPrint1, showErrMessage)) {
+//            printId = 1;
+//            fact.setPrint_id(FType.FORMAT_1FACTURA_1CHITANTA);
+            return null;
+        }
+        jasperPrint1 = resolveArticlesNew(ftemplate, jasperPrint1, table, true);
+
+        try {
+            jasperPrint2 = JasperFillManager.fillReport(ftemplate, params, new JRTableModelDataSource(table));
+        } catch (Exception e) {
+            e.printStackTrace();
+            new JDialogError(null, e).setVisible(true);//finalizare emitere/modificare/vizualizare    factura/aviz/prof
+            throw new RuntimeException(e.getMessage());
+        }
+        jasperPrint2 = resolveArticlesNew(ftemplate, jasperPrint2, table, true);
+
+        //a4 report
+        ftemplate = getReportName(DocumentType.TWO_INVOICE_A5.getTemplate());
+        try {
+            jasperPrint = JasperFillManager.fillReport(ftemplate, params, new JRTableModelDataSource(table));
+        } catch (JRException e) {
+            e.printStackTrace();
+            new JDialogError(null, e).setVisible(true);//finalizare emitere/modificare/vizualizare    factura/aviz/prof
+            throw new RuntimeException(e.getMessage());
+        }
+
+        int ySub = 0;
+        //format 3 este mai mare de a5 asa ca...
+        if (layoutId == 3) {
+            ySub = 10;
+        }
+        //copy first report elements
+        List pages = jasperPrint.getPages();
+        JRPrintPage lastPage = (JRPrintPage) pages.get(0);
+        List pages1 = jasperPrint1.getPages();
+        List elements = ((JRPrintPage) pages1.get(0)).getElements();
+        for (int j = 0; j < elements.size(); j++) {
+//            lastPage.addElement(((JRPrintElement) elements.get(j)));
+            JRPrintElement e = ((JRPrintElement) elements.get(j));
+            e.setY(e.getY() - ySub);
+            lastPage.addElement(e);
+        }
+        //copy second report
+        ySub += 10;
+        int y = 842 / 2;
+        pages1 = jasperPrint2.getPages();
+        elements = ((JRPrintPage) pages1.get(0)).getElements();
+        for (int j = 0; j < elements.size(); j++) {
+            JRPrintElement e = ((JRPrintElement) elements.get(j));
+            e.setY(e.getY() + y - ySub);
+            lastPage.addElement(e);
+        }
+
+        return jasperPrint;
+    }
+
+    public JRStyle getStyle(JasperReport jasperReport, String styleName) throws Exception {
+        JRStyle[] styles = jasperReport.getStyles();
+        for (int i = 0; i < styles.length; i++) {
+            JRStyle jrStyle = styles[i];
+            if (jrStyle.getName().compareTo(styleName) == 0) {
+                return jrStyle;
+            }
+        }
+        throw new Exception("Nu s-a gasit stilul cu numele: " + styleName);
+    }
+
+    public void showDocument() {
+
+        try {
+
+            JasperPrint jasperPrint = getJasperPrint(document.getPageSizeText(), document.getDocumentPrintId(), document.getLayout(), true);
+            //retry pentru  cazul cand nu incape
+            if (jasperPrint == null) {
+//                jasperPrint = getJasperPrint(document.getPrintId(), document.getLayoutId(), true);
+                throw new JRException("Error invoice!");
+            }
+
+            final JDialog viewer = new JDialog(Common.getMainFrame(), "Preview " + SBStringUtils.capitalizeEachWord(JRViewerPlus.getDocumentName(document)), true);
+            if (!mesageOverFlow.isEmpty()) {
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        Messages.showInfoMessageWithLink(viewer, mesageOverFlow, "Overflow");
+                        mesageOverFlow = "";
+                    }
+                });
+            }
+            viewer.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+            //JasperExportManager.exportReportToPdfFile(jasperPrint, "../test.pdf");
+
+//            final JRViewerPlus jasperViewer;
+//            try {
+//                if (jasperPrint == null) {// daca emit 3 facturi/avize/proforme pe o pagina si urmatoara factura/aviz/proforma nu incape nici 2F pe foaie nu pot sa finalises documentul.
+//                    jasperPrint = getJasperPrint(fact.getPrint_id(), fact.getLayout_id(), true);
+//                }
+//            } catch (Exception e) {
+//            }                  
+            //set the layout considering the document type
+            JRViewerPlus jasperViewer = new JRViewerPlus(jasperPrint, document, viewer, this);
+
+            if (inAlb) {
+                jasperViewer.setInAlb(inAlb);
+            }
+            viewer.setResizable(false);
+
+            Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+
+            Dimension viewer_dim = new Dimension(dim.width * 7 / 10, dim.height * 9 / 10);
+
+            if (dim.width == 800) {
+                viewer_dim.width = 780;
+            } else if (dim.width > 800) {
+                viewer_dim.width = 1000;
+            }
+            viewer_dim.height = dim.height * 95 / 100;
+
+            viewer.setPreferredSize(viewer_dim);
+            viewer.setResizable(true);
+
+            jasperViewer.revalidate();
+            viewer.getContentPane().add(jasperViewer);
+            viewer.pack();
+            viewer.setLocationRelativeTo(null);
+
+            String nrInit = document.getNumber();
+
+            viewer.setVisible(true);
+            isFinalized = jasperViewer.isFinalized;
+            nextDoc = jasperViewer.nextDoc;
+
+            if (document.getNumber() != null && !document.getNumber().equals(nrInit) /*&& fact.getFactura_id() > 0*/ && jasperViewer.isFinalized) {
+//                fact.setNumar(fact.getNumar());
+                showDocument();
+            }
+
+        } catch (JRException ex) {
+            ex.printStackTrace();
+        }
+
+    }//ShowReport
+
+//
+//    public void showDocumentStoc() {
+//
+//
+//        try {
+//            JasperPrint jasperPrint = null;
+//            JasperPrint jp2 = null;
+//
+//            String ftemplate = getReportName(documentStoc.getTemplate().getTemplate(0, true));
+//            String altTemplate = documentStoc.getAltTemplate() != null ? getReportName(documentStoc.getAltTemplate().getTemplate(0, true)) : null;
+//
+//            String[] columnNames = documentStoc.getColumnsNames();
+//
+//            Object[][] data;
+//            if ("".equals(documentStoc.getNumar())) {
+//                inAlb = true;
+//            }
+//
+//            switch (documentStoc.getPrintId()) {
+//                // un doc pe pagina
+//                case 3:
+//
+//                    if (!inAlb) {
+//                        data = documentStoc.getDataForPrint();
+//                    } else {
+//                        data = documentStoc.getDataForPrintAlb();
+//                    }
+//
+//
+//                    articol_table = new DefaultTableModel(data, columnNames);
+//
+//                    params = getDocStocParams(documentStoc);
+//                    params.put("subreport1", ftemplate);
+//
+//                    String template = getReportName(documentStoc.getMainTemplate().getTemplate(0, true));
+//                    String template2 = null;
+//                    Map<String, Object> params2 = null;
+//                    if (altTemplate != null) {
+//                        template2 = getReportName(documentStoc.getMainTemplate().getTemplate(0, true));
+//                        params2 = getDocStocParams(documentStoc);
+//                        params2.put("subreport1", altTemplate);
+//                    }
+//
+//                    try {
+//                        params.put("articole", new JRTableModelDataSource(new DefaultTableModel(data, columnNames)));
+//                        jasperPrint = JasperFillManager.fillReport(template, params, new JRTableModelDataSource(new DefaultTableModel(data, columnNames)));
+//                        if (template2 != null) {
+//                            params2.put("subreport1", altTemplate);
+//                            //data = documentStoc.getDataForPrint();
+//                            if (!inAlb) {
+//                                data = documentStoc.getDataForPrint();
+//                            } else {
+//                                data = documentStoc.getDataForPrintAlb();
+//                            }
+//
+//                            params2.put("articole", new JRTableModelDataSource(new DefaultTableModel(data, columnNames)));
+//                            jp2 = JasperFillManager.fillReport(template2, params2, new JRTableModelDataSource(new DefaultTableModel(data, columnNames)));
+//                        }
+//                        //P{PAGE_NUMBER} sucks
+//                        params.put("pagecount", jasperPrint.getPages().size());
+//                        if (jp2 != null) {
+//                            params2.put("pagecount", jp2.getPages().size());
+//                        }
+//                    } catch (JRException e1) {
+//                        e1.printStackTrace();
+//                    }
+//                    break;
+//                //doua doc pe pagina
+//                case 4:
+//
+//
+//                    //data = documentStoc.getDataForPrint();
+//                    if (!inAlb) {
+//                        data = documentStoc.getDataForPrint();
+//                    } else {
+//                        data = documentStoc.getDataForPrintAlb();
+//                    }
+//
+//
+//                    articol_table = new DefaultTableModel(data, columnNames);
+//
+//                    params = new HashMap<String, Object>();
+//
+//                    params.put("serie_doc", documentStoc.getSerie());
+//                    params.put("numar_doc", documentStoc.getNumar());
+//                    params.put("data_doc", Common.ROMANIAN_DATE_FORMAT.format(documentStoc.getTranzactie().getData()).toString());
+//                    params.put("predator", documentStoc.getPredator() != null ? documentStoc.getPredator().getDenumire() : "");
+//                    params.put("primitor", documentStoc.getPrimitor().getDenumire());
+//                    params.put("nume_primitor", documentStoc.getAngajat().getNume());
+//                    params.put("nume_furnizor", documentStoc.getFurnizor().getDenumire());
+//                    params.put("nr_factura", documentStoc.getTranzactie().getSerieFactura() + documentStoc.getTranzactie().getNumarFactura());
+//                    params.put("draw_line", Boolean.TRUE);
+//                    params.put("comisie_receptie", documentStoc.getTranzactie().getComisie_receptie().isEmpty() ? "\r\n\r\n" : documentStoc.getTranzactie().getComisie_receptie());
+//                    params.put("gestionar", documentStoc.getTranzactie().getGestionar());
+//
+//                    params.put("subreport1", ftemplate);
+//                    params.put("subreport2", ftemplate);
+//                    params.put("precizie", documentStoc.getPrecizie());
+//                    params.put("nume_firma", Common.getDenumireFirma());
+//
+//                    params.put("articole", new JRTableModelDataSource(articol_table));
+//                    params.put("articole1", new JRTableModelDataSource(articol_table));
+//
+//                    template = getReportName(DocumentType.DOUA_DOCUMENTE_STOC.getTemplate(0, true));
+//
+//                    try {
+//                        jasperPrint = JasperFillManager.fillReport(template, params, new JRTableModelDataSource(articol_table));
+//                        params.put("pagecount", jasperPrint.getPages().size());
+//                    } catch (JRException e1) {
+//                        e1.printStackTrace();
+//                    }
+//
+//                    if (jasperPrint.getPages().size() > 1) {
+//                        documentStoc.setPrintId(3);
+//                        showDocumentStoc();
+//                        return;
+//                    }
+//                    break;
+//
+//                default:
+//                    return;
+//            }
+//
+//
+//
+//            final JDialog viewer = new JDialog(Common.getMainFrame(), "Previzualizare", true);
+//            viewer.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+//            JRViewerPlus jasperViewer = null;
+//            if (jp2 == null) {
+//                jasperViewer = new JRViewerPlus(jasperPrint, documentStoc, viewer);
+//            } else {
+//                jasperViewer = new JRViewerPlus(new JasperPrint[]{jasperPrint, jp2}, documentStoc, viewer, new String[]{"Model detaliat", "Model compact"});
+//            }
+//            if (inAlb) {
+//                jasperViewer.setInAlb(inAlb);
+//            }
+//
+//            viewer.setResizable(false);
+//
+//            Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+//
+//            Dimension viewer_dim = new Dimension(dim.width * 7 / 10, dim.height * 9 / 10);
+//
+//            if (dim.width == 800) {
+//                viewer_dim.width = 780;
+//            } else if (dim.width > 800) {
+//                viewer_dim.width = 900;
+//            }
+//            if (documentStoc.getMainTemplate() == DocumentType.UN_DOCUMENT_STOC_LANDSCAPE) {
+//                viewer_dim.height = dim.height * 90 / 100;
+//                viewer_dim.width = dim.width * 95 / 100;
+//                int maxWidth = 1400;
+//                int maxHeight = 900;
+//                viewer_dim.width = viewer_dim.width > maxWidth ? maxWidth : viewer_dim.width;
+//                viewer_dim.height = viewer_dim.height > maxHeight ? maxHeight : viewer_dim.height;
+//            } else {
+//                viewer_dim.height = dim.height * 95 / 100;
+//            }
+//
+//            viewer.setPreferredSize(viewer_dim);
+//            viewer.setResizable(true);
+//
+//            jasperViewer.revalidate();
+//            viewer.getContentPane().add(jasperViewer);
+//            viewer.pack();
+//            viewer.setLocationRelativeTo(null);
+//            viewer.addWindowListener(new WindowAdapter() {
+//
+//                @Override
+//                public void windowClosing(WindowEvent e) {
+//                    SwingUtilities.invokeLater(new Runnable() {
+//
+//                        @Override
+//                        public void run() {
+//                            viewer.dispose();
+//                        }
+//                    });
+//                }
+//            });
+//            String nrInit = documentStoc.getNumar();
+//
+//            viewer.setVisible(true);
+//            isFinalized = jasperViewer.isFinalized;
+//
+//            if (documentStoc != null && documentStoc.getTranzactie().getId() > 0 && jasperViewer.isFinalized) {
+//                if (!documentStoc.getNumar().equals(nrInit)) {
+//                    showDocumentStoc();
+//                }
+//            }
+//        } catch (JRException ex) {
+//            ex.printStackTrace();
+//        }
+//
+//    }
+//    private void fillTitle(Map<String, Object> params) {
+//
+//        try {
+//            params.put("txt_title_factura", b(t((reportTitle))));
+//
+//            //String data = data_emiterii.substring(8,10)+"/"+data_emiterii.substring(5,7)+"/"+data_emiterii.substring(0,4);
+//            int layoutId = fact.getLayout_id();
+//
+//            String nr_pozitii = "";//getNr_positii(0);/* informatia cu nr de pozitii apare doar atunci cand sunt mai multe pagini ale documentului ( BILL-323 ) **/            
+//
+//            boolean onlyTvaInclus = true;
+//            for (Articol art : articol) {
+//                if (art.getTva_id() != CotaTva.TVA_INCLUS_ID) {
+//                    onlyTvaInclus = false;
+//                    break;
+//                }
+//            }
+//
+//            fillTitleDocument(layoutId, nr_pozitii, onlyTvaInclus);
+//            String detalii_frn1 = "", detalii_cl1 = "";
+//
+//
+//            ArrayList<String> arr = Common.getIban(fact);
+//            String iban = "", iban2 = "", iban2_bottom = "", iban3 = "", iban3_bottom = "";
+//
+//            detalii_frn1 += t("Furnizor") + ": " + s(date_firma.get("denumire"))
+//                + (date_firma.get("reg_com").equals("") ? "" : "\n" + t("Reg. com.") + ": " + s(date_firma.get("reg_com")))
+//                + "\n" + t("CIF") + ":" + s(date_firma.get(("cif"))
+//                + "\n" + t("Adresa") + ": " + s(date_firma.get(("adresa"))) + ", " + s(date_firma.get("oras")) + ", "
+//                + (lang.equals("RO") ? "Jud." : t("Judet")) + " " + s(date_firma.get("judet")))
+//                + (iban.equals("") ? "" : "\n" + iban)
+//                + (flags.get("f_website").equals("y") ? "\n" + ("Adresa web") + ": " + s(date_firma.get(("website"))) : "")
+//                + (flags.get("f_telefon").equals("y") ? "\n" + t("Tel.") + ": " + s(date_firma.get(("telefon"))) : "")
+//                + (flags.get("f_fax").equals("y") ? "\n" + t("Fax") + ": " + s(date_firma.get(("fax"))) : "")
+//                + (flags.get("f_email").equals("y") ? "\n" + t("Email") + ": " + s(date_firma.get(("email"))) : "")
+//                + (flags.get("f_capital_social").equals("y") ? "\n" + t("Capital social") + ": " + s(date_firma.get("capital_social")) : "");
+//            params.put("fact_detalii_furnizor1", detalii_frn1);
+//
+//            params.put("txt_title_furnizor", t("Furnizor") + ": " + s(date_firma.get("denumire")));
+//            params.put("txt_title_furnizor2", "<style pdfFontName='arial.ttf' size='12' isBold='true'>" + date_firma.get("denumire") + "</style>");
+//            if (!date_firma.get("reg_com").equals("")) {
+//                /*    params.put("txt_title_freg_com", t("Reg. com")+": -");
+//                }
+//                else
+//                {*/
+//                params.put("txt_title_freg_com", t("Reg. com.") + ": " + s(date_firma.get("reg_com")));
+//            }
+//
+//            //params.put("txt_title_fcif", t("CIF") + ":" + s(date_firma.get(("cif"))));
+//            params.put("txt_title_fadresa", t("Adresa") + ": " + s(date_firma.get(("adresa"))) + ", " + s(date_firma.get("oras")) + ", "
+//                + (lang.equals("RO") ? "Jud." : t("Judet")) + " " + s(date_firma.get("judet")));
+//
+//            String s = "";
+//            if (flags.get("f_telefon").equals(("y")) && !date_firma.get("telefon").equals("")) {
+//                params.put("txt_title_tel", t("Tel.") + ": " + s(date_firma.get(("telefon"))));
+//                s += t("Tel.") + ": " + s(date_firma.get(("telefon")));
+//            }
+//            if (flags.get("f_fax").equals(("y")) && !date_firma.get("fax").equals("")) {
+//                params.put("txt_title_fax", t("Fax") + ": " + s(date_firma.get(("fax"))));
+//                if (!"".equals(s)) {
+//                    s += "; ";
+//                }
+//                s += t("Fax") + ": " + s(date_firma.get(("fax")));
+//            }
+//            if (flags.get("f_email").equals(("y")) && !date_firma.get("email").equals("")) {
+//                params.put("txt_title_email", t("Email") + ": " + s(date_firma.get(("email"))));
+//                if (!"".equals(s)) {
+//                    s += "; ";
+//                }
+//                s += t("Email") + ": " + s(date_firma.get(("email")));
+//            }
+//            if (flags.get("f_website").equals(("y")) && !date_firma.get("website").equals("")) {
+//                params.put("txt_title_adresa_web", t("Adresa web") + ": " + s(date_firma.get(("website"))));
+//                if (!"".equals(s)) {
+//                    s += "; ";
+//                }
+//                s += t("Adresa web") + ": " + s(date_firma.get(("website")));
+//            }
+//            //for layout 2
+//            params.put("txt_bottom_fdetalii", s);
+//
+//            if (flags.get("f_capital_social").equals(("y")) && !date_firma.get("capital_social").equals("")) {
+//                params.put("txt_title_fcapital_social", t("Capital social") + ": " + s(date_firma.get("capital_social")));
+//            }
+//            if (arr != null){//    BILL-656
+//                for (int i = 0; i < arr.size(); i = i + 4) {
+//    //                if (i > 0) {
+//                       iban += (arr.get(i + 1).equals("") ? "" : (i!=0?"\n":"") + t("IBAN") + ((!Common.toateIbanurilePtAceeasiMoneda())?stSize( (arr.get(i + 3) == null ? "" : "(" + arr.get(i + 3) + ")") , lang.equals("RO")?7:9)+":"+stSize(arr.get(i + 1),lang.equals("RO")?7:9):":" +
+//                              stSize(arr.get(i + 1),9))) + (arr.get(i).equals("") ? "" : "\n" + t("Banca") + ": " + s((arr.get(i)))) +
+//                             (!lang.equals("RO") && !arr.get(i + 2).toString().equals("") ? "\nSWIFT" + ": " + stSize(arr.get(i + 2),9) : "");
+//                        /*iban2_bottom += "\n" + t("IBAN")+": " + s((arr.get(i+1))) + "; "+t("Banca")+": " + s(arr.get(i)) + "; " +
+//                        (!lang.equals("RO") && !arr.get(i+2).toString().equals("") ? "\nSWIFT"+": " + s(arr.get(i+2)) + ";": "");
+//                         **/
+//                       iban2 += (i==0?((arr.get(i + 1).equals("") ? "" : t("IBAN") + (!Common.toateIbanurilePtAceeasiMoneda()?(arr.get(i + 3) == null ? "" : "(" + arr.get(i + 3) + ")") +stSize(arr.get(i + 1),9):":" +
+//                              stSize(arr.get(i + 1),9))+"\n" + t("Banca") + ": " + s((arr.get(i)))) + (!lang.equals("RO") && !arr.get(i + 2).toString().equals("") ? "\nSWIFT" + ": " + s(arr.get(i + 2)) : "")):"");
+//                       iban2_bottom += (i!=0?((iban2_bottom.equals("") ? "" : "\n") + t("IBAN") +(!Common.toateIbanurilePtAceeasiMoneda()?(arr.get(i + 3) == null ? "" : "(" + arr.get(i + 3) + ")") +stSize(arr.get(i + 1),9):":" +
+//                              stSize(arr.get(i + 1),9))+" ; " + t("Banca") + ": " + s(arr.get(i))+ (!lang.equals("RO") && !arr.get(i + 2).toString().equals("") ? "; SWIFT" + ": " + s(arr.get(i + 2)) : "")):"");
+//
+//                       iban3_bottom += (iban3_bottom.equals("") ? "" : "\n") + t("IBAN")+(!Common.toateIbanurilePtAceeasiMoneda()? (arr.get(i + 3) == null ? "" : "(" + arr.get(i + 3) + ")") +stSize(arr.get(i + 1),9):":" +
+//                              stSize(arr.get(i + 1),9))+" ; "+ t("Banca") + ": " + s(arr.get(i))
+//                            + (!lang.equals("RO") && !arr.get(i + 2).toString().equals("") ? "; SWIFT" + ": " + s(arr.get(i + 2)) : "");
+//                        //System.err.println("1 iban = "+iban);
+//    //                } else//first ibans
+//    //                {
+//    //                    iban3 = (arr.get(i + 1).equals("") ? "" : t("IBAN") + ": " + s((arr.get(i + 1)))) + (arr.get(i).equals("") ? "" : "\n" + t("Banca") + ": " + s((arr.get(i)))) + (!lang.equals("RO") && !arr.get(i + 2).toString().equals("") ? "\nSWIFT" + ": " + s(arr.get(i + 2)) : "");
+//    //                    iban = (arr.get(i + 1).equals("") ? "" : t("IBAN") + ": " + s(arr.get(i + 1))) + (arr.get(i).equals("") ? "" : "\n" + t("Banca") + ": " + s((arr.get(i)))) + (!lang.equals("RO") && !arr.get(i + 2).toString().equals("") ? "\nSWIFT" + ": " + s(arr.get(i + 2)) : "");
+//    //                    //     System.err.println("2 iban = "+iban);
+//    //                }
+//
+//                    //iban += "\n" + t("IBAN")+": " + (arr.get(i+1).equals("") ? "-" : s(st(arr.get(i+1)))) + "\n"+t("Banca")+": " +(arr.get(i).equals("") ? "-" : s(st(arr.get(i)))) + (!lang.equals("RO") && !arr.get(i+2).toString().equals("")? "\nSWIFT"+": " + s(arr.get(i+2)): "");
+//                    //if ( i != 0 )
+//                    //iban2_bottom += "\n" + t("IBAN")+": " + s(st(arr.get(i+1))) + "; "+t("Banca")+": " + s(arr.get(i)) + "; " + (!lang.equals("RO") && !arr.get(i+2).toString().equals("") ? "\nSWIFT"+": " + s(arr.get(i+2)) + ";": "");
+//                }
+//            }
+//            //if empty IBANS, put "-"
+//          /*  if(iban2.equals(""))
+//            iban2 = t("IBAN")+": "  + s("-\n") + t("Banca")+t(": -");
+//            
+//            if(iban.equals(""))
+//            iban = t("IBAN")+": " + s("-\n") + t("Banca") + s(": -");
+//             */
+//            params.put("txt_title_fiban", iban);
+//            //for layout 2
+//            params.put("txt_title_fiban2", iban2);
+//            params.put("txt_bottom_fiban2", iban2_bottom);
+//
+//            Client lclient = fact.getClient();
+//            params.put("txt_title_client", t("Client") + ": " + s(lclient.getDenumire()));
+//            if (!lclient.getReg_com().equals("")) /*    params.put("txt_title_creg_com", t("Reg. com.")+": -");
+//            else */ {
+//                //params.put("txt_title_creg_com", t("Reg. com") + ": " + s(lclient.getReg_com()));
+//            }
+//            params.put("txt_title_ccif", t("CIF") + ": " + s(lclient.getCif()));
+//            String virgula = "";
+//            if (!"".equals(lclient.getAdresa()) && !"".equals(lclient.getLocalitate())) {
+//                virgula = ", ";
+//            }
+//            if (!"".equals(lclient.getAdresa()) || !"".equals(lclient.getLocalitate())) {
+//                params.put("txt_title_cadresa", t("Adresa") + ": " + s(lclient.getAdresa()) + virgula + s(lclient.getLocalitate()));
+//            } else {
+//                params.put("txt_title_cadresa", t("Adresa:"));
+//            }
+//            String cj = t("Judet") + ": " + s(lclient.getJudet());
+//            if (!lclient.getIBAN().equals("")) {
+//                cj += "\n" + t("IBAN") + ":" + s(lclient.getIBAN());
+//            }
+//            if (!lclient.getBanca().equals("")) {
+//                cj += "\n" + t("Banca") + ":" + s(lclient.getBanca());
+//            }
+//            params.put("txt_title_cjudet", cj);
+//
+//            detalii_frn1 = t("Furnizor") + ": " + s(date_firma.get("denumire"))
+//                + (date_firma.get("reg_com").equals("") ? "" : "\n" + t("Reg. com.") + ": " + s(date_firma.get("reg_com")))
+//                + "\n" + t("CIF") + ":" + s(date_firma.get(("cif"))
+//                + "\n" + t("Adresa") + ": " + s(date_firma.get(("adresa"))) + ", " + s(date_firma.get("oras")) + ", "
+//                + (lang.equals("RO") ? "Jud." : t("Judet")) + " " + s(date_firma.get("judet")))
+//                + (iban.equals("") ? "" : "\n" + iban)
+//                + (flags.get("f_website").equals("y") && !date_firma.get("website").equals("") ? "\n" + ("Adresa web") + ": " + s(date_firma.get(("website"))) : "")
+//                + (flags.get("f_telefon").equals("y") && !date_firma.get("telefon").equals("") ? "\n" + t("Tel.") + ": " + s(date_firma.get(("telefon"))) : "")
+//                + (flags.get("f_fax").equals("y") && !date_firma.get("fax").equals("") ? "\n" + t("Fax") + ": " + s(date_firma.get(("fax"))) : "")
+//                + (flags.get("f_email").equals("y") && !date_firma.get("email").equals("") ? "\n" + t("Email") + ": " + s(date_firma.get(("email"))) : "")
+//                + (flags.get("f_capital_social").equals("y") && !date_firma.get("capital_social").equals("") ? "\n" + t("Capital social") + ": " + s(date_firma.get("capital_social")) : "")
+//                + (flags.get("f_date_aditionale").equals("y") && !"".equals(flags.get("date_aditionale")) ? "\n" + s(flags.get("date_aditionale")) : "");
+//
+//            detalii_cl1 = t("Client") + ": " + s(lclient.getDenumire())
+//                + (lclient.getReg_com().equals("") ? "" : "\n" + t("Reg. com.") + ": " + s(lclient.getReg_com()))
+//                + "\n" + t("CIF") + ": " + s(lclient.getCif())
+//                    + "\n" + t("Adresa") + ": " + (!"".equals(lclient.getAdresa()) ? s(lclient.getAdresa()) : "") + virgula + (!"".equals(lclient.getLocalitate()) ? s(lclient.getLocalitate()) : "")
+//                + "\n" + t("Judet") + ": " + s(lclient.getJudet())
+//                + (lclient.getIBAN().equals("") ? (inAlb ? "\n" + t("IBAN") + ":" : "") : "\n" + t("IBAN") + ":" + s(lclient.getIBAN()))
+//                + (lclient.getBanca().equals("") ? (inAlb ? "\n" + t("Banca") + ":" : "") : "\n" + t("Banca") + ":" + s(lclient.getBanca()))
+//                + ((!flags.get("f_cod_client").equals("y") || "".equals(lclient.getCod_client())) ? "" : "\n" + t("Cod client") + ":" + s(lclient.getCod_client()))
+//                + (("".equals(lclient.getTara()) || "romania".compareToIgnoreCase(lclient.getTara()) == 0) ? "" : "\n" + t("Tara") + ":" + s(lclient.getTara()))
+//                + (lclient.getEmail() == null || "".equals(lclient.getEmail()) ? (inAlb ? "\n" + t("Email") + ":" : "") : "\n" + t("Email") + ":" + s(lclient.getEmail()));
+//
+//            params.put("txt_title_furnizor", detalii_frn1);
+//            params.put("txt_title_client", detalii_cl1);
+//            if (layoutId == 1) {
+//                return;
+//            }
+//
+//            String detalii_frn2 = "<style pdfFontName='arial.ttf' size='12' isBold='true'>" + date_firma.get("denumire") + "</style>"
+//                + (date_firma.get("reg_com").equals("") ? "" : "\n" + t("Reg. com.") + ": " + s(date_firma.get("reg_com")))
+//                + (date_firma.get("cif").equals("") ? "" : "\n" + t("CIF") + ":" + s(date_firma.get("cif")))
+//                + "\n" + t("Adresa") + ": " + s(date_firma.get(("adresa"))) + ", " + s(date_firma.get("oras")) + ", "
+//                + (lang.equals("RO") ? "Jud." : t("Judet")) + " " + s(date_firma.get("judet"))
+//                + (iban2.equals("") ? "" : "\n" + iban2)
+//                + (flags.get("f_date_aditionale").equals("y") && !"".equals(flags.get("date_aditionale")) ? "\n" + s(flags.get("date_aditionale")) : "");
+//
+//            params.put("txt_title_furnizor", detalii_frn2);
+//            params.put("txt_title_furnizor2", s(date_firma.get("denumire")));
+//
+//            if (layoutId == 3) {//;)Esteban --> al treila format colorat
+//                String iban_complet = getIBAN3();
+//                String detalii_frn3 = getDetalii_frn3(iban_complet);
+//                String detalii_cl3 = getDetalii_cl3(lclient);
+//
+//                params.put("txt_title_furnizor", detalii_frn3);
+//                params.put("txt_title_client", detalii_cl3);
+//            }
+//        } catch (Exception ex) {
+//            ex.printStackTrace();
+//        }
+//    }//FillTitle
+    /**
+     * fillTitleDocument: tlitlul documentului care contine seria si numa, data
+     * docimentului, nr de aviz cand e cazul, cota TVA cand e cazul si nr de
+     * pozitii
+     *
+     * @param layoutId
+     * @param nrPozitii
+     * @param onlyTvaInclus
+     */
+//    private void fillTitleDocument(int layoutId, String nrPozitii, boolean onlyTvaInclus){
+//        String serieNr = getTitleSerie();
+//        String data    = getTitleDataDocument(layoutId, nrPozitii);
+//        String nrAviz  = getTitleAviz( layoutId);
+//        String cotaTVA = getTitleCotaTVA( layoutId,  onlyTvaInclus);
+//        String pozitii = "";
+//        try {
+//            pozitii = getNr_positii(articol_table.getDataVector().size());
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//        
+//        params.put("txt_title_serie", serieNr + data + nrAviz + cotaTVA + pozitii);
+//        
+//    }
+    /**
+     *
+     * @return
+     */
+//    private String getTitleSerie(){
+//  
+//        String serieNr = "";
+//        if (lang.equals("RO")) {
+//            serieNr = "Seria " + s((fact.getSerie())) + " nr. " + s(fact.getNumar());
+//        } else {
+//            serieNr = t("Seria si nr.") + ": " + s((fact.getSerie()) + " " + fact.getNumar());
+//        } 
+////        serieNr = serieNr.isEmpty()? "": "\n" + serieNr;        
+//        return serieNr;
+//    }
+    /**
+     *
+     * @param layoutId
+     * @param nrPozitii
+     * @return
+     */
+//    private String getTitleDataDocument(int layoutId, String nrPozitii){
+//        String data = "";
+//        if (proforma == null && aviz == null) {
+//            if (layoutId == 1 && lang.equals("RO") == false) {
+//                data =  t("Data (zi/luna/an)", 1) + ":\n"
+//                    + s(fact.getData_emiterii().substring(8, 10) + "/" + fact.getData_emiterii().substring(5, 7) + "/" + fact.getData_emiterii().substring(0, 4)) + nrPozitii;
+//            } else {
+//                if (!"".equals(fact.getData_emiterii())) {
+//                    data = t("Data (zi/luna/an)") + ": " + s(fact.getData_emiterii().substring(8, 10) + "/" + fact.getData_emiterii().substring(5, 7) + "/" + fact.getData_emiterii().substring(0, 4)) + nrPozitii;
+//                } else {
+//                    data = t("Data:" + (layoutId == 1 ? "              " : "                          "));
+//                }
+//            }
+//        } else {
+//            if (layoutId == 1 && lang.equals("RO") == false) {
+//                if (!"".equals(fact.getData_emiterii())) {
+//                    data = t("Data (zi/luna/an)", 1) + ":\n" + s(fact.getData_emiterii()) + nrPozitii;
+//                } else {
+//                    data = t("Data:" + (layoutId == 1 ? "            " : "                        "));
+//                }
+//            } else {
+//                if (!"".equals(fact.getData_emiterii())) {
+//                    data = t("Data (zi/luna/an)") + ": " + s(fact.getData_emiterii()) + nrPozitii;
+//                } else {
+//                    data = t("Data:" + (layoutId == 1 ? "          " : "                        "));
+//                }
+//            }
+//        }                          
+//        return data.isEmpty()? "": "\n" + data /*+ "\n"*/;
+//    }
+    /**
+     *
+     * @param layoutId
+     * @return
+     */
+//    private String getTitleAviz(int layoutId){
+//        String nrAviz = "";
+//        if (aviz == null && fact.getAviz()!=null && !fact.getAviz().equals("")) {
+//            if (fact.getAviz().equals(" ")) {
+//                nrAviz = t("Nr aviz:   " + (layoutId == 1 ? "            " : "                     "));
+//            } else {
+//                nrAviz = t("Nr aviz") + ": " + (fact.getAviz().equals("") ? "-" : Common.escapeLt(fact.getAviz())); // BILL-239
+//            }              
+//        }
+//        return nrAviz = nrAviz.isEmpty()? "": "\n" + nrAviz;
+//    }
+//    private String getTitleCotaTVA(int layoutId, boolean onlyTvaInclus){
+//        String cotaTVA = "";
+//        if (cota != -1) {
+//            if ((int) fact.getCota_TVA() == 0) {
+//                cotaTVA = t("Cota TVA:    " + (layoutId == 1 ? "             " : "                   "));
+//            } else {
+//                String[] lcota = Common.getDenumireProcentCotaTvaEvenIfDeleted((int) fact.getCota_TVA());
+//                if (lcota != null && lcota[0] != null) {
+//                    if (!lcota[0].equals("0")) {
+//                       cotaTVA = t("Cota TVA") + ": " + lcota[0] + "%";
+//                    } else {
+//                        if (onlyTvaInclus) {
+//                            cotaTVA = t("Cota TVA") + ": TVA Inclus";
+//                        } else {
+//                            cotaTVA = t("Cota TVA") + ": " + lcota[0] + "%" + lcota[1];
+//                        }
+//                    }
+//                }
+//            }
+//           cotaTVA = cotaTVA.isEmpty()? "": "\n" + cotaTVA; 
+//        }
+//        return cotaTVA;
+//    } 
+    /**
+     * BILL-323 Obligatoriu cf. Cod Fiscal: pe o factura cu mai multe pagini se
+     * afiseaza pe prima pagina nr. de pagini si nr de pozitii Adauga data
+     * documentului si daca documentul are mai multe pagini adauga si nr
+     * pozitii.
+     *
+     * @param cant : nr de pagini documentului.
+     * @return
+     */
+//    private String getNr_positii(int cant){
+//        boolean hide_nrp = new Config().get("hide_nr_pozitii").equals("true");
+//        String nr_pozitii = cant > 1? hide_nrp? "": "\n" + s(t("Nr pozitii fact.") + ": " + articol.size()): hide_nrp? "": ""/* "\n"*/;// de verificat
+////        nr_pozitii =  + nr_pozitii;
+//
+////        nr_pozitii ="";
+//
+//        return nr_pozitii;
+//    }
+//    private String getDetalii_cl3(Client lclient) {
+//        if (inAlb) {
+//            return "<style isBold='true'>" + t("Client") + ":\n</style>"
+//                + "<style pdfFontName='arial.ttf' size='12' isBold='true' forecolor='#36A7EB'> " + "                                              " + "   </style>"
+//                + "\n" + t("Reg. com.") + ":                                              "
+//                + "\n" + t("CIF") + ":                                              "
+//                + "\n" + t("Adresa") + ":                       ,                      "
+//                + "\n" + t("Judet") + ":                                              "
+//                + "\n" + t("IBAN") + ":                                              "
+//                + "\n" + t("Banca") + ":                                              "
+//                + (flags.get("f_cod_client").equals("y") ? "\n" + t("Cod client") + ":                                              " : "")
+//                + "\n" + t("Tara") + ":                                              "
+//                + "\n" + t("Email") + ":                                              ";
+//        } else {
+//            return "<style isBold='true'>" + t("Client") + ":\n</style>"
+//                + "<style pdfFontName='arial.ttf' size='12' isBold='true' forecolor='#36A7EB'>" + (inAlb ? "    " : s(lclient.getDenumire())) + "</style>"
+//                + (lclient.getReg_com().equals("") ? "" : "\n" + t("Reg. com.") + ": " + s(lclient.getReg_com()))
+//                + "\n" + t("CIF") + ": " + s(lclient.getCif())
+//                + "\n" + t("Adresa") + ": " + (!"".equals(lclient.getAdresa()) ? s(lclient.getAdresa()) + ", " + s(lclient.getLocalitate()) : s(lclient.getLocalitate()))
+//                + "\n" + t("Judet") + ": " + s(lclient.getJudet())
+//                + (lclient.getIBAN().equals("") ? (inAlb ? "\n" + t("IBAN") + ":" : "") : "\n" + t("IBAN") + ":" + s(lclient.getIBAN()))
+//                + (lclient.getBanca().equals("") ? (inAlb ? "\n" + t("Banca") + ":" : "") : "\n" + t("Banca") + ":" + s(lclient.getBanca()))
+//                + ((!flags.get("f_cod_client").equals("y") || "".equals(lclient.getCod_client())) ? "" : "\n" + t("Cod client") + ":" + s(lclient.getCod_client()))
+//                + (("".equals(lclient.getTara()) || "romania".compareToIgnoreCase(lclient.getTara()) == 0) ? "" : "\n" + t("Tara") + ":" + s(lclient.getTara()))
+//                + (lclient.getEmail() == null || "".equals(lclient.getEmail()) ? (inAlb ? "\n" + t("Email") + ":" : "") : "\n" + t("Email") + ":" + s(lclient.getEmail()));
+//        }
+//    }
+//    private void fillArticolHeader(Map<String, Object> params) {
+//        String monedaFactura = (new Config().get("foloseste_ron").equals("true") ? "RON" : "Lei");
+//        if(!fact.getMoneda().equals("RON")){
+//            monedaFactura = fact.getMoneda();
+//        }
+//        params.put("txt_detail_nr_crt", b(t("Nr. crt", 1)));
+//        params.put("txt_detail_denumire_produs", b(t("Denumirea produselor sau a serviciilor", 1)));
+//        params.put("txt_detail_um", b(t("U.M.", 1)));
+//        params.put("txt_detail_cant", b(t("Cantitate", 1)));
+//        if (platitor_tva == 'y') {// am mijorat fontul ca sa intre pe un singur rand textul '(fara TVA)' 
+//            if (lang.equals("RO")) {
+//                    params.put("txt_detail_pret_unitar", b("Pret unitar <style size='8'>(fara TVA)</style>" + "\n-" + monedaFactura + "-"));
+//            }else{
+//                    params.put("txt_detail_pret_unitar", b(t("Pret unitar (fara TVA)", 1) + "\n-" + monedaFactura + "-"));
+//            }
+//        } else {
+//            params.put("txt_detail_pret_unitar", b(t("Pret unitar", 1) + "\n-" + monedaFactura + "-"));
+//        }
+//        params.put("txt_detail_valoare", b(t("Valoarea", 1) + "\n-" + monedaFactura + "-"));
+//        params.put("txt_detail_valoare_tva", b(t("Valoarea TVA", 1) + "\n-" + monedaFactura + "-"));
+//        if (cota == -1) {
+//            params.put("txt_detail_cota_tva", b(t("Cota TVA", 1) + "\n-" + monedaFactura + "-"));
+//        }
+//    }//FillArticolHeader
+//    private void fillArticolBottom(Map<String, Object> params) {
+//        try {
+//            params.put("txt_mentiuni", s(fact.getMentiuni()));
+//            if (!fact.getMoneda().equals("RON")) {
+//                if (!inAlb) {
+//                    params.put("txt_curs_valutar", t("Curs") + " 1 " + s(fact.getMoneda()) + " = " + fact.getCurs_schimb() + " " + monedaRONLeu);
+//                } else {
+//                    params.put("txt_curs_valutar", t("Curs") + " 1 " + s(fact.getMoneda()) + " = " + "         " + " " + monedaRONLeu);
+//                }
+//            }
+//            if (fact.getLayout_id() == 3) {
+//                boolean complet = false;
+//                if (inAlb) {
+//                    params.put("txt_detail_semnatura_furnizor", ttitul("Semnatura si stampila furnizorului") + ": ");
+//                    params.put("txt_detail_intocmit", t("Intocmit de") + ":   ");
+//                    params.put("txt_detail_cnp", t("CNP") + ":     ");
+//                    params.put("txt_detail_nume_delegat", t("Numele delegatului") + ":     ");
+//                    params.put("txt_detail_bi", t("B.I/C.I") + ":     ");
+//                    params.put("txt_detail_mijloc_transport",t("Mijloc transport")+":     ");
+//                    params.put("txt_detail_date_expeditie", ttitul("Date expeditie") + ": ");
+//                    params.put("txt_detail_detalii_semnatura", ttitul("Semnaturile") + ": ");
+//                    params.put("txt_detail_semnatura_primire", ttitul("Semnatura de primire") + ":");
+//
+//                } else {
+//                    int i = 0;
+//                    String parameter = "";
+//
+//                    if (!fact.getIntocmitor().getNume().equals("")) {
+//                        params.put("txt_detail_intocmit", t("Intocmit de") + ": " + s(fact.getIntocmitor().getNume()));
+//                        complet = true;
+//                        i++;
+//                    }
+//                    if (!fact.getIntocmitor().getCnp().equals("")) {
+//                        params.put("txt_detail_cnp", t("CNP") + ": " + s(fact.getIntocmitor().getCnp()));
+//                        complet = true;
+//                        i++;
+//                    }
+//                    if (!fact.getDelegat().getNume().equals("")) {
+//                        params.put("txt_detail_nume_delegat", t("Numele delegatului") + ": " + s(fact.getDelegat().getNume()));
+//                        complet = true;
+//                    }
+//                    if (!fact.getDelegat().getBuletin().equals("")) {
+//                        params.put("txt_detail_bi", t("B.I/C.I") + ": " + s(fact.getDelegat().getBuletin()));
+//                        complet = true;
+//                        i++;
+//                    }
+//                    if (!fact.getDelegat().getAuto().equals("")) {
+//                        params.put("txt_detail_mijloc_transport", t("Mijloc transport")+": " + s(fact.getDelegat().getAuto()));
+//                        complet = true;
+//                        i++;
+//                    }
+//                    params.put("txt_detail_detalii_semnatura", t("Semnaturile") + ": ");
+//                    params.put("txt_title_fbanca", t("Data primirii in gestiune si semnatura"));// // formatul 3 
+//                    params.put("txt_detail_semnatura_primire", ttitul("Semnatura de primire") + ":");
+//                    if (complet) {
+//                        params.put("txt_detail_semnatura_furnizor", ttitul("Semnatura si stampila furnizorului") + ":");
+//                        params.put("txt_detail_date_expeditie", t("Date expeditie") + ": ");
+//                        if (flags.get("f_stamp").toCharArray()[0] == 'y' && !stamp.equals("") && !"".equals(fact.getClient().getDenumire().trim())) {
+//                            if (i < 3) {
+//                                if (fact.getMentiuni().trim().equals("") && fact.getMoneda().equals(("RON"))) {
+//                                    params.put("parameter1", "\n\n\n\n\n\n");
+//                                } else {
+//                                    params.put("parameter1", "\n\n\n\n");
+//                                }
+//                            }
+//                        }
+//                    } else {
+//                        if (flags.get("f_stamp").toCharArray()[0] == 'y' && !stamp.equals("") && !"".equals(fact.getClient().getDenumire().trim())) {
+//                            params.put("txt_detail_semnatura_furnizor", ttitul("Semnatura si stampila furnizorului") + ":");
+//                            params.put("txt_detail_date_expeditie", t("Date expeditie") + ": ");                 
+//                            if (fact.getMentiuni().trim().equals("") && fact.getMoneda().equals(("RON"))) {
+//                                params.put("parameter1", "\n\n\n\n\n\n");
+//                            } else {
+//                                params.put("parameter1", "\n\n\n\n");
+//                            }
+//                        }
+//                    }
+//                }
+//            } else {
+//                params.put("txt_detail_semnatura_furnizor", t("Semnatura si stampila furnizorului"));
+//                params.put("txt_detail_intocmit", t("Intocmit de") + ": " + s(v(fact.getIntocmitor().getNume())));
+//                params.put("txt_detail_cnp", t("CNP") + ": " + s(v(fact.getIntocmitor().getCnp())));
+//                params.put("txt_detail_nume_delegat", t("Numele delegatului") + ": " + s(v(fact.getDelegat().getNume())));
+//                params.put("txt_detail_bi", t("B.I/C.I") + ": " + s(v(fact.getDelegat().getBuletin())));
+//                params.put("txt_detail_mijloc_transport", t("Mijloc transport")+": " + s(v(fact.getDelegat().getAuto())));
+//                params.put("txt_detail_detalii_semnatura", t("Semnaturile") + ": ");
+//                params.put("txt_detail_semnatura_primire", t("Semnatura de primire") + ":");
+//                params.put("txt_title_fbanca", t("Data primirii in gestiune si semnatura"));//  BILL-295 La avizul in valuta pentru TOTAL GENERAL nu se mai afiseaza si suma in RON
+//            }
+//
+//            if (!inAlb && fact.getData_expedierii() != null && !"".equals(fact.getData_expedierii())) {
+//                Date de;
+//                try {
+//                    de = Common.SQLITE_DATE_HOUR_FORMAT.parse(fact.getData_expedierii());
+//                } catch (ParseException ex) {
+//                    ex.printStackTrace();
+//                    de = new Date();
+//                }
+//                params.put("txt_detail_data_expediere", t("Expediere la data de ") + " " + Common.ROMANIAN_DATE_FORMAT.format(de) + "  " + t("ora") + " " + Common.ROMANIAN_HOUR_FORMAT.format(de));
+//            } else {
+//                params.put("txt_detail_data_expediere", t("Expedierea s-a efectuat in prezenta noastra la data de") + " ...................." + t("ora") + ".........");
+//            }
+//
+//
+//            params.put("txt_detail_total", t("Total"));
+//            params.put("txt_detail_total_plata", t("Total plata"));//BILL-1175
+//
+//
+//            if (fact.getTermen_plata() < 0) {
+//                try {
+//                    if (!fact.getData_scadentei().equals("")) {
+//                        Date d = Common.SQLITE_DATE_FORMAT.parse(fact.getData_scadentei());
+//                        String ds = Common.ROMANIAN_DATE_FORMAT.format(d);
+//                        params.put("txt_footer_termen_plata", t("Termen plata") + ": " + s(ds));
+//                    }
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            } else if (fact.getTermen_plata() > 0) {
+//                params.put("txt_footer_termen_plata", t("Termen Plata") + ": " + s(Integer.toString(fact.getTermen_plata())) + " " + t("zile"));
+//            }
+//            if (!"true".equals(Common.sbProps.getProperty("hidead"))) {
+//                params.put("txt_footer_info_sb", smbSpot);
+//            }
+////            int precizie = fact.getClient().getPrecizie() < 2 ? 2 : fact.getClient().getPrecizie();
+//            //params.put("total_value_product", fact.get)
+//            
+//            setTotaluri(params);
+//            
+//            if (fact.getAnulata() == 'y') {
+//                params.put("txt_anulata", "A N U L A T A");
+//            }
+//        } catch (Exception ex) {
+//            ex.printStackTrace();
+//        }
+//
+//    }//FillArticolBottom
+//    private void setTotaluriFactura(){
+//        int precizie = fact.getClient().getPrecizie() < 2 ? 2 : fact.getClient().getPrecizie();
+//        BigDecimal valoare =  BigDecimal.valueOf(fact.getValoare());
+//        BigDecimal valoareTva = BigDecimal.valueOf(fact.getValoare_TVA());
+//        BigDecimal difBaza = valoare.subtract(fact.getValoareBazaColectata());     
+//        BigDecimal difTva  = valoareTva.subtract(fact.getValoareTVAColectata());
+//		if(difBaza.compareTo(BigDecimal.ZERO) < 0){
+//			difBaza = BigDecimal.ZERO;
+//		}
+//		if(difTva.compareTo(BigDecimal.ZERO) < 0){
+//			difTva = BigDecimal.ZERO;
+//		}
+//            
+//        if (fact.getMoneda().equals(("RON"))) {
+//            if (inAlb) {
+//                setTotaluriInAlb();
+//            } else {//
+//            	
+//                params.put("total_value_product", Common.format(fact.getValoare(), precizie));
+//
+//                //factura fara totaluri dar cu tva la incasare
+//                if(fact.isTvaLaIncasare() && fact.getValoareBazaColectata().add(fact.getValoareTVAColectata()).compareTo(BigDecimal.ZERO) == 0) {
+//                	params.put("txt_tva_incasare", Common.STYLE_TVA_LA_INCASARE);
+//                	params.put("total_value_product", params.get("total_value_product") + Common.STYLE_TOTAL_VALUE_PRODUCT);
+//                } else {
+//                	params.put("txt_tva_incasare", "");
+//                }
+//
+//                setTotaluri2016(fact.getvValoareBazaColectata().toPlainString(), Common.TOTAL_VALUE_PRODUCT_COLECTAT);//params.put("total_value_product_colectat", fact.getvValoareBazaColectata().toString() + "\n<style size='7' forecolor='#FFFFFF'>TVA colectat</style>"   /*fact.getvValoareBazaColectata()*/);//$P{total_value_tva}+"\n<style size='7' forecolor='#5A5A5A'>TVA colectat</style>"
+//                setTotaluri2016(fact.getvValoareTVAColectata().toPlainString(), Common.TOTAL_VALUE_TVA_COLECTAT);//params.put("total_value_tva_colectat", fact.getvValoareTVAColectata().toString()  + "\n<style size='7' forecolor='#5A5A5A'>TVA colectat</style>");                 
+//                setTotaluri2016(difBaza.toPlainString(), Common.TOTAL_VALUE_PRODUCT_INCASAT);//params.put("total_value_tva_incasat", difTva.toString() + "\n<style size='7' forecolor='#5A5A5A'>TVA la incasare</style>"); //$P{total_value_tva}+"\n<style size='7' forecolor='#5A5A5A'>TVA la incasare</style>"                                                   
+//                setTotaluri2016(difTva.toPlainString(), Common.TOTAL_VALUE_TVA_INCASAT);//params.put("total_value_product_incasat", difBaza.toString() + "\n<style size='7' forecolor='#FFFFFF'>TVA la incasare</style>");
+//                
+//                boolean onlyTvaInclus = true;
+//                for (Articol art : articol) {
+//                    if (art.getTva_id() != CotaTva.TVA_INCLUS_ID) {
+//                        onlyTvaInclus = false;
+//                        break;
+//                    }
+//                }
+//                if (onlyTvaInclus) {
+//                    params.put("total_value_tva", "TVA Inclus");
+//                } else {
+//                    params.put("total_value_tva", Common.format(fact.getValoare_TVA(), precizie));
+//                }
+//                params.put("total_value", Common.format(fact.getValoare_totala(), precizie));
+//            }
+//
+//        } else {// factuura in valuta.
+//            if (inAlb) {
+//                setTotaluriInAlb();                       
+//            } else {
+//                                
+//            	//valori in lei
+//            	BigDecimal vDifBaza = BigDecimal.valueOf(fact.getV_valoare()).subtract(fact.getvValoareBazaColectata());                
+//            	BigDecimal vDifTva  = BigDecimal.valueOf(fact.getV_valoare_TVA()).subtract(fact.getvValoareTVAColectata());
+//				if(vDifBaza.compareTo(BigDecimal.ZERO) < 0){
+//					vDifBaza = BigDecimal.ZERO;
+//				}
+//				if(vDifTva.compareTo(BigDecimal.ZERO) < 0){
+//					vDifTva = BigDecimal.ZERO;
+//				}
+//                
+//                params.put("total_value_product", setTotalInValuta(BigDecimal.valueOf(fact.getValoare()), fact.getMoneda(), BigDecimal.valueOf(fact.getV_valoare()), precizie));   
+//               
+//                //factura fara totaluri dar cu tva la incasare
+//                if(fact.isTvaLaIncasare() && fact.getValoareBazaColectata().add(fact.getValoareTVAColectata()).compareTo(BigDecimal.ZERO) == 0) {
+//                	params.put("txt_tva_incasare", Common.STYLE_TVA_LA_INCASARE);
+//                	params.put("total_value_product", params.get("total_value_product") + Common.STYLE_TOTAL_VALUE_PRODUCT);
+//                } else {
+//                	params.put("txt_tva_incasare", "");
+//                }
+//                setTotaluri2016(setTotalInValuta(fact.getValoareBazaColectata(), fact.getMoneda(), fact.getvValoareBazaColectata(), precizie), Common.TOTAL_VALUE_PRODUCT_COLECTAT);                
+//                setTotaluri2016(setTotalInValuta(fact.getValoareTVAColectata(), fact.getMoneda(), fact.getvValoareTVAColectata(), precizie), Common.TOTAL_VALUE_TVA_COLECTAT);
+//                boolean onlyTvaInclus = true;
+//                for (Articol art : articol) {
+//                    if (art.getTva_id() != CotaTva.TVA_INCLUS_ID) {
+//                        onlyTvaInclus = false;
+//                        break;
+//                    }
+//                }
+//                if (onlyTvaInclus) {
+//                    params.put("total_value_tva", "TVA Inclus");
+//                } else {
+//                    params.put("total_value_tva", setTotalInValuta(BigDecimal.valueOf(fact.getValoare_TVA()), fact.getMoneda(), BigDecimal.valueOf(fact.getV_valoare_TVA()), precizie));
+//                    setTotaluri2016(setTotalInValuta(difBaza, fact.getMoneda(), vDifBaza, precizie), Common.TOTAL_VALUE_PRODUCT_INCASAT);
+//                    setTotaluri2016(setTotalInValuta(difTva, fact.getMoneda(), vDifTva, precizie), Common.TOTAL_VALUE_TVA_INCASAT);
+//                }                                   
+//                params.put("total_value", setTotalInValuta(BigDecimal.valueOf(fact.getValoare_totala()), fact.getMoneda(), BigDecimal.valueOf(fact.getV_valoare_totala()), precizie));
+//            }   
+//        }        
+//    }
+//    private DefaultTableModel getArticolTable() {
+//
+//        ArrayList<String> lrow = new ArrayList<String>();
+//        ArrayList<ArrayList> table = new ArrayList<ArrayList>();
+//        for (int i = 0; i < articol.size(); i++) {
+//            lrow = new ArrayList<String>();
+//            if (!"".equals(articol.get(i).getDenumire().trim())) {
+//                lrow.add(Common.escapeAmp(String.valueOf(i + 1)));
+//            } else if (inAlb && gprintid == 5) {
+//                lrow.add("<style size='1' forecolor='#FFFFFF'> " + ".\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n" + "</style>");
+//            }
+//
+////        BILL-296 Afisare cod produs pe factura  - BILL-412
+//            boolean codProdus = new Config().get("cod_produs").equals("true");
+//            boolean hideCod = new Config().get("afiseaza_cod_produse").equals("false");
+//            String den = (codProdus && !hideCod && !"".equals(articol.get(i).getCod()) ? ("(" + articol.get(i).getCod()) + ") " : "") + articol.get(i).getDenumire();
+//
+//            if (lang.equals("RO")) {
+//                if (!inAlb) {
+//                    lrow.add(Common.escapeAmp(den));
+//                   lrow.add(articol.get(i).getUM() != null ? Common.escapeAmp(articol.get(i).getUM()) : " ");
+//                } else if (inAlb && gprintid == 5) {
+//                    lrow.add("<style size='1' forecolor='#FFFFFF'> " + ".\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n" + "</style>");
+//                    lrow.add("<style size='1' forecolor='#FFFFFF'> " + ".\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n" + "</style>");
+//                }
+//            } else {
+//                lrow.add(Common.escapeAmp(articol.get(i).getArticol_tradus() + "\n<style pdfFontName='arial.ttf' size='8'>" + den + "</style>"));
+//                lrow.add(Common.escapeAmp(articol.get(i).getUm_tradus() + "\n<style pdfFontName='arial.ttf' size='8'>" + articol.get(i).getUM() + "</style>"));
+//            }
+//
+//            int precizie = fact.getClient().getPrecizie() < 2 ? 2 : fact.getClient().getPrecizie();
+//            //row.add(articol.get(i).getCantitate().setScale(precizie,RoundingMode.HALF_UP).toString());
+//            try {
+//                if (articol.get(i).getCantitate() == null) {
+//                    if (inAlb && gprintid == 5) {
+//                        lrow.add("<style size='1' forecolor='#FFFFFF'> " + ".\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n" + "</style>");
+//                    }
+//                } else {
+//                    int x = articol.get(i).getCantitate().intValueExact();
+//                    lrow.add(String.valueOf(x));
+//                }
+//            } catch (ArithmeticException e) {
+//                //row.add(String.valueOf(articol.get(i).getCantitate()));
+//                lrow.add(articol.get(i).getCantitate().setScale(precizie, RoundingMode.HALF_UP).toString());
+//            }
+//
+//            if (aviz == null) {
+//                if (articol.get(i).getValoare() == null) {
+//                    if (inAlb && gprintid == 5) {
+//                        lrow.add("<style size='1' forecolor='#FFFFFF'> " + ".\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n" + "</style>");
+//                    }
+//                    if (inAlb && gprintid == 5) {
+//                        lrow.add("<style size='1' forecolor='#FFFFFF'> " + ".\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n" + "</style>");
+//                    }
+//                    if (inAlb && gprintid == 5) {
+//                        lrow.add("<style size='1' forecolor='#FFFFFF'> " + ".\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n" + "</style>");
+//                    }
+//                } else {
+//                    lrow.add(articol.get(i).getPretFaraTva().setScale(precizie, RoundingMode.HALF_UP).toString());
+//                    lrow.add(articol.get(i).getValoare().setScale(precizie, RoundingMode.HALF_UP).toString());
+//                    if (articol.get(i).getTva_id() == CotaTva.TVA_INCLUS_ID) {
+//                    	if(!textTvaInclus.isEmpty()){
+//                    		lrow.add(textTvaInclus);
+//                    	} else {
+//                    		lrow.add("TVA Inclus");
+//                    	}
+//                    } else {
+//                        lrow.add(articol.get(i).getValoareTva().setScale(precizie, RoundingMode.HALF_UP).toString());
+//                    }
+//                }
+//            } else {//pt aviz
+//                if (articol.get(i).getPretFaraTva() == null || articol.get(i).getPretFaraTva().compareTo(BigDecimal.ZERO) == 0 || fact.isHidePret()) {
+//                    lrow.add(schimbSpacecuCero());//lrow.add(" ");
+//                } else {
+//                    lrow.add(articol.get(i).getPretFaraTva().setScale(precizie, RoundingMode.HALF_UP).toString());
+//                }
+//                if (articol.get(i).getValoare() == null || articol.get(i).getValoare().compareTo(BigDecimal.ZERO) == 0 || fact.isHidePret()) {
+//                    lrow.add(schimbSpacecuCero());//lrow.add("");
+//                } else {
+//                    lrow.add(articol.get(i).getValoare().setScale(precizie, RoundingMode.HALF_UP).toString());
+//                }
+//                if (articol.get(i).getValoareTva()==null  || articol.get(i).getValoareTva().compareTo(BigDecimal.ZERO) == 0 || fact.isHidePret()) {
+//                    if (inAlb){
+//                        lrow.add(schimbSpacecuCero());//lrow.add(" ");
+//                    }else{
+//                        if(articol.get(i).getTva_id()==CotaTva.TVA_INCLUS_ID){
+//                        	if(!textTvaInclus.isEmpty()){
+//                        		lrow.add(textTvaInclus);
+//                        	} else {
+//                        		lrow.add("TVA Inclus");
+//                        	}
+//                        }else{
+//                             //lrow.add(articol.get(i).getValoareTva().setScale(precizie, RoundingMode.HALF_UP).toString());//lrow.add("0");
+//
+//                            if (articol.get(i).getPretFaraTva() == null || articol.get(i).getPretFaraTva().compareTo(BigDecimal.ZERO) == 0 || fact.isHidePret()) {
+//                                lrow.add(schimbSpacecuCero());
+//                            }else{
+//                                lrow.add(articol.get(i).getValoareTva().setScale(precizie, RoundingMode.HALF_UP).toString());
+//                            }
+//                        }
+//                    }
+//                } else {
+//                    lrow.add(articol.get(i).getValoareTva().setScale(precizie, RoundingMode.HALF_UP).toString());
+//                }
+//            }
+//
+//            if (platitor_tva == 'y' && cota == -1) {
+//                if (cota > -1 && (fact.getTip_factura() == 's' && "storno_total".equals(articol.get(0).getTip_pozitie()))) {
+//                    //String[] lcota = {"-"};//??
+//                } else {
+//                    if (inAlb) {
+//                        lrow.add("");
+//                    } else {
+//                        String[] lcota = Common.getDenumireProcentCotaTva(articol.get(i).getTva_id());
+//                        if (lcota[0] == null) {
+//                            lcota[0] = "0";
+//                            lcota[1] = "0";
+//                        }
+//                        if (!lcota[0].equals("0")) {
+//                            lrow.add(Common.escapeAmp(lcota[0] + "%"));
+//                        } else if (lcota[1].contains("TVA Inclus")) {
+//                            lrow.add(Common.escapeAmp(lcota[1]));
+//                        } else {
+//                            lrow.add(Common.escapeAmp(lcota[0] + "%" + lcota[1]));
+//                        }
+//                    }
+//                }
+//            }
+//            table.add(lrow);
+//        }
+//
+//        
+//        int cols = table.size() > 0 ? ((ArrayList) (table.get(0))).size() : 0;
+//
+//        //extra rows for testing
+////        for(int i = 0; i < 27; i++) {
+////            row = new ArrayList<String>();
+////            for(int j =0; j < cols; j++)
+////                row.add("1 ");
+////            table.add((row));
+////        }
+//
+//        int rows = table.size();
+//        //int cols = ((ArrayList)(table.get(0))).size();
+//
+//        //am pus inca o coloana pentru page break
+//        String[] columnNames;
+//            if (cota == -1) {
+//                columnNames = new String[]{"nr_crt", "den_serv", "um", "cant", "pret", "val", "tva", "cota_tva", "page break"};
+//            } else {
+//                columnNames = new String[]{"nr_crt", "den_serv", "um", "cant", "pret", "val", "tva", "page break"};
+//            }
+//        String[][] data = new String[rows][cols + 1];
+//
+//        for (int i = 0; i < rows; i++) {
+//            for (int j = 0; j < cols + 1; j++) {
+//            	if(j == cols){            		
+//                    data[i][j] = "0";                    
+//            	} else {
+//            		data[i][j] = String.valueOf(((ArrayList) (table.get(i))).get(j));
+//            	}
+//            }
+//        }
+//        return new DefaultTableModel(data, columnNames);
+//    }//GetArticolTable
+//    private String schimbSpacecuCero(){
+//        String result = " ";
+//        if (fact.getLayout_id()==3){
+//            if (!inAlb) result = " ";// punem liniuta in loc de zero, cum era inainte
+//        }
+//        return result;
+//
+//
+//    }
+//
+//    private String t(String text) {
+//        //hardcoded
+//        if (text.equals("Cantitate") && lang.equals("RO")) {
+//            text = "Cant.";
+//        }
+//        if (text.equals(reportTitle) || text.equals("Chitanta")) {
+//            //put the title in uppercase
+//            if (lang.equals("RO")) {
+//                return Common.escapeAmp(text).toUpperCase();
+//            }
+//            String s = Common._t(text, lang);
+//            if (s.equals(text)) {
+//                return Common.escapeAmp(text);
+//            } else {
+//                return Common.escapeAmp(s).toUpperCase() + "/ " + Common.escapeAmp(text).toUpperCase();
+//            }
+//        }
+//
+//        if (lang.equals("RO")) {
+//            return Common.escapeAmp(text);
+//        }
+//        return Common.escapeAmp(Common._t(text, lang)) + "<style pdfFontName='arial.ttf' size='7'> (" + Common.escapeAmp(text) + ")</style>";
+//    }
+//    //this method puts a new line after the translation
+//
+//    private String t(String text, int nl) {
+//        //hardcoded
+//        if (text.equals("Cantitate") && lang.equals("RO")) {
+//            text = "Cant.";        //the report title -> to upper case
+//        }
+//        if (text.equals(reportTitle) || text.equals("Chitanta")) {
+//            if (lang.equals("RO")) {
+//                return Common.escapeAmp(text).toUpperCase();
+//                //if the translation is the same return just the romanian word
+//            }
+//            String s = Common._t(text, lang);
+//            if (s.equals(text)) {
+//                return Common.escapeAmp(text);
+//            } else {
+//                return Common.escapeAmp(s).toUpperCase() + "/ " + Common.escapeAmp(text).toUpperCase();
+//            }
+//        }
+//
+//        if (lang.equals("RO")) {
+//            return Common.escapeAmp(text);
+//        }
+//        //translate the text and put the romanian version in smaller font
+//        String s = Common._t(text, lang);
+//        if (s.equals("")) {
+//            s = text;
+//        }
+//        if (s.equals(text)) {
+//            return Common.escapeAmp(text);
+//        } else {
+//            return Common.escapeAmp(s) + "<style pdfFontName='arial.ttf' size='7'>\n(" + Common.escapeAmp(text) + ")</style>";
+//        }
+//    }
+//
+//    //;)Esteban
+//    private String ttitul(String text) {
+//        //hardcoded
+//        if (lang.equals("RO")) {
+//            return Common.escapeAmp(text);
+//        }
+//        //translate the text and put the romanian version in smaller font
+//        String s = Common._t(text, lang);
+//        s.replace("(", "\n(");
+//        if (s.equals("")) {
+//            s = text;
+//        }
+//        if (s.equals(text)) {
+//            return Common.escapeAmp(text);
+//        } else {
+//            return Common.escapeAmp(s) + "<style pdfFontName='arial.ttf' size='7'>\n(" + Common.escapeAmp(text) + ")</style>";
+//        }
+//    }
+//    //returns the text styled as if it was translated
+//
+//    private String stSize(String text,int size) {
+//        return "<style pdfFontName='arial.ttf' size='"+size+"'> " + Common.escapeAmp(text) + "</style>";
+//    }
+//
+//    private String st(String text) {
+//        return "<style pdfFontName='arial.ttf' size='7'> " + Common.escapeAmp(text) + "</style>";
+//    }
+//    //style the text
+//
+//    private String s(String text) {
+//        return "<style  pdfFontName='arial.ttf'>" + Common.escapeAmp(text) + "</style>";//isBold='true'
+//    }
+//    //style bold the text
+//
+//    private String b(String text) {
+//        return "<style isBold='true' pdfFontName='arialb.ttf'>" + Common.escapeAmp(text) + "</style>";
+//    }
+    //returns a line if the value is empty
+    private String v(String text) {
+        if (inAlb) {
+            return "                        ";
+        }
+        if (text == null || text.equals("")) {
+            return " -";
+        }
+        return text;
+    }
+
+    public boolean isFinalized() {
+        return isFinalized;
+    }
+
+    public boolean isNextDoc() {
+        return nextDoc;
+    }
+
+    private JasperPrint resolveArticlesNew(String ftemplate, JasperPrint jasperPrint, DefaultTableModel articles, boolean procLastPage) {
+//if (true) return jasperPrint;
+        if (jasperPrint == null) {
+            return jasperPrint;
+        }
+        List pages = jasperPrint.getPages();
+        int nrPages = pages.size();
+        if (nrPages == 0) {
+            return jasperPrint;
+        }
+        params.put("page_count", nrPages);
+        JRPrintPage lastPage = (JRPrintPage) pages.get(nrPages - 1);
+        List elements = lastPage.getElements();
+
+//		int titleHeight = 0;
+//		int headerHeight = 0;
+        int detailHeight = 0;
+//		int bottomHeight = 0;
+
+        int yHeader = 0;
+//		int yLastDetail = 0;
+        int yGroupFooter = 0;
+        int yPageFooter = 0;
+        ArrayList<JRPrintElement> articoleGroupFooterLines = new ArrayList<JRPrintElement>();
+        ArrayList<JRPrintElement> columnFooterLines = new ArrayList<JRPrintElement>();
+        ArrayList<JRPrintElement> horizontalFooterLines = new ArrayList<JRPrintElement>();
+        ArrayList<JRPrintElement> pageNumberElements = new ArrayList<JRPrintElement>();
+        for (int j = 0; j < elements.size(); j++) {
+            JRPrintElement element = ((JRPrintElement) elements.get(j));
+
+            if (element.getKey() == null) {
+                continue;
+            }
+            // System.out.println(e.getKey());
+            // System.out.println(e.getKey()+":    "+j);
+            if (element.getKey().equals("title_height")) {
+//				titleHeight = element.getHeight();
+            } else if (element.getKey().equals("header_height")) {
+//				headerHeight = element.getHeight();
+                yHeader = element.getY() + element.getHeight();
+            } else if (element.getKey().equals("detail_height")) {
+                detailHeight += element.getHeight();
+//				yLastDetail = element.getY() + element.getHeight();
+//			} else if (element.getKey().equals("bottom_height")) {
+            } else if (element.getKey().equals("subreport-bottom")) {
+//				bottomHeight = element.getHeight();
+                yGroupFooter = element.getY();
+            } else if (element.getKey().equals("page_footer_height")) {
+                yPageFooter = element.getY();
+            } else if (element.getKey().contains("_articol")) {
+//                articoleGroupFooterLines.add(element);
+            } else if (element.getKey().contains("vertical_line_")) {
+//                columnFooterLines.add(element);
+            } else if (element.getKey().contains("horizontal_line_1")) {
+                horizontalFooterLines.add(element);
+            } else if (element.getKey().contains("page_number")) {
+                pageNumberElements.add(element);
+            }
+
+        }
+
+        // fara detalii pe ultima pagina
+        if (detailHeight == 0 && nrPages > 1 && procLastPage) {
+            // seteaza page break la ultimul produs
+            Vector data = articles.getDataVector();
+            if (data.size() > 0) {
+                Vector o = (Vector) data.get(data.size() - 1);
+                o.set(o.size() - 1, "1");
+                System.out.println("page break: ");
+                try {
+                    long t = System.currentTimeMillis();
+                    jasperPrint = JasperFillManager.fillReport(ftemplate, params, new JRTableModelDataSource(articles));
+                    long t1 = System.currentTimeMillis();
+                    System.out.println("refill: " + (t1 - t));
+                    return resolveArticlesNew(ftemplate, jasperPrint, articles, false);
+                } catch (JRException e) {
+                    e.printStackTrace();
+                    new JDialogError(null, e).setVisible(true);
+                    throw new RuntimeException(e.getMessage());
+                }
+            }
+        }
+
+        // set last page lines height     //nu mai est e necesar sa tragem lini pt ca sa rezolva din Jasper
+//		resolveBottomLines(jasperPrint, yHeader, yPageFooter - yHeader - 1);
+//        resolveBottomArticol(articoleGroupFooterLines, jasperPrint.getLeftMargin(), yHeader, yGroupFooter - yHeader - 1);
+        // remove column footer lines
+        for (JRPrintElement jrPrintElement : columnFooterLines) {
+            elements.remove(jrPrintElement);
+        }
+        // remove horizontal footer lines
+        for (JRPrintElement jrPrintElement : horizontalFooterLines) {
+            elements.remove(jrPrintElement);
+        }
+
+        // remove page number
+        if (nrPages == 1) {
+            for (JRPrintElement jrPrintElement : pageNumberElements) {
+                elements.remove(jrPrintElement);
+            }
+            //pag=1 se sterge numar pozitii
+//			if(params.get("txt_numar_pozitii") != null){
+//				params.remove("txt_numar_pozitii");
+//	            try {
+//	            	long t= System.currentTimeMillis();
+//					jasperPrint = JasperFillManager.fillReport(ftemplate, params, new JRTableModelDataSource(articles));
+//					long t1= System.currentTimeMillis();
+//			    	System.out.println("refill: " + (t1-t));
+//					return resolveArticlesNew(ftemplate, jasperPrint, articles);
+//				} catch (JRException e) {
+//					e.printStackTrace();
+//		            new JDialogError(null, e).setVisible(true);
+//		            throw new RuntimeException(e.getMessage());
+//				}
+//			}
+        }
+
+        return jasperPrint;
+    }
+
+    /**
+     * *
+     *
+     * @param jasperPrint
+     * @param y
+     * @param height
+     */
+    @Deprecated //nu mai est e necesar sa tragem lini pt ca sa rezolva din Jasper
+    private void resolveBottomLines(JasperPrint jasperPrint, int y, int height) {
+        long t = System.currentTimeMillis();
+        int leftMargin = jasperPrint.getLeftMargin();
+        int detailIndex = jasperDetailIndex;
+//		int detailIndex = getJasperReportDetailIndex();
+        List pages = jasperPrint.getPages();
+        for (int i = 0; i < pages.size() - 1; i++) {
+            JRPrintPage page = (JRPrintPage) pages.get(i);
+            List elements = page.getElements();
+            int x = 0;
+            for (int j = 0; j < elements.size(); j++) {
+                JRPrintElement element = ((JRPrintElement) elements.get(j));
+                if (element.getKey() == null) {
+                    continue;
+                }
+                if (element.getKey().indexOf("_footer") != -1) {
+                    setXJRPrintElement(element, detailIndex, x, y, height, leftMargin);
+                }
+            }
+        }
+        long t1 = System.currentTimeMillis();
+        System.out.println("resolveBottomLines: " + (t1 - t));
+    }
+
+    /**
+     * *
+     *
+     * @param verticalLineGroup
+     * @param leftMargin
+     * @param y
+     * @param height
+     */
+    @Deprecated //nu mai est e necesar sa tragem lini pt ca sa rezolva din Jasper
+    private void resolveBottomArticol(ArrayList<JRPrintElement> verticalLineGroup, int leftMargin, int y, int height) {
+
+        long t = System.currentTimeMillis();
+        int detailIndex = jasperDetailIndex;
+//        int detailIndex = getJasperReportDetailIndex();
+        int x = 0;
+        for (JRPrintElement element : verticalLineGroup) {
+            if (element.getKey() == null) {
+                continue;
+            }
+            setXJRPrintElement(element, detailIndex, x, y, height, leftMargin);
+        }
+
+        long t1 = System.currentTimeMillis();
+        System.out.println("resolveBottomArticol: " + (t1 - t));
+    }
+
+    /**
+     *
+     * @param element
+     * @param detailIndex
+     * @param x
+     * @param y
+     * @param height
+     * @param leftMargin
+     */
+    @Deprecated //nu mai est e necesar sa tragem lini pt ca sa rezolva din Jasper
+    private void setXJRPrintElement(JRPrintElement element, int detailIndex, int x, int y, int height, int leftMargin) {
+
+        if (!element.getKey().contains("horizontal_line_1")) {
+            element.setY(y);
+            element.setHeight(height);
+        }
+        if (detailIndex > 1) {
+            x = element.getX();
+            if (element.getKey().contains("_2_")) {
+                switch (detailIndex) {
+                    case 1:
+                    case 2:
+                    case 3:
+                        x = 40;
+                        break;
+                    case 4:
+                        x = 30;//x = 260;
+                        break;
+                }
+                element.setX(x + leftMargin);
+            } else if (element.getKey().contains("_3_")) {
+                switch (detailIndex) {
+                    case 1:
+                    case 2:
+                    case 3:
+                        x = 281;
+                        break;
+                    case 4:
+                        x = 246;//216;//x = 260;
+                        break;
+                }
+                element.setX(x + leftMargin);
+            } else if (element.getKey().contains("_4_")) {
+                switch (detailIndex) {
+                    case 1:
+                        x = 371;
+                        break;
+                    case 2:
+                        x = 402;
+                        break;
+                    case 3:
+                        x = 346;
+                        break;
+                    case 4:
+                        x = 346;//308; //x = 360;
+                        break;
+                }
+                element.setX(x + leftMargin);
+            } else if (element.getKey().contains("_5_")) {
+                switch (detailIndex) {
+                    case 1:
+                        x = 465;
+                        break;
+                    case 2:
+                        x = 475;
+                        break;
+                    case 3:
+                        x = 416;
+                        break;
+                    case 4:
+                        x = 416;//368;//430;
+                        break;
+                }
+                element.setX(x + leftMargin);
+            } else if (element.getKey().contains("_6_")) {
+                switch (detailIndex) {
+                    case 1:
+                        x = -10;
+                        break;
+                    case 2:
+                        x = -10;
+                        break;
+                    case 3:
+                        x = 480;
+                        break;
+                    case 4:
+                        x = 482;//427;
+                        break;
+                }
+                element.setX(x + leftMargin);
+            }
+//            pentru o coloana noua cu tax name 
+//            else if (element.getKey().contains("_7_")) {
+//                switch (detailIndex) {
+//                    case 1:
+//                        x = -10;
+//                        break;
+//                    case 2:
+//                        x = -10;
+//                        break;
+//                    case 3:
+//                        x = -10;
+//                        break;
+//                    case 4:
+//                        x = 490;//480;
+//                        break;
+//                }
+//                    element.setX(x + leftMargin);
+//            }
+        }
+    }
+
+    /**
+     * @TODO: trebuie setata valoare corecta din flags
+     *
+     * @return 1: "NO", "PRODUCT", "DESCRIPTION", "QUANTITY", "PRICE", "AMOUNT"
+     * 2: "NO", "PRODUCT", "DESCRIPTION", "QUANTITY", "UM","PRICE", "AMOUNT" 3:
+     * "NO", "PRODUCT", "DESCRIPTION", "QUANTITY", "PRICE", "TAX", "AMOUNT" 4:
+     * "NO", "PRODUCT", "DESCRIPTION", "QUANTITY", "UM", "PRICE", "TAX",
+     * "AMOUNT"
+     *
+     */
+    @Deprecated//sa rezolva pe jasper
+    public int getJasperReportDetailIndex() {
+        //
+        try {
+            activeFlag = Flag.getLast(Common.connection.getConnection());
+        } catch (SBDaoException ex) {
+            Logger.getLogger(ReportGenerator.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SQLException ex) {
+            Logger.getLogger(ReportGenerator.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        jasperDetailIndex = 1 + (activeFlag.isShowUmColumn() ? 1 : 0) + (activeFlag.isShowTaxColumn() ? 2 : 0);
+        return jasperDetailIndex;
+    }
+
+    private String getReportName(String filename) {
+        return filename + ".jasper";
+    }
+
+    /**
+     * isPageOverflow: Afiseasa mesajul ca documentul nu incape pe A4
+     *
+     * @param id
+     * @param print_id_initial
+     * @param jasperPrint1
+     * @param showErrMessage
+     * @return true daca nu incape si false daca incape.
+     */
+    private boolean isPageOverflow(int id, int print_id_initial, JasperPrint jasperPrint1, boolean showErrMessage) {
+
+        if (jasperPrint1 == null || jasperPrint1.getPages().size() > 1) {
+//            fact.setPrint_id(id);
+//            if(true)return false;// anuleaza mesajul pt teste.
+            msgPageOverflow(print_id_initial, showErrMessage);
+            return true;
+        }
+        return false;
+    }
+
+    private void msgPageOverflow(int print_id, boolean showErrMessage) {
+        if (!showErrMessage) {
+            return;
+        }
+//                 "The " + document.getDocumentTypeName() + " does not fit on a A5 sheet!";  
+        mesageOverFlow = "<HTML>"
+                + "<b>The current amount of data does not fit the A5 format.</b><br>"
+                + "Note: If you still want the document in a small format,<br>"
+                + "please visit this "
+                + "<a href=\"https://www.billingsoftware.in/small-invoice-format-solution.html\"> dedicated FAQ page for possible solutions</a>."
+                + "</HTML>";
+
+//        String infoMesaj = "";
+//        String explicatie = "";
+//        // System.err.println("print_id = "+print_id);
+//        String motive = "<html><b>Posibile motive ar fi:</b><br/>"
+//            + (!inAlb ? "-" + Common.SPAN_STYLE_MSG_PAGE_OVERFLOW + " produsele introduse" + Common.SPAN_STYLE_MSG_PAGE_OVERFLOW_1 + " pe document " + Common.SPAN_STYLE_MSG_PAGE_OVERFLOW + "ocupa mult spatiu" + Common.SPAN_STYLE_MSG_PAGE_OVERFLOW_1 + " <br/>" : "")
+//            + "- ati ales sa afisati un " + Common.SPAN_STYLE_MSG_PAGE_OVERFLOW + "numar mare de date personale" + Common.SPAN_STYLE_MSG_PAGE_OVERFLOW_1 + " pe"
+//            + "  document care ocupa mult spatiu (banci si IBAN-uri,"
+//            + "<br/>    tel, fax, email, adresa web, capital social)";
+//
+//        if (print_id == DocumentType.FORMAT_2INVOICE) {
+//            String tip_document = "";
+//      
+//                System.err.println(this.document.getDocumentTypeName());
+//                infoMesaj = "<html>" + Common.DIV_STYLE_MSG_PAGE_OVERFLOW + "Cele doua facturi " + Common.SPAN_STYLE_MSG_PAGE_OVERFLOW + "nu incap impreuna" + Common.SPAN_STYLE_MSG_PAGE_OVERFLOW_1 + " pe o coala A4. " + Common.DIV_STYLE_MSG_PAGE_OVERFLOW_1 + "<br/>";
+//                explicatie = motive
+//                    + "<br/>Daca doriti totusi ca cele 2 facturi sa incapa pe o coala A4 " + Common.SPAN_STYLE_MSG_PAGE_OVERFLOW + "puteti reduce" + Common.SPAN_STYLE_MSG_PAGE_OVERFLOW_1 + " din datele personale enumerate mai sus.";
+////                new JDialogMesajFormatDocs(Common.getMainFrame(), true, "Avertisment", "./images/dialogs/ico_a4_factura_cross.png", infoMesaj, explicatie).setVisible(true);
+//           
+//
+//        } else if (this.document.getPageSizeText().equalsIgnoreCase(DocumentType.PAGE_SIZE_A5)) {
+//            String tip_document = "";
+//
+//                System.err.println("fact");
+//
+//                infoMesaj = "<html>" + Common.DIV_STYLE_MSG_PAGE_OVERFLOW + "Factura " + Common.SPAN_STYLE_MSG_PAGE_OVERFLOW + "nu incape" + Common.SPAN_STYLE_MSG_PAGE_OVERFLOW_1 + " pe o coala A5. " + Common.DIV_STYLE_MSG_PAGE_OVERFLOW_1 + "<br/>";                       
+//                explicatie = motive
+//                    + "<br/>Daca doriti totusi ca factura sa incapa pe o coala A5 " + Common.SPAN_STYLE_MSG_PAGE_OVERFLOW + "puteti reduce" + Common.SPAN_STYLE_MSG_PAGE_OVERFLOW_1 + " din datele personale enumerate mai sus."
+//                    + "<br/> In continuare se va incerca " + Common.SPAN_STYLE_MSG_PAGE_OVERFLOW + "dispunerea  pe o foaie A4." + Common.SPAN_STYLE_MSG_PAGE_OVERFLOW_1;
+////                new JDialogMesajFormatDocs(Common.getMainFrame(), true, "Avertisment", "./images/dialogs/ico_a5_factura_cross.png", infoMesaj, explicatie).setVisible(true);
+//
+//
+//        }
+    }
+
+    public Document getDocument() {
+        return document;
+    }
+
+    public void setDocument(Document document) {
+        this.document = document;
+    }
+
+    public static void loadBlank() {
+        try {
+            String ftemplate = DocumentType.BLANK.getTemplate() + ".jasper";
+            JasperPrint jasperPrint = JasperFillManager.fillReport(ftemplate, new HashMap<String, Object>(),
+                    new JRTableModelDataSource(new DefaultTableModel()));
+        } catch (JRException e) {
+            e.printStackTrace();
+            new JDialogError(null, e).setVisible(true);//finalizare emitere/modificare/vizualizare    factura/aviz/prof
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    public boolean isInAlb() {
+        return inAlb;
+    }
+
+    public void setInAlb(boolean inAlb) {
+        this.inAlb = inAlb;
+    }
+
+}

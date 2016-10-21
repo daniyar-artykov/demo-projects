@@ -1,0 +1,10 @@
+package sleekbill.swingutils.autosuggesters;
+
+import java.util.ArrayList;
+
+public interface AutosuggesterDataBuilder {
+
+	public ArrayList<AutosuggesterItem> getData(String input, Integer rowNumber);
+        public long getCount();
+	
+}

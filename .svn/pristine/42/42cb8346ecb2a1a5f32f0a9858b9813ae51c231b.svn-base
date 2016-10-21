@@ -1,0 +1,67 @@
+package sleekbill.swingutils;
+
+import java.awt.Color;
+import java.awt.Component;
+import javax.swing.JLabel;
+import javax.swing.JTable;
+import javax.swing.SwingConstants;
+import javax.swing.UIManager;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.TableCellRenderer;
+
+/**
+ *
+ * @author daniyar.artykov
+ */
+public class InvoiceNumberCellRenderer extends JLabel implements TableCellRenderer {
+
+    private String number;
+    private String fullNumber;
+
+    public InvoiceNumberCellRenderer(String number, String fullNumber) {
+        this.number = number;
+        this.fullNumber = fullNumber;
+    }
+    
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, 
+            boolean isSelected, boolean hasFocus, int row, int column) {
+        setBorder(new EmptyBorder(1, 2, 1, 2));
+        if (isSelected) {
+            setForeground(table.getSelectionForeground());
+            setBackground(table.getSelectionBackground());
+        } else if (UIManager.get("Table.evenRowColor") instanceof Color 
+                && UIManager.get("Table.evenRowColor") instanceof Color) {
+            Color rc = row % 2 == 0 
+                    ? (Color) UIManager.get("Table.evenRowColor") 
+                    : (Color) UIManager.get("Table.oddRowColor");
+            setForeground(rc);
+            setBackground(rc);
+        } else {
+            setForeground(table.getForeground());
+            setBackground(table.getBackground());
+        }
+        setText(this.number);
+        setForeground(Color.BLACK);
+        setToolTipText(this.fullNumber);
+        setOpaque(true);
+        setHorizontalAlignment(SwingConstants.CENTER);
+        return this;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public void setNumber(String number) {
+        this.number = number;
+    }
+
+    public String getFullNumber() {
+        return fullNumber;
+    }
+
+    public void setFullNumber(String fullNumber) {
+        this.fullNumber = fullNumber;
+    }
+}

@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="in_t_1" pageWidth="557" pageHeight="421" columnWidth="556" leftMargin="1" rightMargin="0" topMargin="0" bottomMargin="21" uuid="b739fed3-32f6-46af-b5ad-c4ad4caf7786">
+	<property name="ireport.zoom" value="1.6500000000000021"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<template><![CDATA["styleTemplate1.jrtx"]]></template>
+	<style name="styleFontColor" isDefault="true" forecolor="#555555" hAlign="Left" vAlign="Middle" pattern="" fontName="Segoe UI" fontSize="12" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica">
+		<paragraph lineSpacing="Single" lineSpacingSize="1.2" leftIndent="2" rightIndent="2"/>
+		<conditionalStyle>
+			<style/>
+		</conditionalStyle>
+	</style>
+	<style name="styleTitle1">
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$P{title_document_numbrer}.length() <= 8]]></conditionExpression>
+			<style mode="Transparent" forecolor="#555555" hAlign="Center" vAlign="Middle" fontName="Segoe UI" fontSize="30" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica">
+				<paragraph leftIndent="6" rightIndent="3"/>
+			</style>
+		</conditionalStyle>
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$P{title_document_numbrer}.length() > 8 && $P{title_document_numbrer}.length() < 14]]></conditionExpression>
+			<style mode="Transparent" forecolor="#555555" hAlign="Center" vAlign="Middle" fontName="Segoe UI" fontSize="24" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica">
+				<paragraph leftIndent="6" rightIndent="3"/>
+			</style>
+		</conditionalStyle>
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$P{title_document_numbrer}.length() > 13]]></conditionExpression>
+			<style mode="Transparent" forecolor="#555555" hAlign="Center" vAlign="Middle" fontName="Segoe UI" fontSize="19" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica">
+				<paragraph leftIndent="6" rightIndent="3"/>
+			</style>
+		</conditionalStyle>
+	</style>
+	<style name="styleTitle1A">
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$P{title_document_numbrer}.length() <= 8]]></conditionExpression>
+			<style mode="Transparent" forecolor="#555555" hAlign="Center" vAlign="Middle" fontName="Segoe UI" fontSize="26" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica">
+				<paragraph leftIndent="6" rightIndent="3"/>
+			</style>
+		</conditionalStyle>
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$P{title_document_numbrer}.length() > 8 && $P{title_document_numbrer}.length() < 14]]></conditionExpression>
+			<style mode="Transparent" forecolor="#555555" hAlign="Center" vAlign="Middle" fontName="Segoe UI" fontSize="20" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica">
+				<paragraph leftIndent="6" rightIndent="3"/>
+			</style>
+		</conditionalStyle>
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$P{title_document_numbrer}.length() > 13 && $P{title_document_numbrer}.length() < 18]]></conditionExpression>
+			<style mode="Transparent" forecolor="#555555" hAlign="Center" vAlign="Middle" fontName="Segoe UI" fontSize="17" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica">
+				<paragraph leftIndent="6" rightIndent="3"/>
+			</style>
+		</conditionalStyle>
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$P{title_document_numbrer}.length() > 17]]></conditionExpression>
+			<style mode="Transparent" forecolor="#555555" hAlign="Center" vAlign="Middle" fontName="Segoe UI" fontSize="16" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfFontName="Helvetica">
+				<paragraph leftIndent="6" rightIndent="3"/>
+			</style>
+		</conditionalStyle>
+	</style>
+	<style name="styleTitle2_old_del" mode="Opaque" forecolor="#FFFFFF" backcolor="#E58B00" fill="Solid" vAlign="Middle" fontName="Segoe UI" fontSize="16" pdfFontName="Helvetica">
+		<box topPadding="2" leftPadding="2" bottomPadding="2" rightPadding="2"/>
+		<paragraph leftIndent="6" rightIndent="3"/>
+	</style>
+	<style name="styleSubTitle1" forecolor="#555555" vAlign="Bottom" fontName="Segoe UI" fontSize="14">
+		<paragraph leftIndent="6" rightIndent="3"/>
+	</style>
+	<style name="styleSubTitle2" forecolor="#FFFFFF" hAlign="Center" vAlign="Middle" fontName="Segoe UI" fontSize="13">
+		<paragraph leftIndent="2" rightIndent="2"/>
+	</style>
+	<style name="styleText1" forecolor="#555555" vAlign="Middle" fontName="Segoe UI" fontSize="13">
+		<paragraph leftIndent="2" rightIndent="3"/>
+	</style>
+	<style name="styleText2" forecolor="#555555" vAlign="Middle" fontName="Segoe UI" fontSize="11">
+		<paragraph leftIndent="3" rightIndent="3"/>
+	</style>
+	<style name="styleText3" forecolor="#555555" vAlign="Middle" fontName="Segoe UI" fontSize="10">
+		<paragraph leftIndent="3" rightIndent="3"/>
+	</style>
+	<parameter name="title_txt_document" class="java.lang.String"/>
+	<parameter name="title_document_numbrer" class="java.lang.String"/>
+	<parameter name="title_txt_amount_due" class="java.lang.String"/>
+	<parameter name="title_amount_due" class="java.lang.String"/>
+	<parameter name="title_txt_document_date" class="java.lang.String"/>
+	<parameter name="title_document_date" class="java.lang.String"/>
+	<parameter name="title_txt_due_date" class="java.lang.String"/>
+	<parameter name="title_due_date" class="java.lang.String"/>
+	<parameter name="title_logo" class="java.lang.String"/>
+	<parameter name="title_provider_company_name" class="java.lang.String"/>
+	<parameter name="title_provider_address" class="java.lang.String"/>
+	<parameter name="title_provider_location" class="java.lang.String"/>
+	<parameter name="title_provider_phone" class="java.lang.String"/>
+	<parameter name="title_provider_fax" class="java.lang.String"/>
+	<parameter name="title_provider_web" class="java.lang.String"/>
+	<parameter name="title_provider_additional_details" class="java.lang.String"/>
+	<parameter name="title_billing_company_name" class="java.lang.String"/>
+	<parameter name="title_billing_address" class="java.lang.String"/>
+	<parameter name="title_billing_location" class="java.lang.String"/>
+	<parameter name="title_billing_phone" class="java.lang.String"/>
+	<parameter name="title_billing_fax" class="java.lang.String"/>
+	<parameter name="title_billing_web" class="java.lang.String"/>
+	<parameter name="title_shipping_company_name" class="java.lang.String"/>
+	<parameter name="title_shipping_address" class="java.lang.String"/>
+	<parameter name="title_shipping_location" class="java.lang.String"/>
+	<parameter name="title_shipping_phone" class="java.lang.String"/>
+	<parameter name="title_shipping_fax" class="java.lang.String"/>
+	<parameter name="title_shipping_web" class="java.lang.String"/>
+	<parameter name="currency_symbol" class="java.lang.String"/>
+	<parameter name="title_txt_po_number" class="java.lang.String"/>
+	<parameter name="title_po_number" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="title_client_additional_details" class="java.lang.String"/>
+	<parameter name="title_provider_email" class="java.lang.String"/>
+	<parameter name="show_ship_to" class="java.lang.Boolean"/>
+	<variable name="showShipTo" class="java.lang.Boolean">
+		<variableExpression><![CDATA[$P{show_ship_to} || $V{hide_ship_to}]]></variableExpression>
+		<initialValueExpression><![CDATA[$P{show_ship_to}]]></initialValueExpression>
+	</variable>
+	<variable name="hide_ship_to" class="java.lang.Boolean">
+		<variableExpression><![CDATA[!$P{title_billing_address}.equalsIgnoreCase( $P{title_shipping_address} )]]></variableExpression>
+		<initialValueExpression><![CDATA[!$P{title_billing_address}.equalsIgnoreCase( $P{title_shipping_address} )]]></initialValueExpression>
+	</variable>
+	<variable name="Amount_due" class="java.lang.String">
+		<variableExpression><![CDATA[$P{title_amount_due}.isEmpty()? "":
+"<style fontName='FreeSerif' size='16'>" + $P{currency_symbol} + "</style>"
++ " " + $P{title_amount_due}]]></variableExpression>
+		<initialValueExpression><![CDATA[$P{title_amount_due}.isEmpty()? "":
+"<style fontName='FreeSerif' size='16'>" + $P{currency_symbol} + "</style>"
++ " " + $P{title_amount_due}]]></initialValueExpression>
+	</variable>
+	<group name="test">
+		<groupExpression><![CDATA[$V{PAGE_NUMBER}]]></groupExpression>
+		<groupHeader>
+			<band height="160">
+				<image hAlign="Left" onErrorType="Blank">
+					<reportElement key="logoImage" x="0" y="0" width="260" height="83" uuid="cf1eaeaf-caf9-4721-b2a9-34204acb3ed0"/>
+					<box topPadding="1" leftPadding="1" bottomPadding="0" rightPadding="1">
+						<pen lineWidth="0.0" lineColor="#E58B00"/>
+						<topPen lineWidth="0.0" lineColor="#E58B00"/>
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+						<bottomPen lineWidth="0.0" lineColor="#E58B00"/>
+						<rightPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<imageExpression><![CDATA[$P{title_logo}]]></imageExpression>
+				</image>
+				<textField>
+					<reportElement style="styleTitle1A" x="389" y="15" width="166" height="48" uuid="f20ede95-3d24-46ab-bb4f-c30c9298b4ed"/>
+					<box topPadding="3"/>
+					<textElement textAlignment="Right"/>
+					<textFieldExpression><![CDATA[$P{title_document_numbrer}]]></textFieldExpression>
+				</textField>
+				<textField isBlankWhenNull="true">
+					<reportElement style="styleTitle2" positionType="Float" x="376" y="69" width="179" height="34" uuid="46f2f6fc-9cbf-468f-a06d-fb2d4b3513bf"/>
+					<box topPadding="2" leftPadding="0" bottomPadding="2" rightPadding="0"/>
+					<textElement textAlignment="Right" markup="styled"/>
+					<textFieldExpression><![CDATA[$V{Amount_due}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement style="styleText2" positionType="Float" mode="Transparent" x="0" y="89" width="260" height="60" isPrintWhenDetailOverflows="true" uuid="c00a8a1b-af0b-47c5-aecc-6971c7121404"/>
+					<box>
+						<pen lineWidth="0.0" lineColor="#FF00FF"/>
+						<topPen lineWidth="0.0" lineColor="#FF00FF"/>
+						<leftPen lineWidth="0.0" lineColor="#FF00FF"/>
+						<bottomPen lineWidth="0.0" lineColor="#FF00FF"/>
+						<rightPen lineWidth="0.0" lineColor="#FF00FF"/>
+					</box>
+					<textElement verticalAlignment="Bottom">
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_provider_company_name} +
+($P{title_provider_address}.isEmpty() ? "" : "\n" + $P{title_provider_address}) +
+($P{title_provider_location}.isEmpty() ? "" : "\n" + $P{title_provider_location}) +
+($P{title_provider_phone}.isEmpty() ? "" : "\n" + $P{title_provider_phone}) +
+($P{title_provider_email}.isEmpty() ? "" : "\n" + $P{title_provider_email}) +
+($P{title_provider_web}.isEmpty() ? "" : "\n" + $P{title_provider_web}) +
+($P{title_provider_additional_details}.isEmpty() ? "" : "\n" + $P{title_provider_additional_details})]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement style="styleSubTitle1" positionType="Float" mode="Transparent" x="282" y="119" width="144" height="20" uuid="eb36eada-18af-4750-a057-f22d456b4819"/>
+					<box>
+						<pen lineWidth="0.0"/>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+					<textFieldExpression><![CDATA[$P{title_txt_document_date}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement style="styleSubTitle1" positionType="Float" mode="Transparent" x="411" y="119" width="144" height="20" uuid="b95f03f8-5295-4a70-83c8-b9350e1137e8"/>
+					<box>
+						<pen lineWidth="0.0"/>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+					<textElement textAlignment="Right"/>
+					<textFieldExpression><![CDATA[$P{title_document_date}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement style="styleSubTitle1" positionType="Float" mode="Transparent" x="282" y="139" width="144" height="20" uuid="635bbc76-658a-42de-a391-093b7c8d0d25"/>
+					<box>
+						<pen lineWidth="0.0"/>
+						<topPen lineWidth="0.0" lineColor="#3366FF"/>
+						<leftPen lineWidth="0.0" lineColor="#3366FF"/>
+						<bottomPen lineWidth="0.0" lineColor="#3366FF"/>
+						<rightPen lineWidth="0.0" lineColor="#3366FF"/>
+					</box>
+					<textFieldExpression><![CDATA[$P{title_txt_due_date}.isEmpty() ?
+$P{title_txt_po_number} :
+$P{title_txt_due_date} + "\n" + $P{title_txt_po_number}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement style="styleSubTitle1" positionType="Float" mode="Transparent" x="411" y="139" width="144" height="20" uuid="90d6ed58-386b-4ba4-8a08-460672e2a99f"/>
+					<box>
+						<pen lineWidth="0.0"/>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+					<textElement textAlignment="Right"/>
+					<textFieldExpression><![CDATA[$P{title_due_date}.isEmpty() ?
+$P{title_po_number} :
+$P{title_due_date} + "\n" + $P{title_po_number}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement style="styleSubTitle1" mode="Transparent" x="282" y="160" width="144" height="0" isRemoveLineWhenBlank="true" uuid="c331703c-1d93-4c09-8729-aa66423fbe94"/>
+					<box>
+						<pen lineWidth="0.0"/>
+						<topPen lineWidth="0.0" lineColor="#FF3333"/>
+						<leftPen lineWidth="0.0" lineColor="#FF3333"/>
+						<bottomPen lineWidth="0.0" lineColor="#FF3333"/>
+						<rightPen lineWidth="0.0" lineColor="#FF3333"/>
+					</box>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement style="styleSubTitle1" mode="Transparent" x="411" y="160" width="144" height="0" isRemoveLineWhenBlank="true" uuid="275084ff-bb9b-43a1-88e5-2f6cb5645577"/>
+					<box>
+						<pen lineWidth="0.0"/>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+					<textElement textAlignment="Right"/>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement style="styleTitle1" x="275" y="15" width="180" height="48" isPrintWhenDetailOverflows="true" uuid="c3bbc2c7-de6f-4f7e-9feb-0d7452f739a6"/>
+					<textElement textAlignment="Left">
+						<paragraph lineSpacingSize="-1.0"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_txt_document}]]></textFieldExpression>
+				</textField>
+				<textField isBlankWhenNull="true">
+					<reportElement style="styleTitle2" positionType="Float" mode="Opaque" x="282" y="69" width="125" height="34" uuid="f4735f83-6618-4c37-a046-1a74ca4b3fb9"/>
+					<box topPadding="2" leftPadding="0" bottomPadding="2" rightPadding="0">
+						<leftPen lineWidth="0.0" lineColor="#E58B00"/>
+					</box>
+					<textFieldExpression><![CDATA[$P{title_txt_amount_due}]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement key="line_logo_E" style="styleNormalColor" positionType="Float" x="94" y="21" width="25" height="1" uuid="e07e4098-b5a9-40a0-aa02-28f5632b824d">
+						<printWhenExpression><![CDATA[$P{title_logo}.equalsIgnoreCase( "./test_company/Sleek Bill Test Database/logos/logo_sleek_bill.png" )]]></printWhenExpression>
+					</reportElement>
+					<graphicElement>
+						<pen lineWidth="3.35"/>
+					</graphicElement>
+				</line>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="73">
+				<textField>
+					<reportElement style="styleText2" mode="Transparent" x="0" y="24" width="260" height="15" uuid="e729aa47-5dbf-4a4e-ad81-ee882d0dcadd"/>
+					<textElement>
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Bill to:"]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement style="styleText3" x="0" y="37" width="260" height="35" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true" uuid="f2319709-2e69-4afa-a892-04e30205f432"/>
+					<textElement>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_billing_company_name} +
+($P{title_billing_address}.isEmpty() ? "" : "\n" + $P{title_billing_address}) +
+($P{title_billing_location}.isEmpty() ? "" : "\n" + $P{title_billing_location}) +
+($P{title_billing_phone}.isEmpty() ? "" : "\n" +$P{title_billing_phone}) +
+($P{title_client_additional_details}.isEmpty() ? "" : "\n" +$P{title_client_additional_details})]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement style="styleText2" mode="Transparent" x="282" y="24" width="273" height="15" uuid="c169789f-90ef-4eb0-b376-c8abb8f96c56">
+						<printWhenExpression><![CDATA[$V{showShipTo}]]></printWhenExpression>
+					</reportElement>
+					<textElement>
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Ship to:"]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement style="styleText3" mode="Transparent" x="282" y="37" width="273" height="35" uuid="011fe71d-9896-46d3-9fb7-520eaceca781">
+						<printWhenExpression><![CDATA[$V{showShipTo}]]></printWhenExpression>
+					</reportElement>
+					<textElement>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{title_shipping_company_name} +
+($P{title_shipping_address}.isEmpty() ? "" : "\n" + $P{title_shipping_address}) +
+($P{title_shipping_location}.isEmpty() ? "" : "\n" + $P{title_shipping_location}) +
+($P{title_shipping_phone}.isEmpty() ? "" : "\n" + $P{title_shipping_phone})]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<title>
+		<band splitType="Stretch"/>
+	</title>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band/>
+	</columnHeader>
+	<detail>
+		<band/>
+	</detail>
+	<columnFooter>
+		<band/>
+	</columnFooter>
+	<pageFooter>
+		<band/>
+	</pageFooter>
+	<lastPageFooter>
+		<band/>
+	</lastPageFooter>
+	<summary>
+		<band/>
+	</summary>
+</jasperReport>

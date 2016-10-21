@@ -1,0 +1,10 @@
+#
+#Tue Dec 08 11:57:02 EET 2015
+version=1
+company=andrei cel indian
+port=8090
+rf=generic
+estimate_title=Quotation
+test_update=false
+server=192.168.1.148
+invoices_save_path=C\:\\Users\\dani\\workspace\\SleekBillUSA\\reports\\aaa test ioana/

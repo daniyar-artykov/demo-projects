@@ -1,0 +1,140 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.entities;
+
+import com.j256.ormlite.field.DataType;
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+import java.math.BigDecimal;
+import java.util.Date;
+
+/**
+ *
+ * @author Andrei
+ */
+@DatabaseTable(tableName = "payments")
+public class PaymentEntity {
+    
+    public static final String AMOUNT = "amount";
+    public static final String TYPE = "type";
+    public static final String NOTE = "note";
+    public static final String PAY_DATE = "pay_date";
+    public static final String DELETED = "deleted";
+    
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+    @DatabaseField(columnName = AMOUNT, canBeNull = false, dataType = DataType.BIG_DECIMAL)
+    protected BigDecimal amount;
+    @DatabaseField(columnName = TYPE, canBeNull = false)
+    protected String type;
+    @DatabaseField(columnName = NOTE, canBeNull = false)
+    protected String note;
+    @DatabaseField(columnName = PAY_DATE, canBeNull = false, dataType = DataType.DATE_STRING, format = "yyyy-MM-dd")
+    protected Date payDate;
+    @DatabaseField(columnName = DELETED, canBeNull = false, defaultValue = "n")
+    protected String deleted;
+
+    public PaymentEntity() {
+    }
+    
+    public PaymentEntity(PaymentEntity paymentEntity) {
+        this.id = paymentEntity.id;
+        this.amount = paymentEntity.amount;
+        this.type = paymentEntity.type;
+        this.note = paymentEntity.note;
+        this.payDate = paymentEntity.payDate;
+        this.deleted = paymentEntity.deleted;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
+    }
+
+    public Date getPayDate() {
+        return payDate;
+    }
+
+    public void setPayDate(Date payDate) {
+        this.payDate = payDate;
+    }
+
+    public String getDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(String deleted) {
+        this.deleted = deleted;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 43 * hash + this.id;
+        hash = 43 * hash + (this.amount != null ? this.amount.hashCode() : 0);
+        hash = 43 * hash + (this.type != null ? this.type.hashCode() : 0);
+        hash = 43 * hash + (this.note != null ? this.note.hashCode() : 0);
+        hash = 43 * hash + (this.payDate != null ? this.payDate.hashCode() : 0);
+        hash = 43 * hash + (this.deleted != null ? this.deleted.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final PaymentEntity other = (PaymentEntity) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (this.amount != other.amount && (this.amount == null || !this.amount.equals(other.amount))) {
+            return false;
+        }
+        if ((this.type == null) ? (other.type != null) : !this.type.equals(other.type)) {
+            return false;
+        }
+        if ((this.note == null) ? (other.note != null) : !this.note.equals(other.note)) {
+            return false;
+        }
+        if (this.payDate != other.payDate && (this.payDate == null || !this.payDate.equals(other.payDate))) {
+            return false;
+        }
+        if ((this.deleted == null) ? (other.deleted != null) : !this.deleted.equals(other.deleted)) {
+            return false;
+        }
+        return true;
+    }
+}

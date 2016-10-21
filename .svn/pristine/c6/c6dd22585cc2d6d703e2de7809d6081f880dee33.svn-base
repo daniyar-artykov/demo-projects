@@ -1,0 +1,15 @@
+package sleekbill.jasper;
+
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JasperPrint;
+
+public class SBJasperPrintManager { //extends JasperPrintManager {
+
+	public static boolean printPages(JasperPrint jasperPrint,
+			int firstPageIndex, int lastPageIndex, boolean withPrintDialog, boolean fitPage)
+			throws JRException {
+		SBJRPrinterAWT.fitPage = fitPage;
+		return SBJRPrinterAWT.printPages(jasperPrint, firstPageIndex,
+				lastPageIndex, withPrintDialog);
+	}
+}

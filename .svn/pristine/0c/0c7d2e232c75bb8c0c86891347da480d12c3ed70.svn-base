@@ -1,0 +1,28 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.utils;
+
+import java.awt.Desktop;
+import java.io.IOException;
+import java.net.URI;
+
+/**
+ *
+ * @author dani
+ */
+public class SBDesktop {
+	
+	public static final String LINUX_FILE = "xdg-open";
+	
+	public static void browse(URI uri) throws IOException {
+		if(System.getProperty("os.name").toLowerCase().indexOf("linux") >= 0){
+			String[] cmd = new String[]{LINUX_FILE, uri.toString()};
+			Runtime.getRuntime().exec(cmd);
+		} else {
+			Desktop.getDesktop().browse(uri);
+		}
+	}
+	
+}

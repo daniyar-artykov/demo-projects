@@ -1,0 +1,61 @@
+package sleekbill.swingutils;
+
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Image;
+import java.io.File;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
+import javax.swing.JPanel;
+
+/**
+ *
+ * @author  flaviu m
+ */
+public class JImagePanel extends JPanel {
+
+    private Image img;
+    String imgPath;
+
+    public JImagePanel() {
+    }
+
+    public JImagePanel(String img) {
+        imgPath=img;
+        initComp();
+    }
+
+    public void initComp() {
+        try {
+            this.img = new ImageIcon(ImageIO.read(new File(imgPath))).getImage();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            return;
+        }
+        setSize(200,100);
+        Dimension size = new Dimension(img.getWidth(null), img.getHeight(null));
+        setPreferredSize(size);
+        setMinimumSize(size);
+        setMaximumSize(size);
+        setSize(size);
+        setLayout(null);
+        revalidate();
+    }
+
+    @Override
+    public void paintComponent(Graphics g) {
+        g.drawImage(img, 0, 0, null);
+    }
+
+    public String getImgPath() {
+        return imgPath;
+    }
+
+    public void setImgPath(String imgPath) {
+        this.imgPath = imgPath;
+        initComp();
+    }
+
+}

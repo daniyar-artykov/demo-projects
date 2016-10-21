@@ -1,0 +1,157 @@
+/*
+ * ButtonColumn.java
+ *
+ * Created on November 8, 2007, 6:22 PM
+ */
+package sleekbill.swingutils;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.AbstractCellEditor;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JPanel;
+import javax.swing.JTable;
+import javax.swing.UIManager;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumnModel;
+
+/**
+ *
+ * @author flaviu marcu
+ */
+/* the delete/edit buttons on table*/
+public class ButtonColumn extends AbstractCellEditor
+        implements TableCellRenderer, TableCellEditor, ActionListener {
+
+    protected JTable table;
+    protected JPanel renderPanel;
+    protected JPanel editPanel;
+    protected JButton renderButton;
+    protected JButton editButton;
+
+    public ButtonColumn(SBJTable table, int column) { /*delete buttons*/
+        super();
+        this.table = table;
+
+        renderPanel = new JPanel();
+        renderPanel.setLayout(new GridBagLayout());
+
+        renderButton = new JButton();
+        renderButton.setPreferredSize(new Dimension(87, 19));
+        renderButton.setText("delete");
+        renderButton.setIcon(new ImageIcon("./images/buttons/Cross.png"));
+        //renderButton.setDisabledIcon(new ImageIcon("./images/buttons/Cross.png"));
+        renderButton.setOpaque(false);
+        renderButton.setBorder(null);
+        renderButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        renderButton.setContentAreaFilled(false);
+
+        renderPanel = new JPanel();
+        renderPanel.setLayout(new GridBagLayout());
+        renderPanel.add(renderButton, new GridBagConstraints(0, 0, 1, 1, 0.001, 0.0, GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
+
+        editButton = new JButton();
+        editButton.setFocusPainted(false);
+        editButton.addActionListener(this);
+        editButton.setPreferredSize(new Dimension(87, 19));
+        editButton.setText("delete");
+        editButton.setIcon(new ImageIcon("./images/buttons/Cross.png"));
+        //editButton.setDisabledIcon(new ImageIcon("./images/buttons/Cross.png"));
+        editButton.setOpaque(false);
+        editButton.setBorder(null);
+        editButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        editButton.setContentAreaFilled(false);
+
+        editPanel = new JPanel();
+        editPanel.setLayout(new GridBagLayout());
+        editPanel.add(editButton, new GridBagConstraints(0, 0, 1, 1, 0.001, 0, GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 1, 1, 1), 0, 0));
+
+        TableColumnModel columnModel = table.getColumnModel();
+        columnModel.getColumn(column).setCellRenderer(this);
+        columnModel.getColumn(column).setCellEditor(this);        
+        
+    }
+
+    public ButtonColumn(SBJTable table, int column, String text, ImageIcon icon) {
+        this(table, column);
+        renderButton.setText(text);
+        renderButton.setIcon(icon);
+        renderButton.setMinimumSize(new Dimension(text.length() * 10 + 30, icon.getIconHeight() + 2));
+        renderButton.setPreferredSize(new Dimension(text.length() * 10 + 30, icon.getIconHeight() + 2));
+        renderButton.setOpaque(false);
+        renderButton.setBorder(null);
+        renderButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        renderButton.setContentAreaFilled(false);
+
+
+        editButton.setText(text);
+        editButton.setIcon(icon);
+        editButton.setMinimumSize(new Dimension(text.length() * 10 + 30, icon.getIconHeight() + 2));
+        editButton.setPreferredSize(new Dimension(text.length() * 10 + 30, icon.getIconHeight() + 2));
+        editButton.setOpaque(false);
+        editButton.setBorder(null);
+        editButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        editButton.setContentAreaFilled(false);
+    }
+
+    public ButtonColumn(SBJTable table, int column, String text, ImageIcon icon, int doubleClickCol) {
+        this(table, column,text,icon);
+        table.removeAllDoubleClickActionListeners();
+        table.addDoubleClickActionListener(new DoubleClickActionListener(doubleClickCol) {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ButtonColumn.this.actionPerformed(e);
+            }
+        });    
+    }
+
+
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        if (isSelected) {
+            renderPanel.setForeground(table.getSelectionForeground());
+            renderPanel.setBackground(table.getSelectionBackground());
+        } else {
+            if (UIManager.get("Table.evenRowColor") instanceof Color && UIManager.get("Table.evenRowColor") instanceof Color) {
+                Color rc = row % 2 == 0 ? (Color) UIManager.get("Table.evenRowColor") : (Color) UIManager.get("Table.oddRowColor");
+                renderPanel.setForeground(rc);
+                renderPanel.setBackground(rc);
+            } else {
+                renderPanel.setForeground(table.getForeground());
+                renderPanel.setBackground(table.getBackground());
+            }
+        }
+        return renderPanel;
+    }
+
+    @Override
+    public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+        editPanel.setForeground(table.getSelectionForeground());
+        editPanel.setBackground(table.getSelectionBackground());
+        return editPanel;
+    }
+
+    @Override
+    public Object getCellEditorValue() {
+        return "";
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        fireEditingStopped();
+        if((e.getModifiers() & ActionEvent.MOUSE_EVENT_MASK)==ActionEvent.MOUSE_EVENT_MASK){
+            //verifica daca-i click
+        }
+        if(table instanceof SBJTable) ((SBJTable)table).actionDelete();        
+    }
+}

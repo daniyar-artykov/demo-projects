@@ -1,0 +1,13 @@
+package sleekbill.xmlrpc;
+
+public class NotAuthorizedException extends Exception {
+
+	public NotAuthorizedException() {
+		this("Not authorized");
+	}
+
+	public NotAuthorizedException(String message) {
+		super(message);
+	}
+	
+}

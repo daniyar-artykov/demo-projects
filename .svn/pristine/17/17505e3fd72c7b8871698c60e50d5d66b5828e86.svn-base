@@ -1,0 +1,835 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.frames;
+
+import java.io.File;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.event.CellEditorListener;
+import javax.swing.event.ChangeEvent;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
+
+import sleekbill.Common;
+import sleekbill.Messages;
+import sleekbill.beans.Client;
+import sleekbill.entities.ClientEntity;
+import sleekbill.excel.Export;
+import sleekbill.excel.NameType;
+import sleekbill.frames.autosuggesterdata.SBACClients;
+import sleekbill.frames.records.ClientRecord;
+import sleekbill.frames.records.Record;
+import sleekbill.swingutils.ButtonsClients;
+import sleekbill.swingutils.MultiLineCellEditor;
+import sleekbill.util.SBSwingUtils;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.stmt.PreparedQuery;
+import com.j256.ormlite.stmt.SelectArg;
+import com.j256.ormlite.stmt.UpdateBuilder;
+import sleekbill.entities.StateEntity;
+import sleekbill.frames.autosuggesterdata.SBACCities;
+import sleekbill.swingutils.LeftCellLabel;
+import sleekbill.swingutils.autosuggesters.AutosuggesterItem;
+
+/**
+ *
+ * @author Andrei
+ */
+public class JDialogClientsReport extends JDialogBaseReport {
+
+    SBACClients asData = new SBACClients(" AND deleted = 'n' ");
+    private final SBACCities asData1 = 
+            new SBACCities(Common.connection, SBACCities.TYPE_FOR_CLIENTS_REPORT);
+    private static final String[] COLUMN_NAMES = {"No.", "Client Name", 
+        "Contact Name", "Billing Address", "Email", "Phone", "Private Details", 
+        "Action"};
+    private static final int[] PREFERRED_COLUMN_WIDTH = {10, 150, 50, 150, 100, 
+        50, 150, 32};
+    //global search fields
+    String name;
+    String email;
+    String phone;
+    String contact;
+    String city = "";
+    String state = "";
+
+    public JDialogClientsReport(java.awt.Frame parent, boolean modal) {
+        super(parent, modal);
+        initComponents();
+        refreshParameters();
+        setLocationRelativeTo(parent);
+        jPTable = jPTableClients;
+
+        reportTableModel = new ClientsReportModel(COLUMN_NAMES, COLUMN_NAMES,
+                PREFERRED_COLUMN_WIDTH);
+        reportTable = new ClientsReportTable(jPTable);
+
+        init(jPTableClients, jPanelNoResults, false);
+
+        java.awt.GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        pmPanel.addComponentToControl(jPanelButtons, gridBagConstraints);
+
+        setLocationRelativeTo(parent);
+
+        SBSwingUtils.addContextMenuToChildren(this);
+        SBSwingUtils.applyFocusBorder(this);
+    }
+
+    @Override
+    public void actionEdit(int row) {
+
+        Integer id = getRow(pmPanel.getRealRow(row)).getId();
+        JDialogClientData jdcd = new JDialogClientData(new Client(id), true, this, true);
+        jdcd.setVisible(true);
+
+        if (jdcd.isDirty) {
+            Client client = new Client(id);
+            getRow(pmPanel.getRealRow(row)).data = new ClientRecord(client.getId(), client.getName(), client.getContact(),
+                    client.getBillingAddress(), client.getEmail(), client.getTelephone(), client.getDetails()).data;
+            glassPane.showOK("You have successfully updated the client \"" + client.getName() + "\"!");
+            reportTableModel.fireTableDataChanged();
+        }
+    }
+
+    @Override
+    public void actionDelete(int row) {
+        Integer id = getRow(pmPanel.getRealRow(row)).getId();
+        try {
+            if (Messages.showQuestionMessage(this, "Are you sure you want to delete client \""
+                    + reportTableModel.getRow(pmPanel.getRealRow(row)).getValueAt(0) + "\" ?", "Confirmation") == JOptionPane.YES_OPTION) {
+
+                try {
+                    //try to delete
+                    Client.delete(Common.connection.getConnection(), id);
+                } catch (Exception e1) {
+                    //update deleted
+                    Client.updateDeleted(Common.connection.getConnection(), id, true);
+                }
+
+                glassPane.showOK("You have successfully deleted the client \"" + getRow(pmPanel.getRealRow(row)).data[0] + "\"!");
+                reportTableModel.refreshDataFire();
+            }
+
+        } catch (Exception ex) {
+            glassPane.showError("This operation could not be completed!");
+        }
+    }
+
+    @Override
+    public void actionPreview(int row) {
+        Integer id = getRow(pmPanel.getRealRow(row)).getId();
+        JDialogClientData jdcd = new JDialogClientData(new Client(id), false, this, true);
+        jdcd.setVisible(true);
+
+        if (jdcd.isDirty) {
+            Client client = new Client(id);
+            getRow(pmPanel.getRealRow(row)).data = new ClientRecord(client.getId(), client.getName(), client.getContact(),
+                    client.getBillingAddress(), client.getEmail(), client.getTelephone(), client.getDetails()).data;
+            glassPane.showOK("You have successfully updated the client \"" + getRow(pmPanel.getRealRow(row)).data[0] + "\"!");
+            reportTableModel.fireTableDataChanged();
+        }
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
+
+        jPanelContent = new javax.swing.JPanel();
+        jPanelBorderUp = new javax.swing.JPanel();
+        jPanelTitleUp = new javax.swing.JPanel();
+        jLabel5 = new javax.swing.JLabel();
+        jPanelUpper = new javax.swing.JPanel();
+        jPanelSearch = new javax.swing.JPanel();
+        jPanelSearchButtons = new javax.swing.JPanel();
+        jButtonSearch = new javax.swing.JButton();
+        jButtonReset = new javax.swing.JButton();
+        jPanelSearchFields = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        jTextFieldContact = new javax.swing.JTextField();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        jTextFieldEmail = new javax.swing.JTextField();
+        jTextFieldPhone = new javax.swing.JTextField();
+        sBACPanelClientName = new sleekbill.swingutils.autosuggesters.SBACPanelTextField(asData, false, false);
+        filler1 = new javax.swing.Box.Filler(new java.awt.Dimension(50, 0), new java.awt.Dimension(50, 0), new java.awt.Dimension(50, 0));
+        jLabel7 = new javax.swing.JLabel();
+        sBACPanelCity = new sleekbill.swingutils.autosuggesters.SBACPanelTextField(asData1, false, false);
+        jPanelBorderDown = new javax.swing.JPanel();
+        jPanelTitleDown = new javax.swing.JPanel();
+        jLabel6 = new javax.swing.JLabel();
+        jPanelResults = new javax.swing.JPanel();
+        jPTableClients = new javax.swing.JPanel();
+        jPanelNoResults = new sleekbill.swingutils.JPanelNoResults();
+        jPanelButtons = new javax.swing.JPanel();
+        jButtonAddNew = new javax.swing.JButton();
+        jButtonImport = new javax.swing.JButton();
+        jButtonExport = new javax.swing.JButton();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setTitle("Clients Report");
+        getContentPane().setLayout(new java.awt.GridBagLayout());
+
+        jPanelContent.setBackground(new java.awt.Color(229, 235, 242));
+        jPanelContent.setLayout(new java.awt.GridBagLayout());
+
+        jPanelBorderUp.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(195, 210, 219), 1, true));
+        jPanelBorderUp.setLayout(new java.awt.GridBagLayout());
+
+        jPanelTitleUp.setBackground(new java.awt.Color(253, 253, 253));
+        jPanelTitleUp.setBorder(javax.swing.BorderFactory.createMatteBorder(1, 1, 0, 1, new java.awt.Color(203, 209, 213)));
+        jPanelTitleUp.setLayout(new java.awt.GridBagLayout());
+
+        jLabel5.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        jLabel5.setText("Search Clients");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelTitleUp.add(jLabel5, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        gridBagConstraints.weightx = 0.1;
+        jPanelBorderUp.add(jPanelTitleUp, gridBagConstraints);
+
+        jPanelUpper.setLayout(new java.awt.GridBagLayout());
+
+        jPanelSearch.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(203, 209, 213)));
+        jPanelSearch.setLayout(new java.awt.GridBagLayout());
+
+        jPanelSearchButtons.setLayout(new java.awt.GridBagLayout());
+
+        jButtonSearch.setIcon(new ImageIcon("./images/buttons/Search.png"));
+        jButtonSearch.setText("Search");
+        jButtonSearch.setName("bSearch"); // NOI18N
+        jButtonSearch.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonSearchActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchButtons.add(jButtonSearch, gridBagConstraints);
+
+        jButtonReset.setIcon(new ImageIcon("./images/buttons/refresh.png"));
+        jButtonReset.setText("Reset");
+        jButtonReset.setName("bReset"); // NOI18N
+        jButtonReset.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonResetActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchButtons.add(jButtonReset, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearch.add(jPanelSearchButtons, gridBagConstraints);
+
+        jPanelSearchFields.setLayout(new java.awt.GridBagLayout());
+
+        jLabel1.setText("Client Name");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(jLabel1, gridBagConstraints);
+
+        jLabel2.setText("Contact Name");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(jLabel2, gridBagConstraints);
+
+        jTextFieldContact.setMaximumSize(new java.awt.Dimension(200, 20));
+        jTextFieldContact.setMinimumSize(new java.awt.Dimension(200, 20));
+        jTextFieldContact.setName("tfContact"); // NOI18N
+        jTextFieldContact.setPreferredSize(new java.awt.Dimension(200, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(jTextFieldContact, gridBagConstraints);
+
+        jLabel3.setText("Email");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(jLabel3, gridBagConstraints);
+
+        jLabel4.setText("Phone");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(jLabel4, gridBagConstraints);
+
+        jTextFieldEmail.setMaximumSize(new java.awt.Dimension(200, 20));
+        jTextFieldEmail.setMinimumSize(new java.awt.Dimension(200, 20));
+        jTextFieldEmail.setName("tfClientEmail"); // NOI18N
+        jTextFieldEmail.setPreferredSize(new java.awt.Dimension(200, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 4;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(jTextFieldEmail, gridBagConstraints);
+
+        jTextFieldPhone.setMaximumSize(new java.awt.Dimension(200, 20));
+        jTextFieldPhone.setMinimumSize(new java.awt.Dimension(200, 20));
+        jTextFieldPhone.setName("tfPhone"); // NOI18N
+        jTextFieldPhone.setPreferredSize(new java.awt.Dimension(200, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 4;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(jTextFieldPhone, gridBagConstraints);
+
+        sBACPanelClientName.setMaximumSize(new java.awt.Dimension(200, 20));
+        sBACPanelClientName.setMinimumSize(new java.awt.Dimension(200, 20));
+        sBACPanelClientName.setName("tfClientName"); // NOI18N
+        sBACPanelClientName.setPreferredSize(new java.awt.Dimension(200, 20));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(sBACPanelClientName, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 1;
+        jPanelSearchFields.add(filler1, gridBagConstraints);
+
+        jLabel7.setText("City");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 6;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(jLabel7, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 7;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearchFields.add(sBACPanelCity, gridBagConstraints);
+        sBACPanelCity.setMaximumSize(new java.awt.Dimension(200, 20));
+
+        sBACPanelCity.setMinimumSize(new java.awt.Dimension(200, 20));
+
+        sBACPanelCity.setName("tfCity"); // NOI18N
+
+        sBACPanelCity.setPreferredSize(new java.awt.Dimension(200, 20));
+
+        sBACPanelCity.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                sBACPanelCityFocusLost(evt);
+            }
+        });
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelSearch.add(jPanelSearchFields, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        gridBagConstraints.weightx = 0.1;
+        jPanelUpper.add(jPanelSearch, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        gridBagConstraints.weightx = 0.1;
+        jPanelBorderUp.add(jPanelUpper, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(15, 15, 15, 15);
+        jPanelContent.add(jPanelBorderUp, gridBagConstraints);
+
+        jPanelBorderDown.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(195, 210, 219), 1, true));
+        jPanelBorderDown.setLayout(new java.awt.GridBagLayout());
+
+        jPanelTitleDown.setBackground(new java.awt.Color(253, 253, 253));
+        jPanelTitleDown.setBorder(javax.swing.BorderFactory.createMatteBorder(1, 1, 0, 1, new java.awt.Color(203, 209, 213)));
+        jPanelTitleDown.setLayout(new java.awt.GridBagLayout());
+
+        jLabel6.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        jLabel6.setText("Results");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelTitleDown.add(jLabel6, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        gridBagConstraints.weightx = 0.1;
+        jPanelBorderDown.add(jPanelTitleDown, gridBagConstraints);
+
+        jPanelResults.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(203, 209, 213)));
+        jPanelResults.setLayout(new java.awt.GridBagLayout());
+
+        jPTableClients.setName("tableClients"); // NOI18N
+        jPTableClients.setLayout(new javax.swing.BoxLayout(jPTableClients, javax.swing.BoxLayout.LINE_AXIS));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelResults.add(jPTableClients, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        jPanelBorderDown.add(jPanelResults, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(0, 15, 15, 15);
+        jPanelContent.add(jPanelBorderDown, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        getContentPane().add(jPanelContent, gridBagConstraints);
+
+        jPanelNoResults.setLabel("There are no results for your search criteria...");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        getContentPane().add(jPanelNoResults, gridBagConstraints);
+
+        jPanelButtons.setLayout(new java.awt.GridBagLayout());
+
+        jButtonAddNew.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        jButtonAddNew.setForeground(new java.awt.Color(35, 130, 165));
+        jButtonAddNew.setIcon(new ImageIcon("./images/buttons/Person_add.png"));
+        jButtonAddNew.setText("New Client");
+        jButtonAddNew.setName("bNewClient"); // NOI18N
+        jButtonAddNew.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonAddNewActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 5, 0, 5);
+        jPanelButtons.add(jButtonAddNew, gridBagConstraints);
+
+        jButtonImport.setIcon(new ImageIcon("./images/buttons/Page_import.png"));
+        jButtonImport.setText("Import");
+        jButtonImport.setName("bImport"); // NOI18N
+        jButtonImport.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonImportActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 5, 0, 5);
+        jPanelButtons.add(jButtonImport, gridBagConstraints);
+
+        jButtonExport.setIcon(new ImageIcon("./images/buttons/Page_export.png"));
+        jButtonExport.setText("Export");
+        jButtonExport.setName("bExport"); // NOI18N
+        jButtonExport.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonExportActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 5, 0, 5);
+        jPanelButtons.add(jButtonExport, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        getContentPane().add(jPanelButtons, gridBagConstraints);
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void jButtonAddNewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonAddNewActionPerformed
+        JDialogClientData jDialogClientData = new JDialogClientData(this, true);
+        jDialogClientData.setVisible(true);
+
+        if (jDialogClientData.isDirty) {
+            glassPane.showOK("You have successfully added the client \"" + jDialogClientData.client.getName() + "\"!");
+            reportTableModel.refreshData();
+        }
+    }//GEN-LAST:event_jButtonAddNewActionPerformed
+
+    private void jButtonImportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonImportActionPerformed
+        new JDialogImportExcelEx(this, JDialogImportExcelEx.FOR_CLIENTS).setVisible(true);
+        reportTableModel.refreshData();
+    }//GEN-LAST:event_jButtonImportActionPerformed
+
+    private void jButtonExportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonExportActionPerformed
+
+        String filename = "Clients.xls";
+
+        File file = new File(filename);
+        JFileChooser efc = new JFileChooser();
+        efc.setSelectedFile(file);
+        if (efc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            file = efc.getSelectedFile();
+            if (file.exists()) {
+                if (Messages.showQuestionMessage(this, "The file already exists. Would you like to overwrite?", "Save file") != JOptionPane.YES_OPTION) {
+                    return;
+                }
+            }
+            try {
+                ArrayList<Integer> idList = new ArrayList<Integer>();
+                for (int i = 0; i < reportTableModel.getData().size(); i++) {
+                    idList.add(reportTableModel.getRow(i).getId());
+                }
+                Export.DownloadClients(file, NameType.CLIENT_COLUMNS, idList);
+                glassPane.showOK("Export complete!");
+            } catch (Exception e) {
+                glassPane.showError("This operation could not be completed. If the file already exists, please check that it is closed.");
+            }
+        }
+    }//GEN-LAST:event_jButtonExportActionPerformed
+
+    private void jButtonSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSearchActionPerformed
+        refreshParameters();
+        reportTableModel.refreshData();
+    }//GEN-LAST:event_jButtonSearchActionPerformed
+
+    private void jButtonResetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonResetActionPerformed
+        sBACPanelClientName.getSbTextField().setText("");
+        sBACPanelCity.getSbTextField().setText("");
+        jTextFieldContact.setText("");
+        jTextFieldEmail.setText("");
+        jTextFieldPhone.setText("");
+
+        // reset these two as well
+        city = "";
+        state = "";
+        
+        // auto search after reset filters
+        refreshParameters();
+        reportTableModel.refreshData();
+    }//GEN-LAST:event_jButtonResetActionPerformed
+
+    private void refreshParameters() {
+        name = sBACPanelClientName.getSbTextField().getText();
+        email = jTextFieldEmail.getText();
+        contact = jTextFieldContact.getText();
+        phone = jTextFieldPhone.getText();
+        // city and country are updated on click
+        if (name == null) {
+            name = "";
+        }
+        if (email == null) {
+            email = "";
+        }
+        if (contact == null) {
+            contact = "";
+        }
+        if (phone == null) {
+            phone = "";
+        }
+
+        name = "%" + name + "%";
+        email = "%" + email + "%";
+        contact = "%" + contact + "%";
+        phone = "%" + phone + "%";
+        city = "%" + city + "%";
+        //state = "%" + state + "%";
+    }
+
+    private void sBACPanelCityFocusLost(java.awt.event.FocusEvent evt) {
+
+        AutosuggesterItem selectedItem = sBACPanelCity.getSbTextField().getSelectedItem();
+
+        if (selectedItem != null) {
+            StateEntity aux = (StateEntity) selectedItem.getObj();
+
+            city = aux.getCity();
+            state = aux.getState();
+
+            sBACPanelCity.setText(aux.getCity() + ", " + aux.getState());
+        }
+    }
+
+    public class ClientsReportModel extends ReportTableModel {
+
+        public ClientsReportModel(String[] columnNames, String[] columns, int[] preferredColumnWidths) {
+            super(columnNames, columns, preferredColumnWidths, null, null);
+        }
+
+        @Override
+        public ArrayList<Record> getData() {
+
+            ArrayList<Record> results = new ArrayList<Record>();
+            try {
+                Dao<ClientEntity, Integer> clientsDao = DaoManager.createDao(
+                        Common.connection.getConnection(), ClientEntity.class);
+
+                SelectArg selectName = new SelectArg();
+                SelectArg selectEmail = new SelectArg();
+                SelectArg selectContact = new SelectArg();
+                SelectArg selectPhone = new SelectArg();
+//                SelectArg selectState = new SelectArg();
+                SelectArg selectBCity = new SelectArg();
+
+                PreparedQuery<ClientEntity> pq = clientsDao.queryBuilder().orderByRaw(" lower(name) ASC ").where().like(Client.NAME, selectName)
+                        .and().like(Client.EMAIL, selectEmail)
+                        .and().like(Client.CONTACT, selectContact)
+                        .and().like(Client.TELEPHONE, selectPhone)
+                        //.and().like(Client.SSTATE_ID, selectState)
+                        .and().like(Client.BCITY, selectBCity)
+                        .and().eq(Client.DELETED, "n").prepare();
+
+                selectName.setValue(name);
+                selectEmail.setValue(email);
+                selectContact.setValue(contact);
+                selectPhone.setValue(phone);
+                //selectState.setValue(state);
+                selectBCity.setValue(city);
+
+                List<ClientEntity> query = clientsDao.query(pq);
+
+                for (ClientEntity client : query) {
+                    results.add(new ClientRecord(client.getId(), client.getName(), client.getContact(), client.getBillingAddress(),
+                            client.getEmail(), client.getTelephone(), client.getDetails()));
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+
+            if (pmPanel != null) {
+                pmPanel.hardreset();
+            }
+
+            if (reportTable != null && reportTable.getColumnCount() > 0) {
+                new ButtonsClients(reportTable, reportTable.getColumnCount() - 1);
+            }
+
+            if (reportTable != null) {
+                for (int i = 0; i < reportTable.getColumnCount() - 1; i++) {
+                    reportTable.getColumnModel().getColumn(i).setHeaderRenderer(sortButtonRenderer);
+                }
+                reportTable.setPreferredColumnWidths();
+            }
+
+            return results;
+        }
+
+        @Override
+        public boolean isCellEditable(int row, int col) {
+            if (col == getColumnCount() - 1 || col == getColumnCount() - 2) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    public class ClientsReportTable extends ReportTable {
+
+        public ClientsReportTable(JPanel p) {
+            super(p);
+        }
+
+        @Override
+        public TableCellEditor getCellEditor(int row, int column) {
+
+            MultiLineCellEditor mle = new MultiLineCellEditor(reportTable);
+            mle.addCellEditorListener(new CellEditorListener() {
+                @Override
+                public void editingStopped(ChangeEvent e) {
+                    try {
+                        MultiLineCellEditor mle = (MultiLineCellEditor) e.getSource();
+                        int id = ((ClientsReportModel) reportTableModel).getId(pmPanel.getRealRow(mle.getRow()));
+
+                        Dao<ClientEntity, Integer> clientsDao = DaoManager.createDao(Common.connection.getConnection(), ClientEntity.class);
+                        UpdateBuilder<ClientEntity, Integer> updateBuilder = clientsDao.updateBuilder();
+                        updateBuilder.updateColumnValue(Client.DETAILS, mle.getCellEditorValue().toString());
+                        updateBuilder.where().eq("id", id);
+                        updateBuilder.update();
+
+                        reportTableModel.getRow(pmPanel.getRealRow(mle.getRow())).data[5] = mle.getCellEditorValue().toString();
+
+                        reportTableModel.fireTableRowsUpdated(pmPanel.getRealRow(mle.getRow()), pmPanel.getRealRow(mle.getRow()));
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+
+                @Override
+                public void editingCanceled(ChangeEvent e) {
+                    return;
+                }
+            });
+            if (column == Arrays.asList(COLUMN_NAMES).indexOf("Private Details")) {
+                return mle;
+            }
+
+            return super.getCellEditor(row, column);
+        }
+
+        @Override
+        public TableCellRenderer getCellRenderer(int row, int column) {
+
+            if (Arrays.asList(COLUMN_NAMES).indexOf("Private Details") == column || Arrays.asList(COLUMN_NAMES).indexOf("Address") == column) {
+                return new BasicMultiLineCellRenderer(reportTable);
+            }
+
+            if (Arrays.asList(COLUMN_NAMES).indexOf("Client Name") == column) {
+                return new LeftCellLabel();
+            }
+
+            return super.getCellRenderer(row, column);
+        }
+    }
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(JDialogClientsReport.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(JDialogClientsReport.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(JDialogClientsReport.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(JDialogClientsReport.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the dialog */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                JDialogClientsReport dialog = new JDialogClientsReport(new javax.swing.JFrame(), true);
+                dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+                    @Override
+                    public void windowClosing(java.awt.event.WindowEvent e) {
+                        System.exit(0);
+                    }
+                });
+                dialog.setVisible(true);
+            }
+        });
+    }
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.Box.Filler filler1;
+    private javax.swing.JButton jButtonAddNew;
+    private javax.swing.JButton jButtonExport;
+    private javax.swing.JButton jButtonImport;
+    private javax.swing.JButton jButtonReset;
+    private javax.swing.JButton jButtonSearch;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JPanel jPTableClients;
+    private javax.swing.JPanel jPanelBorderDown;
+    private javax.swing.JPanel jPanelBorderUp;
+    private javax.swing.JPanel jPanelButtons;
+    private javax.swing.JPanel jPanelContent;
+    private sleekbill.swingutils.JPanelNoResults jPanelNoResults;
+    private javax.swing.JPanel jPanelResults;
+    private javax.swing.JPanel jPanelSearch;
+    private javax.swing.JPanel jPanelSearchButtons;
+    private javax.swing.JPanel jPanelSearchFields;
+    private javax.swing.JPanel jPanelTitleDown;
+    private javax.swing.JPanel jPanelTitleUp;
+    private javax.swing.JPanel jPanelUpper;
+    private javax.swing.JTextField jTextFieldContact;
+    private javax.swing.JTextField jTextFieldEmail;
+    private javax.swing.JTextField jTextFieldPhone;
+    private sleekbill.swingutils.autosuggesters.SBACPanelTextField sBACPanelCity;
+    private sleekbill.swingutils.autosuggesters.SBACPanelTextField sBACPanelClientName;
+    // End of variables declaration//GEN-END:variables
+}

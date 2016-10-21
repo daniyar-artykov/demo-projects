@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE jasperTemplate PUBLIC "-//JasperReports//DTD Template//EN" "http://jasperreports.sourceforge.net/dtds/jaspertemplate.dtd">
+<jasperTemplate>
+	<style backcolor="#B82D2D" fontName="Roboto" fontSize="12" forecolor="#B82D2D" hAlign="Left" isBold="true" isItalic="false" isStrikeThrough="false" isUnderline="false" mode="Transparent" name="styleProduct"/>
+	<style fontName="Roboto" fontSize="10" forecolor="#B82D2D" hAlign="Left" isBold="true" name="styleTableHeader" vAlign="Middle"/>
+	<style backcolor="#B82D2D" fontName="Roboto" fontSize="10" forecolor="#B82D2D" hAlign="Left" isBold="true" isItalic="false" isStrikeThrough="false" isUnderline="false" name="styleNormalColor" vAlign="Middle">
+		<pen lineStyle="Solid"/>
+	</style>
+        <style fontName="Roboto" fontSize="12" forecolor="#B82D2D" isBold="true" name="styleTotaluri"/>
+	<style fontName="Roboto" fontSize="14" forecolor="#B82D2D" isBold="true" isItalic="true" name="styleSubTitle"/>
+	<style backcolor="#B82D2D" fill="Solid" fontName="Segoe UI" fontSize="13" forecolor="#B82D2D" hAlign="Center" mode="Opaque" name="styleSubTitle2" pdfFontName="Helvetica" vAlign="Middle"/>
+	<style backcolor="#B82D2D" fill="Solid" fontName="Segoe UI" fontSize="16" forecolor="#B82D2D" mode="Opaque" name="styleTitle2" pdfFontName="Helvetica" vAlign="Middle">
+		<box bottomPadding="2" leftPadding="2" rightPadding="2" topPadding="2"/>
+		<paragraph leftIndent="6" rightIndent="3"/>
+	</style>
+	<style forecolor="#B82D2D" name="styleLALA">
+		<paragraph leftIndent="40"/>
+	</style>
+</jasperTemplate>

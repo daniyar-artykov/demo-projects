@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="a4_1i_t_date_3" pageWidth="150" pageHeight="842" columnWidth="150" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="9e177de1-321e-4b20-8ee8-19f84fe2b66b">
+	<property name="ireport.zoom" value="2.1435888100000016"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<template><![CDATA["StyleTemplate3.jrtx"]]></template>
+	<style name="document_number">
+            <conditionalStyle>
+                <conditionExpression><![CDATA[$P{title_document_numbrer}.length() <= 8]]></conditionExpression>
+                <style mode="Transparent" forecolor="#4B8B4A" hAlign="Center" vAlign="Middle" fontName="Roboto" fontSize="22" isItalic="false" pdfFontName="Roboto">
+                    <paragraph lineSpacing="Single"/>
+                </style>
+            </conditionalStyle>
+            <conditionalStyle>
+                <conditionExpression><![CDATA[$P{title_document_numbrer}.length() > 8 && $P{title_document_numbrer}.length() < 14]]></conditionExpression>
+                <style mode="Transparent" forecolor="#4B8B4A" hAlign="Center" vAlign="Middle" fontName="Roboto" fontSize="18" isItalic="false" pdfFontName="Roboto">
+                    <paragraph lineSpacing="Single"/>
+                </style>
+            </conditionalStyle>
+            <conditionalStyle>
+                <conditionExpression><![CDATA[$P{title_document_numbrer}.length() > 13]]></conditionExpression>
+                <style mode="Transparent" forecolor="#4B8B4A" hAlign="Center" vAlign="Middle" fontName="Roboto" fontSize="14" isItalic="false" pdfFontName="Roboto">
+                    <paragraph lineSpacing="Single"/>
+                </style>
+            </conditionalStyle>
+        </style>
+	<parameter name="title_txt_document" class="java.lang.String"/>
+	<parameter name="title_document_numbrer" class="java.lang.String"/>
+	<parameter name="title_txt_document_date" class="java.lang.String"/>
+	<parameter name="title_txt_amount_due" class="java.lang.String"/>
+	<parameter name="title_txt_po_number" class="java.lang.String"/>
+	<title>
+		<band height="56" splitType="Stretch">
+			<textField isStretchWithOverflow="true">
+				<reportElement style="document_number" positionType="Float" x="0" y="37" width="150" height="18" isPrintWhenDetailOverflows="true" uuid="a23c5e10-1106-4a84-8d23-d3af0cdaf293"/>
+				<textElement markup="styled"/>
+				<textFieldExpression><![CDATA[$P{title_document_numbrer}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement key="pako" style="document_name" positionType="Float" mode="Transparent" x="0" y="0" width="150" height="37" isPrintWhenDetailOverflows="true" uuid="60521271-9d11-4c51-845e-bed4e3edd311"/>
+				<textElement verticalAlignment="Middle" markup="none">
+					<font size="25"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{title_txt_document}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<detail>
+		<band height="43" splitType="Stretch">
+			<textField isStretchWithOverflow="true">
+				<reportElement style="due_date" positionType="Float" mode="Transparent" x="0" y="29" width="150" height="13" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true" uuid="9d508d77-1d90-4a5e-9376-ebeb1cf6eed4"/>
+				<textElement verticalAlignment="Middle" markup="styled">
+					<paragraph lineSpacing="1_1_2"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{title_txt_po_number}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement style="due_date" positionType="Float" mode="Transparent" x="0" y="14" width="150" height="14" isRemoveLineWhenBlank="true" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true" uuid="8782d460-1858-466b-a65e-c934e1076012"/>
+				<textElement verticalAlignment="Middle" markup="styled">
+					<paragraph lineSpacing="1_1_2"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{title_txt_amount_due}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement style="due_date" positionType="Float" mode="Transparent" x="0" y="0" width="150" height="13" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true" uuid="6dd036ca-6e02-4958-b71c-f3066cad0d67"/>
+				<textElement verticalAlignment="Middle" markup="styled">
+					<paragraph lineSpacing="1_1_2"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{title_txt_document_date}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

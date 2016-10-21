@@ -1,0 +1,157 @@
+package sleekbill.beans;
+
+import java.sql.SQLException;
+import java.util.List;
+
+import sleekbill.Common;
+import sleekbill.entities.CurrencyEntity;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.stmt.PreparedQuery;
+import com.j256.ormlite.stmt.SelectArg;
+import com.j256.ormlite.support.ConnectionSource;
+
+public class Currency extends CurrencyEntity {
+
+    private Dao<CurrencyEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+
+    public Currency(CurrencyEntity currenciesEntity) {
+        this(0);
+        this.id = currenciesEntity.getId();
+        this.currencySymbol = currenciesEntity.getCurrencySymbol();
+        this.currencyName = currenciesEntity.getCurrencyName();
+        this.isUsed = currenciesEntity.isUsed();
+        this.symbol = currenciesEntity.getSymbol();
+    }
+
+    public Currency() {
+        this(0);
+    }
+
+    public Currency(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager
+                        .createDao(mainConnection, CurrencyEntity.class);
+
+                if (id != null && id != 0) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void refreshDao() {
+        try {
+            mainDao = DaoManager
+                    .createDao(Common.connection.getConnection(), CurrencyEntity.class);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void create() throws Exception {
+        mainDao.create(this);
+    }
+
+    public CurrencyEntity read(Integer id) throws Exception {
+        return mainDao.queryForId(id);
+    }
+
+    public void update() throws Exception {
+        mainDao.update(this);
+    }
+
+    public void delete() throws Exception {
+        mainDao.delete(this);
+    }
+
+    public static void add(JdbcConnectionSource connectionSource, Currency currency) throws SBDaoException, SQLException {
+
+        Dao<CurrencyEntity, Integer> currenciesDao = DaoManager.createDao(connectionSource, CurrencyEntity.class);
+
+        currenciesDao.create(currency);
+    }
+
+    public static Currency get(JdbcConnectionSource connectionSource, String name) throws SBDaoException, SQLException {
+        SelectArg selectArg = new SelectArg();
+        Dao<CurrencyEntity, Integer> currencyDao = DaoManager.createDao(connectionSource, CurrencyEntity.class);
+        PreparedQuery<CurrencyEntity> prepare = currencyDao.queryBuilder().where().eq(Currency.CURRENCY_NAME, selectArg).prepare();
+        selectArg.setValue(name);
+        List<CurrencyEntity> query = currencyDao.query(prepare);
+
+        if (query.size() > 0) {
+            return new Currency(query.get(0));
+        }
+        return null;
+    }
+    
+    public static Currency getByCode(ConnectionSource connectionSource, String code) throws SBDaoException, SQLException {
+        SelectArg selectArg = new SelectArg();
+        Dao<CurrencyEntity, Integer> currencyDao = DaoManager.createDao(connectionSource, CurrencyEntity.class);
+        PreparedQuery<CurrencyEntity> prepare = currencyDao.queryBuilder().where().eq(Currency.CURRENCY_SYMBOL, selectArg).prepare();
+        selectArg.setValue(code);
+        List<CurrencyEntity> query = currencyDao.query(prepare);
+
+        if (query.size() > 0) {
+            return new Currency(query.get(0));
+        }
+        return null;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 31 * hash + this.id;
+        hash = 31 * hash + (this.currencySymbol != null ? this.currencySymbol.hashCode() : 0);
+        hash = 31 * hash + (this.currencyName != null ? this.currencyName.hashCode() : 0);
+        hash = 31 * hash + (this.isUsed ? 1 : 0);
+        hash = 31 * hash + (this.symbol != null ? this.symbol.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Currency other = (Currency) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if ((this.currencySymbol == null) ? (other.currencySymbol != null) : !this.currencySymbol.equals(other.currencySymbol)) {
+            return false;
+        }
+        if ((this.currencyName == null) ? (other.currencyName != null) : !this.currencyName.equals(other.currencyName)) {
+            return false;
+        }
+        if (this.isUsed != other.isUsed) {
+            return false;
+        }
+        if ((this.symbol == null) ? (other.symbol != null) : !this.symbol.equals(other.symbol)) {
+            return false;
+        }
+        return true;
+    }
+
+    public Dao<CurrencyEntity, Integer> getMainDao() {
+        return mainDao;
+    }
+
+    public void setMainDao(Dao<CurrencyEntity, Integer> mainDao) {
+        this.mainDao = mainDao;
+    }
+}

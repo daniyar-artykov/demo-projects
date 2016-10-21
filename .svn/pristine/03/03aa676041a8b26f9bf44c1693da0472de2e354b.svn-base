@@ -1,0 +1,659 @@
+package sleekbill.swingutils.datepicker.calendar;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FocusTraversalPolicy;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyVetoException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.TimeZone;
+
+import javax.swing.AbstractAction;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.InputMap;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JFormattedTextField;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
+import javax.swing.plaf.ComponentUI;
+import javax.swing.text.DateFormatter;
+import javax.swing.text.DefaultFormatterFactory;
+
+import sleekbill.SBConstants;
+import sleekbill.swingutils.datepicker.common.CommitEvent;
+import sleekbill.swingutils.datepicker.common.CommitListener;
+
+public class SBBasicDatePickerUI extends DatePickerUI implements
+        PropertyChangeListener {
+
+    protected static final String POPUP_KEY = "##BasicVetoDatePickerUI.popup##";
+    protected DatePicker peer;
+    protected CalendarPane calendarPane;
+    protected JButton button;
+    protected JPopupMenu popup;
+    protected JFormattedTextField fieldYear;
+    protected JFormattedTextField fieldMonth;
+    protected JFormattedTextField fieldDay;
+    protected JPanel tfPanel;
+    protected ComponentListener componentListener;
+
+    public static ComponentUI createUI(JComponent c) {
+        return new SBBasicDatePickerUI();
+    }
+
+    public void installUI(JComponent c) {
+        peer = (DatePicker) c;
+        installComponents();
+        istallListeners();
+        installKeyboardActions();
+    }
+
+    public void uninstallUI(JComponent c) {
+        uninstallKeyboardActions();
+        uninstallListeners();
+        uninstallComponents();
+        peer = null;
+    }
+
+    protected void installKeyboardActions() {
+        InputMap input = peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+        input.put(KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.ALT_MASK),
+                POPUP_KEY);
+        input.put(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_DOWN, 0), POPUP_KEY);
+
+        peer.getActionMap().put(POPUP_KEY, new AbstractAction() {
+
+            public void actionPerformed(ActionEvent e) {
+                showPopup(true);
+            }
+        });
+
+    }
+
+    protected void uninstallKeyboardActions() {
+        InputMap input = peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+        input.remove(KeyStroke.getKeyStroke(KeyEvent.VK_C,
+                InputEvent.ALT_MASK));
+        input.remove(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_DOWN, 0));
+
+        peer.getActionMap().remove(POPUP_KEY);
+    }
+
+    protected void istallListeners() {
+        peer.addPropertyChangeListener(this);
+    }
+
+    protected void uninstallListeners() {
+        peer.removePropertyChangeListener(this);
+    }
+
+    protected void uninstallComponents() {
+        button.removeActionListener(componentListener);
+        fieldYear.removePropertyChangeListener(componentListener);
+        fieldMonth.removePropertyChangeListener(componentListener);
+        fieldDay.removePropertyChangeListener(componentListener);
+
+        calendarPane.removePropertyChangeListener(componentListener);
+        calendarPane.removeCommitListener(componentListener);
+        calendarPane.removeActionListener(componentListener);
+
+        peer.remove(tfPanel);
+        peer.remove(button);
+        popup = null;
+        calendarPane = null;
+        button = null;
+
+        tfPanel = null;
+        fieldYear = null;
+        fieldMonth = null;
+        fieldDay = null;
+
+    }
+
+    protected void installComponents() {
+        tfPanel = new JPanel();
+        tfPanel.setLayout(new BoxLayout(tfPanel, BoxLayout.X_AXIS));
+
+        class IntDateFormatter extends DateFormatter {
+            public IntDateFormatter(DateFormat df){
+                super(df);
+            }
+            @Override
+            public Object stringToValue(String text) throws ParseException {
+            	Date d = SBConstants.STANDARD_DATE_FORMAT.parse(fieldYear.getText() + "-" + fieldMonth.getText() + "-" + fieldDay.getText() + " " +
+            			SBConstants.STANDARD_HOUR_FORMAT.format(new Date()));
+//                Date d = (Date) SBConstants.ROMANIAN_DATE_HOUR_FORMAT.parse(fieldDay.getText()+"/"+fieldMonth.getText()+"/"+fieldYear.getText()+ " "+SBConstants.ROMANIAN_HOUR_FORMAT.format(new Date()));
+                return d;
+            }            
+        }
+        class IntSimpleDateFormat extends SimpleDateFormat {
+            public IntSimpleDateFormat(String pattern) {
+                super(pattern);
+                setLenient(false);
+            }
+        }
+
+        DateFormatter dfr = new IntDateFormatter(new IntSimpleDateFormat("dd"));
+        DateFormatter mfr = new IntDateFormatter(new IntSimpleDateFormat("MM"));
+        DateFormatter yfr = new IntDateFormatter(new IntSimpleDateFormat("yyyy"));
+        
+        fieldDay = new JFormattedTextField(new DefaultFormatterFactory(dfr));
+        fieldDay.setValue(peer.getDate());
+        fieldDay.setFocusLostBehavior(peer.getFocusLostBehavior());
+        fieldDay.setEditable(peer.isFieldEditable());
+        fieldDay.setToolTipText(peer.getToolTipText());
+        fieldDay.setMaximumSize(new Dimension(25, 20));
+        fieldDay.setPreferredSize(new Dimension(25,20));
+        fieldDay.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        fieldDay.selectAll();
+                    }
+                });
+            }
+        });
+        
+        fieldMonth = new JFormattedTextField(new DefaultFormatterFactory(mfr));
+        fieldMonth.setValue(peer.getDate());
+        fieldMonth.setFocusLostBehavior(peer.getFocusLostBehavior());
+        fieldMonth.setEditable(peer.isFieldEditable());
+        fieldMonth.setToolTipText(peer.getToolTipText());
+        fieldMonth.setMaximumSize(new Dimension(25, 20));
+        fieldMonth.setPreferredSize(new Dimension(25,20));
+        fieldMonth.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        fieldMonth.selectAll();
+                    }
+                });
+            }
+        });
+
+        fieldYear = new JFormattedTextField(new DefaultFormatterFactory(yfr));
+        fieldYear.setValue(peer.getDate());
+        fieldYear.setFocusLostBehavior(peer.getFocusLostBehavior());
+        fieldYear.setEditable(peer.isFieldEditable());
+        fieldYear.setToolTipText(peer.getToolTipText());
+        fieldYear.setMaximumSize(new Dimension(40, 20));
+        fieldYear.setPreferredSize(new Dimension(40,20));
+        fieldYear.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        fieldYear.selectAll();
+                    }
+                });
+            }
+        });
+
+        tfPanel.add(fieldMonth);
+        tfPanel.add(Box.createHorizontalGlue());
+        tfPanel.add(new JLabel(" / "));
+        tfPanel.add(Box.createHorizontalGlue());
+        tfPanel.add(fieldDay);
+        tfPanel.add(Box.createHorizontalGlue());
+        tfPanel.add(new JLabel(" / "));
+        tfPanel.add(Box.createHorizontalGlue());
+        tfPanel.add(fieldYear);
+
+        tfPanel.setFocusTraversalPolicy(new FocusTraversalPolicy() {
+
+            @Override
+            public Component getComponentAfter(Container aContainer, Component aComponent) {
+                if (aComponent == fieldMonth) {
+                    return fieldDay;
+                }
+                if (aComponent == fieldDay) {
+                    return fieldYear;
+                }
+                return fieldMonth;
+            }
+
+            @Override
+            public Component getComponentBefore(Container aContainer, Component aComponent) {
+                if (aComponent == fieldDay) {
+                    return fieldMonth;
+                }
+                if (aComponent == fieldYear) {
+                    return fieldDay;
+                }
+                return fieldYear;
+            }
+
+            @Override
+            public Component getFirstComponent(Container aContainer) {
+                return fieldMonth;
+            }
+
+            @Override
+            public Component getLastComponent(Container aContainer) {
+                return fieldYear;
+            }
+
+            @Override
+            public Component getDefaultComponent(Container aContainer) {
+                return fieldMonth;
+            }
+        });
+
+        tfPanel.setFocusTraversalPolicyProvider(true);
+
+        // button
+        button = new JButton();
+        button.setFocusable(false);
+        button.setMargin(new Insets(0, 0, 0, 0));
+        button.setToolTipText(peer.getToolTipText());
+        button.setOpaque(false);
+        button.setBorder(null);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setContentAreaFilled(false);
+
+        setSimpeLook(false);
+        // calendar
+        calendarPane = new CalendarPane(peer.getStyle());
+        calendarPane.setShowTodayButton(peer.isShowTodayButton());
+        calendarPane.setFocusLostBehavior(JFormattedTextField.REVERT);
+        //calendarPane.setFocusCycleRoot(true);
+        calendarPane.setBorder(BorderFactory.createEmptyBorder(1, 3, 0, 3));
+        calendarPane.setStripTime(false);
+        calendarPane.setLocale(peer.getLocale());
+        calendarPane.setZone(peer.getZone());
+        calendarPane.setFocusable(peer.isDropdownFocusable());
+        calendarPane.setColorOverrideMap(peer.getColorOverrideMap());
+        calendarPane.setHolidayPolicy(peer.getHolidayPolicy());
+        
+        // popup
+        popup = new JPopupMenu();
+        popup.setLayout(new BorderLayout());
+        popup.add(calendarPane, BorderLayout.CENTER);
+        popup.setLightWeightPopupEnabled(true);
+        // add
+        peer.setLayout(new BorderLayout());
+
+        switch (peer.getPickerStyle()) {
+            case DatePicker.PICKER_STYLE_FIELD_AND_BUTTON:
+                peer.add(tfPanel, BorderLayout.CENTER);
+                peer.add(button, BorderLayout.EAST);
+                break;
+            case DatePicker.PICKER_STYLE_BUTTON:
+                peer.add(button, BorderLayout.EAST);
+                break;
+        }
+
+        peer.revalidate();
+        peer.repaint();
+
+        componentListener = new ComponentListener();
+
+        button.addActionListener(componentListener);
+        fieldDay.addPropertyChangeListener(componentListener);
+        fieldMonth.addPropertyChangeListener(componentListener);
+        fieldYear.addPropertyChangeListener(componentListener);
+
+        calendarPane.addPropertyChangeListener(componentListener);
+        calendarPane.addCommitListener(componentListener);
+        calendarPane.addActionListener(componentListener);
+
+        peerDateChanged(peer.getDate());
+    }
+
+    public void setSimpeLook(boolean b) {
+        if (b) {
+            //tfPanel.setBorder(BorderFactory.createEmptyBorder());
+            button.setText("...");
+            button.setIcon(null);
+        } else {
+            //tfPanel.setBorder(new JTextField().getBorder());
+            button.setText("");
+            button.setIcon(new ImageIcon("./images/buttons/ico_calendar.png"));             //new ImageIcon(Resource.class.getResource("picker-16.png")));
+        }
+
+    }
+
+    public void showPopup(boolean visible) {
+        if (visible) {
+
+            // try to apply date to calendar pane popup, but not cause commit
+            if (peer.isKeepTime()) {
+                try {
+                    Date value = getDateFromFields();
+                    calendarPane.removePropertyChangeListener(componentListener);
+                    calendarPane.setDate(value);
+                    calendarPane.addPropertyChangeListener(componentListener);
+
+                } catch (ParseException e) {
+                    // ignore
+                } catch (PropertyVetoException e) {
+                    // can not happen
+                }
+            }
+            popup.show(peer, 0, peer.getHeight());
+            calendarPane.requestFocus(false);
+        } else {
+            popup.setVisible(false);
+        }
+    }
+
+    public void propertyChange(PropertyChangeEvent evt) {
+        if (JComponent.TOOL_TIP_TEXT_KEY.equals(evt.getPropertyName())) {
+            fieldDay.setToolTipText((String) evt.getNewValue());
+            fieldMonth.setToolTipText((String) evt.getNewValue());
+            fieldYear.setToolTipText((String) evt.getNewValue());
+            button.setToolTipText((String) evt.getNewValue());
+        } else if (evt.getPropertyName().equals(DatePicker.PROPERTY_NAME_DATE)) {
+            Date newValue = (Date) evt.getNewValue();
+            peerDateChanged(newValue);
+        } else if (evt.getPropertyName().equals(
+                DatePicker.PROPERTY_NAME_FIELD_EDITABLE)) {
+            fieldDay.setEditable(peer.isFieldEditable());
+            fieldMonth.setEditable(peer.isFieldEditable());
+            fieldYear.setEditable(peer.isFieldEditable());
+        } else if (evt.getPropertyName().equals(
+                DatePicker.PROPERTY_NAME_FOCUS_LOST_BEHAVIOR)) {
+            fieldDay.setFocusLostBehavior(peer.getFocusLostBehavior());
+            fieldMonth.setFocusLostBehavior(peer.getFocusLostBehavior());
+            fieldYear.setFocusLostBehavior(peer.getFocusLostBehavior());
+        } else if (evt.getPropertyName().equals(DatePicker.PROPERTY_NAME_LOCALE)) {
+            //fieldDay.setFormatterFactory(createFormatterFactory());
+            //fieldMonth.setFormatterFactory(createFormatterFactory());
+            //fieldYear.setFormatterFactory(createFormatterFactory());
+            calendarPane.setLocale(peer.getLocale());
+        } else if (evt.getPropertyName().equals(
+                DatePicker.PROPERTY_NAME_DATE_FORMAT)) {
+            //fieldDay.setFormatterFactory(createFormatterFactory());
+            //fieldMonth.setFormatterFactory(createFormatterFactory());
+            //fieldYear.setFormatterFactory(createFormatterFactory());
+        } else if (evt.getPropertyName().equals(DatePicker.PROPERTY_NAME_ZONE)) {
+            //field.setFormatterFactory(createFormatterFactory());
+            calendarPane.setZone((TimeZone) evt.getNewValue());
+        } else if (evt.getPropertyName().equals(
+                DatePicker.PROPERTY_NAME_SHOW_TODAY_BTN)) {
+            boolean value = ((Boolean) evt.getNewValue()).booleanValue();
+            calendarPane.setShowTodayButton(value);
+        } else if (evt.getPropertyName().equals(
+                DatePicker.PROPERTY_NAME_SHOW_NONE_BTN)) {
+            boolean value = ((Boolean) evt.getNewValue()).booleanValue();
+            calendarPane.setShowNoneButton(value);
+        } else if (evt.getPropertyName().equals(
+                DatePicker.PROPERTY_NAME_SHOW_NUMBER_WEEK)) {
+            boolean value = ((Boolean) evt.getNewValue()).booleanValue();
+            calendarPane.setShowNumberOfWeek(value);
+        } else if (evt.getPropertyName().equals(DatePicker.PROPERTY_NAME_STYLE)) {
+            int value = ((Integer) evt.getNewValue()).intValue();
+            calendarPane.setStyle(value);
+        } else if (evt.getPropertyName().equals(
+                DatePicker.PROPERTY_NAME_VETO_POLICY)) {
+            calendarPane.setVetoPolicy((VetoPolicy) evt.getNewValue());
+        } else if (evt.getPropertyName().equals(
+                DatePicker.PROPERTY_NAME_HOLIDAY_POLICY)) {
+            calendarPane.setHolidayPolicy((HolidayPolicy) evt.getNewValue());
+        } else if (evt.getPropertyName().equals("focusable")) {
+            boolean value = ((Boolean) evt.getNewValue()).booleanValue();
+            fieldDay.setFocusable(value);
+            fieldMonth.setFocusable(value);
+            fieldYear.setFocusable(value);
+        } else if (evt.getPropertyName().equals(
+                DatePicker.PROPERTY_NAME_RESOURCES)) {
+            CalendarResources resources = (CalendarResources) evt.getNewValue();
+            calendarPane.setResources(resources);
+        } else if (evt.getPropertyName().equals("enabled"/*
+                 * DatePicker.PROPERTY_NAME_ENABLED
+                 */)) {
+            boolean value = ((Boolean) evt.getNewValue()).booleanValue();
+            fieldDay.setEnabled(value);
+            fieldMonth.setEnabled(value);
+            fieldYear.setEnabled(value);
+            button.setEnabled(value);
+        } else if (evt.getPropertyName().equals(
+                DatePicker.PROPERTY_NAME_PICKER_STYLE)) {
+            peer.updateUI();
+        } else if (evt.getPropertyName().equals(
+                DatePicker.PROPERTY_NAME_DROPDOWN_FOCUSABLE)) {
+            calendarPane.setFocusable(peer.isDropdownFocusable());
+        }
+    }
+
+    private void peerDateChanged(Date newValue) {
+        try {
+            calendarPane.removePropertyChangeListener(componentListener);
+            calendarPane.setDate(newValue);
+            calendarPane.addPropertyChangeListener(componentListener);
+        } catch (PropertyVetoException e) {
+            // Ignore. CalendarPane has no VetoModel here.
+        }
+        fieldDay.removePropertyChangeListener(componentListener);
+        fieldMonth.removePropertyChangeListener(componentListener);
+        fieldYear.removePropertyChangeListener(componentListener);
+        
+        fieldDay.setValue(newValue);
+        fieldMonth.setValue(newValue);
+        fieldYear.setValue(newValue);
+        
+        fieldDay.addPropertyChangeListener(componentListener);
+        fieldMonth.addPropertyChangeListener(componentListener);
+        fieldYear.addPropertyChangeListener(componentListener);
+    }
+
+    private DefaultFormatterFactory createFormatterFactory() {
+        return new DefaultFormatterFactory(new DateFormatter(peer.getDateFormat()));
+    }
+
+    protected class ComponentListener implements ActionListener,
+            PropertyChangeListener, CommitListener {
+
+        public void actionPerformed(ActionEvent e) {
+
+            if (e.getSource() != calendarPane) {
+                showPopup(true);
+            } else {
+                showPopup(false);
+            }
+        }
+
+        public void propertyChange(PropertyChangeEvent evt) {
+            if (evt.getSource() == calendarPane) {
+                if (CalendarPane.PROPERTY_NAME_DATE.equals(evt.getPropertyName())) {
+                    showPopup(false);
+
+                    Date fieldValue = null;
+                    try {
+                        fieldValue = getDateFromFields();
+                    } catch (ParseException e) {
+                        //fieldValue = (Date) field.getValue();
+                        //e.printStackTrace();
+                        System.out.println("what now?");
+                    }
+
+                    if (fieldValue != null || evt.getNewValue() != null) {
+
+                        if (peer.isKeepTime() && fieldValue != null && evt.getNewValue() != null) {
+
+                            Calendar fieldCal = Calendar.getInstance(peer.getZone(), peer.getLocale());
+                            fieldCal.setTime(fieldValue);
+
+                            Calendar valueCal = Calendar.getInstance(peer.getZone(), peer.getLocale());
+                            valueCal.setTime((Date) evt.getNewValue());
+
+                            // era
+                            fieldCal.set(Calendar.ERA, valueCal.get(Calendar.ERA));
+                            // year
+                            fieldCal.set(Calendar.YEAR, valueCal.get(Calendar.YEAR));
+                            // month
+                            fieldCal.set(Calendar.MONTH, valueCal.get(Calendar.MONTH));
+                            // date
+                            fieldCal.set(Calendar.DAY_OF_MONTH, valueCal.get(Calendar.DAY_OF_MONTH));
+                            fieldDay.setValue(fieldCal.getTime());
+                            fieldMonth.setValue(fieldCal.getTime());
+                            fieldYear.setValue(fieldCal.getTime());
+                        } else {
+                            fieldDay.setValue((Date) evt.getNewValue());
+                            fieldMonth.setValue((Date) evt.getNewValue());
+                            fieldYear.setValue((Date) evt.getNewValue());
+                        }
+                    }
+                }
+            }
+//            /*
+            if (evt.getSource() == fieldDay) {
+                if ("value".equals(evt.getPropertyName())) {
+                    Date value = (Date) fieldDay.getValue();
+
+                    try {
+                        peer.setDate(value);
+                    } catch (PropertyVetoException e) {
+                        fieldDay.setValue(peer.getDate());
+                    }
+                }
+                else if("editValid".equals(evt.getPropertyName())){
+//                    try {
+//                        peer.setDateDontFire(getDateFromFields());
+//                    } catch (ParseException ex) {
+                        //...
+//                    }
+                }
+            }
+            else if (evt.getSource() == fieldMonth) {
+                if ("value".equals(evt.getPropertyName())) {
+                    Date value = (Date) fieldMonth.getValue();
+
+                    try {
+                        peer.setDate(value);
+                    } catch (PropertyVetoException e) {
+                        fieldMonth.setValue(peer.getDate());
+                    }
+                }
+                else if("editValid".equals(evt.getPropertyName())){
+//                    try {
+//                        peer.setDateDontFire(getDateFromFields());
+//                    } catch (ParseException ex) {
+                        //...
+//                    }
+                }
+            }
+            else if (evt.getSource() == fieldYear) {
+                if ("value".equals(evt.getPropertyName())) {
+                    Date value = (Date) fieldYear.getValue();
+
+                    try {
+                        peer.setDate(value);
+                    } catch (PropertyVetoException e) {
+                        fieldYear.setValue(peer.getDate());
+                    }
+                }
+                else if("editValid".equals(evt.getPropertyName())){
+//                    try {
+//                        peer.setDateDontFire(getDateFromFields());
+//                    } catch (ParseException ex) {
+                        //...
+//                    }
+                }
+            }
+//             */
+        }
+
+        public void commit(CommitEvent action) {
+            showPopup(false);
+            if (fieldDay.getValue() != null || calendarPane.getDate() != null) {
+                fieldDay.setValue(calendarPane.getDate());
+            }
+            if (fieldMonth.getValue() != null || calendarPane.getDate() != null) {
+                fieldMonth.setValue(calendarPane.getDate());
+            }
+            if (fieldYear.getValue() != null || calendarPane.getDate() != null) {
+                fieldYear.setValue(calendarPane.getDate());
+            }            
+        }
+
+        public void revert(CommitEvent action) {
+            showPopup(false);
+
+        }
+    }
+
+    public void commit() throws PropertyVetoException, ParseException {
+        fieldDay.commitEdit();
+        fieldMonth.commitEdit();
+        fieldYear.commitEdit();
+    }
+
+    public void revert() {
+        peerDateChanged(peer.getDate());
+    }
+
+    public void observeMonth(int year, int month) {
+        CalendarPaneUI ui = (CalendarPaneUI) calendarPane.getUI();
+        ui.observeMonth(year, month);
+    }
+    
+    protected Date getDateFromFields() throws ParseException{
+        try {
+            peer.commitEdit();
+        } catch (Exception ex) {
+            //...
+        }
+        DateFormatter df  = (DateFormatter) fieldDay.getFormatter();
+        if(fieldDay.isEditValid() && fieldMonth.isEditValid() && fieldYear.isEditValid()) {
+        	return SBConstants.STANDARD_DATE_HOUR_FORMAT.parse(fieldYear.getText() + "-" + fieldMonth.getText() + "-" + fieldDay.getText() + " " +
+        			SBConstants.STANDARD_HOUR_FORMAT.format(new Date()));
+//            return (Date) SBConstants.ROMANIAN_DATE_HOUR_FORMAT.parse(fieldDay.getText()+"/"+fieldMonth.getText()+"/"+fieldYear.getText()+" "+SBConstants.ROMANIAN_HOUR_FORMAT.format(new Date()));
+        } else {
+        	return null;   
+        }
+    }
+    
+    public void setInvalid(boolean bInvalid){
+        
+        Color innerColor = new Color(251, 242, 243);
+        Color outerColor = new Color(162, 103, 117);
+        Color outerDefaultColor = new Color(171, 173, 179);
+        
+        if(bInvalid){
+            fieldDay.setBackground(innerColor);
+            fieldDay.setBorder(BorderFactory.createLineBorder(outerColor));
+            fieldMonth.setBackground(innerColor);
+            fieldMonth.setBorder(BorderFactory.createLineBorder(outerColor));
+            fieldYear.setBackground(innerColor);
+            fieldYear.setBorder(BorderFactory.createLineBorder(outerColor));
+        }
+        else{
+            fieldDay.setBackground(Color.white);
+            fieldDay.setBorder(BorderFactory.createLineBorder(outerDefaultColor));
+            fieldMonth.setBackground(Color.white);
+            fieldMonth.setBorder(BorderFactory.createLineBorder(outerDefaultColor));
+            fieldYear.setBackground(Color.white);
+            fieldYear.setBorder(BorderFactory.createLineBorder(outerDefaultColor));
+        }
+    }
+    
+}

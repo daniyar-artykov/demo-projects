@@ -1,0 +1,72 @@
+package sleekbill.xmlrpc;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import org.apache.xmlrpc.client.XmlRpcClient;
+import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
+import org.apache.xmlrpc.client.util.ClientFactory;
+
+import sleekbill.Config;
+import sleekbill.SBConstants;
+
+/**
+ *
+ * @author  flaviu  marcu
+ */
+public class Client {
+    static ClientFactory factory = null;
+    public static ClientFactory getFactory(){
+        try {
+            if(factory!=null) return factory;
+            XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
+            config.setReplyTimeout(SBConstants.CLIENT_TIMEOUT);
+            config.setConnectionTimeout(SBConstants.CLIENT_TIMEOUT);
+//            config.setBasicUserName("u");
+//            config.setBasicPassword("u");
+            
+            int port;
+            String server;
+            Config c = new Config();
+            port = Integer.parseInt(c.get("port"));
+            server = c.get("server");
+                        
+            
+            config.setServerURL(new URL("http://"+server+":"+port+"/xmlrpc"));
+            config.setEnabledForExtensions(true);
+            config.setEnabledForExceptions(true);
+            config.setContentLengthOptional(false);
+            XmlRpcClient client = new XmlRpcClient();            
+            client.setConfig(config);
+            ClientFactory f = new ClientFactory(client);
+            factory = f;
+            return factory;
+        } catch (MalformedURLException ex) {
+            ex.printStackTrace();
+        }
+        return null;
+    }
+    
+    public static void fetch(File file){
+        try {
+            Handlers hs = (Handlers) factory.newInstance(Handlers.class);
+            file.getParentFile().mkdirs();
+            FileOutputStream fos = new FileOutputStream(file);
+            byte[] bytes = hs.fetch(file);
+            if(bytes!=null)
+                fos.write(bytes);
+            fos.close();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+    
+    public static void resetFactory(){
+        factory = null;
+        getFactory();
+    }
+    
+}

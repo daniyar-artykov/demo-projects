@@ -1,0 +1,163 @@
+package sleekbill.xmlrpc;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.HashMap;
+
+import sleekbill.TestORMLite;
+
+/**
+ *
+ * @author  flaviu marcu
+ */
+public class HandlersImpl implements Handlers{
+    Server.SBConfig config; 
+    String clientIP;
+    HashMap<String,String> activeClients = new HashMap<String,String>();
+
+    @Override
+    public void init(Server.SBConfig pConfig){
+        config = pConfig;
+        clientIP = config.getClientIpAddress();
+    }
+    
+//    @Override
+//    public synchronized CachedRowSetImpl getRows(String query,String firma,String user) throws SQLException{
+//        activeClients.put(clientIP,user);
+//        return DBAccess.getRows(query,clientIP,firma);
+//    }
+//    @Override
+//    public synchronized CachedRowSetImpl getRows(String query,Object[] params,String firma,String user) throws SQLException{
+//        activeClients.put(clientIP,user);
+//        return (CachedRowSetImpl) DBAccess.getRows(query, params,clientIP,firma);
+//    }
+//    @Override
+//    public synchronized int uidRow(String query,String firma) throws SQLException{
+//        return DBAccess.uidRow(query,clientIP,firma);
+//    }
+//    @Override
+//    public synchronized int uidRow(String query,Object[] params,String firma) throws SQLException{
+//        return DBAccess.uidRow(query, params,clientIP,firma);
+//    }
+//    @Override
+//    public synchronized int beginTransaction(String firma){
+//        DBAccess.beginTransaction(clientIP,firma);
+//        return 0;
+//    }
+//    @Override
+//    public synchronized int commitTr(String firma){
+//        DBAccess.commitTr(clientIP,firma);
+//        return 0;
+//    }
+//    @Override
+//    public synchronized int rollbackTr(String firma){
+//        DBAccess.rollbackTr(clientIP,firma);
+//        return 0;
+//    }
+    
+    @Override
+    public synchronized byte[] fetch(File f){
+        FileInputStream fos = null;
+        try {
+            if (!f.exists()) {
+                return null;
+            }
+            fos = new FileInputStream(f);
+            byte[] b = new byte[(int) f.length()];
+            fos.read(b);
+            return b;
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } finally {
+            try {
+                if(fos!=null) fos.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+        return null;
+    }            
+//    @Override
+//    public synchronized String getCurrentLock(String fkey){
+//        return DBAccess.getCurrentLock(fkey);
+//    }
+
+//    @Override
+//    public int updateDB(String fkey) {
+////        Updates.updateDBFirma(fkey);
+//        return 1;
+//    }
+//
+//    @Override
+//    public Date getServerDate(){
+//        return new Date();
+//    }
+//
+//    @Override
+//    public Vector<String> getServerVersion() {
+//        return new Vector<String>(Arrays.asList(new String[]{ Common.VERSION,SBConstants.AN}));
+//    }
+
+//	@Override
+//	public int vKCheck(String fkey, String cif) {
+//		return Common.vKCheck(fkey, cif);
+//	}
+    
+//	@Override
+//	public boolean checkAuthorization(String firmaDb) throws NotAuthorizedException {
+//		if(!Server.isAuthorized(firmaDb, config.getClientIpAddress())){
+//			String message = "";
+//			int maxClients;
+//			try {
+//				maxClients = Integer.valueOf(Common.getMaxClientsDb(firmaDb));
+//			} catch (NumberFormatException e) {
+//				maxClients = 0;
+//			}
+//			if(maxClients == 0) {
+//				message = "Licenta achizitionata nu accepta clienti retea!";
+//			} else {
+//				message = "Numarul maxim de " + Server.getNrMaxClients(firmaDb) + " clienti retea a fost atins!";
+//			}
+//			throw new NotAuthorizedException(message);
+////			throw new NotAuthorizedException("Numarul maxim de " + Server.getNrMaxClients(firmaDb) + " clienti retea a fost atins!");
+//		}
+//		return true;
+//	}
+//
+	@Override
+	public boolean refreshMaxClients(String firmaDB) {
+		return Server.refreshMaxClients(firmaDB);
+	}
+//
+//	@Override
+//	public boolean vKInsert(String k, String fkey, String versiune, String an,
+//			String osType, Date dataExpirarii, String moduleNr, String access,
+//			String maxClients) {
+//		return Common.vKInsert(k, fkey, versiune, an, osType, dataExpirarii, 
+//				moduleNr, access, maxClients);
+//	}
+//
+//	@Override
+//	public boolean vKUpdateAccess(String fkey, String access) {
+//		return Common.vKUpdateAccess(fkey, access);
+//	}
+//
+//	@Override
+//	public String getOsType() {
+//		return Common.getOsType();
+//	}
+
+//    @Override
+//    public synchronized Vector<Company> getFirmeList(String fkey) {
+//        return Company.getFirmeList(fkey);
+//    }
+
+	@Override
+	public String addTax(Object[] p) throws SQLException {
+		TestORMLite.saveT(p);
+		return "";
+	}
+	
+}

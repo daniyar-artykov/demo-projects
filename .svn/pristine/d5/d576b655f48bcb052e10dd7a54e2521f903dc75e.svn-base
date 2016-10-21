@@ -1,0 +1,27 @@
+package sleekbill.db;
+
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+
+public class SBConnection {
+
+	public JdbcConnectionSource connection = null;
+
+	public SBConnection() {
+		this(null);
+	}
+	
+	public SBConnection(JdbcConnectionSource connection) {
+		this.connection = connection;
+	}
+
+	public JdbcConnectionSource getConnection() {
+		return connection;
+	}
+
+	public void setConnection(JdbcConnectionSource connection) {
+		this.connection = connection;
+	}
+	
+	
+	
+}

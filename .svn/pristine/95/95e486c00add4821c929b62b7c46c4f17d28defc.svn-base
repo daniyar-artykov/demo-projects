@@ -1,0 +1,135 @@
+/*
+ * SBAbstractTableModel.java
+ *
+ * Created on November 8, 2007, 6:11 PM
+ */
+package sleekbill.swingutils;
+
+import java.util.ArrayList;
+
+import javax.swing.SwingWorker;
+import javax.swing.table.AbstractTableModel;
+
+import sleekbill.frames.records.Record;
+
+/**
+ *
+ * @author flaviu marcu
+ */
+public abstract class SBAbstractTableModel extends AbstractTableModel {
+
+    protected String[] columnNames;
+    protected int[] preferredColumnWidths;
+    protected ArrayList<Record> data = new ArrayList<Record>();
+
+    public abstract ArrayList<Record> getData();
+    private boolean busyLoading;
+
+    @Override
+    public int getColumnCount() {
+        return columnNames.length;
+    }
+
+    @Override
+    public int getRowCount() {
+        return data.size();
+    }
+
+    @Override
+    public String getColumnName(int col) {
+        return columnNames[col];
+    }
+
+    @Override
+    public Object getValueAt(int row, int col) {
+        if (col == 0) {
+            return new Integer(row + 1); /*Nr. crt*/
+        }
+        return data.get(row).getValueAt(col);
+    }
+
+    /*
+     * JTable uses this method to determine the default renderer/
+     * editor for each cell.  If we didn't implement this method,
+     * then the last column would contain text ("true"/"false"),
+     * rather than a component.
+     */
+    @Override
+    public Class getColumnClass(int c) {
+        return getValueAt(0, c).getClass();
+    }
+
+    public void refreshData() {
+        busyLoading = true;
+        fireTableDataChanged();
+
+        SwingWorker worker = new SwingWorker<ArrayList<Record>, Void>() {
+
+            @Override
+            public ArrayList<Record> doInBackground() {
+                return getData();
+            }
+
+            @Override
+            public void done() {
+                try {
+                    data = get();
+                } catch (InterruptedException ignore) {
+                    System.err.println("Error loading table: " + ignore.getMessage());
+                } catch (java.util.concurrent.ExecutionException e) {
+                    String why = null;
+                    Throwable cause = e.getCause();
+                    if (cause != null) {
+                        why = cause.getMessage();
+                        cause.printStackTrace();
+                    } else {
+                        why = e.getMessage();
+                    }
+                    System.err.println("Error loading table: " + why);
+                }
+                reSortTable();
+                busyLoading = false;
+                fireTableDataChanged();
+            }
+        };
+        worker.execute();
+    }
+
+    public int getId(int row) {
+        return data.get(row).getId();
+    }
+    /* needed for excel export */
+
+    public void refreshDataNoFire() {
+        data = getData();
+    }
+
+    /*for the rest*/
+    public void refreshDataFire() {
+        data = getData();
+        fireTableDataChanged();
+    }
+
+    /* to overwrite if needed*/
+    public void reSortTable() {
+    }
+
+    public void removeRow(int row) {
+        data.remove(row);
+        fireTableRowsDeleted(row, row);
+    }
+
+    public void updateRow(Record record, int row) {
+        data.remove(row);
+        data.add(row, record);
+        fireTableRowsUpdated(row, row);
+    }
+
+    public boolean isBusyLoading() {
+        return busyLoading;
+    }
+
+    public int[] getPreferredColumnWidths() {
+        return preferredColumnWidths;
+    }
+}

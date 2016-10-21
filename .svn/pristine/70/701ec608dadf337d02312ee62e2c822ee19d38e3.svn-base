@@ -1,0 +1,163 @@
+package sleekbill.swingutils.balloons;
+
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Point;
+import java.awt.Rectangle;
+
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+
+import net.java.balloontip.BalloonTip;
+import net.java.balloontip.positioners.BalloonTipPositioner;
+import net.java.balloontip.styles.RoundedBalloonStyle;
+
+/**
+ *
+ * @author  sun
+ */
+public class SBBalloonTip extends BalloonTip {
+
+    public final static int YELLOW_BALLOON_TIP = 1;
+    public final static int BLUE_BALLOON_TIP = 2;
+    public final static int RED_BALLOON_TIP = 3;
+    public static Color YELLOW_BORDER_COLOR = new Color(255, 205, 0);
+    public static Color BLUE_BORDER_COLOR = new Color(50, 104, 255);
+    public static Color RED_BORDER_COLOR = new Color(205, 0, 0);
+    public static Color YELLOW_FILL_COLOR = new Color(253, 255, 204);
+    public static Color BLUE_FILL_COLOR = new Color(232, 249, 255);
+    public static Color RED_FILL_COLOR = new Color(255, 233, 238);
+    public static SBBalloonTip balloon = null; //new SBBalloonTip(new JLabel(),"");       
+        
+    public SBBalloonTip(JComponent attachedComponent, String text) {
+        super(attachedComponent, text);
+    }           
+    
+    @Override
+    public void addDefaultMouseListener(boolean permanentClose) {
+        super.addDefaultMouseListener(false);   
+    }
+
+    public static SBBalloonTip getYellowBalloonTip(JComponent attachedComponent, String text) {
+        if (balloon == null) {
+            balloon = new SBBalloonTip(attachedComponent, text);
+            balloon.setStyle(new RoundedBalloonStyle(5, 5, YELLOW_FILL_COLOR, YELLOW_BORDER_COLOR));
+            //  balloon.setupPositioner(BalloonTip.Orientation.RIGHT_BELOW, BalloonTip.AttachLocation.EAST, 20, 10);
+            balloon.addDefaultMouseListener(true);
+            JButton b = balloon.getCloseButton();
+            if (b != null) {
+                b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            }
+            balloon.setCloseButton(b);
+            balloon.setOpacity((float) 0.8);            
+        }
+        balloon.setAttachedComponent(attachedComponent);
+        ((JLabel) balloon.getContents()).setText(text);
+        //balloon.setupPositioner(BalloonTip.Orientation.LEFT_ABOVE, BalloonTip.AttachLocation.NORTHEAST, 20, 10);
+        balloon.visibilityControl.setCriteriumAndUpdate("manual", true);
+        balloon.visibilityControl.setCriteriumAndUpdate("withinViewport", true);
+        balloon.visibilityControl.setCriteriumAndUpdate("attachedComponentShowing", true);
+        balloon.setVisible(true);
+        balloon.refreshLocation();
+        return balloon;
+    }
+    
+    public static SBBalloonTip getUniqueYellowBalloonTip(JComponent attachedComponent, String text) {        
+    	return getUniqueYellowBalloonTip(attachedComponent, text, null);
+    }
+    
+    public static SBBalloonTip getUniqueYellowBalloonTip(JComponent attachedComponent, String text, BalloonTipPositioner positioner) {
+        
+        SBBalloonTip balloonEx = new SBBalloonTip(attachedComponent, text);
+        balloonEx.setStyle(new RoundedBalloonStyle(5, 5, YELLOW_FILL_COLOR, YELLOW_BORDER_COLOR));
+        balloonEx.addDefaultMouseListener(true);
+        JButton b = balloonEx.getCloseButton();
+        if (b != null) {
+            b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        }
+        balloonEx.setCloseButton(b);
+        balloonEx.setOpacity((float) 0.8);
+
+        balloonEx.setAttachedComponent(attachedComponent);
+        balloonEx.getStyle().setHorizontalOffset(100);
+        ((JLabel) balloonEx.getContents()).setText(text);
+
+        if(positioner != null) {
+        	balloonEx.setPositioner(positioner);
+        }
+        
+        balloonEx.visibilityControl.setCriteriumAndUpdate("manual", true);
+        balloonEx.visibilityControl.setCriteriumAndUpdate("withinViewport", true);
+        balloonEx.visibilityControl.setCriteriumAndUpdate("attachedComponentShowing", true);
+        balloonEx.setVisible(true);
+        balloonEx.refreshLocation();
+        return balloonEx;
+    }
+    
+    public static SBBalloonTip getYellowBalloonTipWithCloseButton(JComponent attachedComponent, String text) {
+        getYellowBalloonTip(attachedComponent, text);
+        balloon.addDefaultMouseListener(true);
+        JButton b = balloon.getCloseButton();
+        if (b != null) {
+            b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        }
+        balloon.setCloseButton(b);
+        balloon.setOpacity((float) 0.8);        
+        balloon.visibilityControl.setCriteriumAndUpdate("manual", true);
+        balloon.visibilityControl.setCriteriumAndUpdate("withinViewport", true);
+        balloon.visibilityControl.setCriteriumAndUpdate("attachedComponentShowing", true);
+        balloon.setVisible(true);
+        balloon.refreshLocation();
+        return balloon;
+    }
+    
+	public static class TopRightAlignPositioner extends BalloonTipPositioner {
+		int x = 0; // Current X-coordinate of the top-left corner of the bounding box around the balloon tip
+		int y = 0; // Current Y-coordinate of the top-left corner of the bounding box around the balloon tip
+
+		/*
+		 * The balloon tip will call this method every time it wants to re-draw
+		 * itself. The parameter of this function, attached, is the Rectangle
+		 * that the balloon tip should attach itself to.
+		 */
+		public void determineAndSetLocation(Rectangle attached) {
+			/*
+			 * Calculate the coordinates of the top-left corner of the bounding
+			 * box around the balloon tip This positioner will place the balloon
+			 * tip above the attached Rectangle.
+			 */
+			// x = attached.x;
+			// y = attached.y - balloonTip.getPreferredSize().height;
+			x = attached.x + attached.width - balloonTip.getPreferredSize().width;
+			y = attached.y - balloonTip.getPreferredSize().height;
+
+			// Now move the balloon tip to the position we've just calculated
+			balloonTip.setBounds(x, y, balloonTip.getPreferredSize().width, balloonTip.getPreferredSize().height);
+			balloonTip.validate();
+		}
+
+		/* This method should return the location of the balloon's tip */
+		public Point getTipLocation() {
+			/*
+			 * You may use the last position calculated in
+			 * determineAndSetLocation to calculate the tip's location. The
+			 * fields x and y now contain the position of the top-left corner of
+			 * the bounding box of the balloon tip.
+			 */
+			return new Point(x + 20, y + balloonTip.getPreferredSize().height);
+		}
+
+		/*
+		 * Whenever a balloon tip's style is changed (This includes setting it
+		 * for the first time..), this method is called. Within this method, the
+		 * positioner should take care of properly setting up this new style.
+		 */
+		protected void onStyleChange() {
+			balloonTip.getStyle().setHorizontalOffset(20);
+			balloonTip.getStyle().setVerticalOffset(20);
+			balloonTip.getStyle().flipX(true);
+			balloonTip.getStyle().flipY(false);
+		}
+	}
+}

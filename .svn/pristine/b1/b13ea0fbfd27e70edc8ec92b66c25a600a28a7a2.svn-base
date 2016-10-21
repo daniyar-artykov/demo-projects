@@ -1,0 +1,176 @@
+package sleekbill.systray;
+
+import java.awt.AWTException;
+import java.awt.MenuItem;
+import java.awt.PopupMenu;
+import java.awt.SystemTray;
+import java.awt.TrayIcon;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import javax.swing.ImageIcon;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+
+import sleekbill.Common;
+
+/**
+ *
+ * @author  flaviu marcu
+ */
+public class SysTray {
+    String message = "";
+    JFSysTray sysFrame = null;
+    int days = 0;
+    SystemTray tray=null;
+    boolean areFirmaConfigurata = false;
+
+    public SysTray(final int d, boolean areFirmaConfigurata) {
+        try {
+            this.days=d;
+            this.areFirmaConfigurata = areFirmaConfigurata;
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            if (!SystemTray.isSupported()) {
+                throw new RuntimeException("No system tray supported");
+            }
+            final String trayMessage;
+            if (d < 31) {       //neexpirat
+                if (areFirmaConfigurata) {
+                    message = "<html> "
+                        + "<div style='font-family:Verdana;text-decoration:none;font-size:8.5px;padding-top:5px'>Sleek Bill will expire in <b style='color:#FE4800;'>" + (31 - days) + "</b> days!</div>"
+                        + "<p style='font-family:Verdana;text-decoration:none;font-size:8.5px;'>Sleek Bill is here to add value to your business.</p>"
+                        + "<p style='font-family:Verdana;text-decoration:none;font-size:8.5px;'>Our mission is to offer much more than a plain invoicing tool.</p>"
+                        + "</html>";
+                    trayMessage = "You have installed Sleek Bill. "
+                        + "\nYour copy will expire in " + (31 - days) + " days!";
+                } else {
+                    message = "<html> "
+                        + "<div style='font-family:Verdana;text-decoration:none;font-size:8.5px;padding-top:5px'>We advise using Sleek Bill as your invoicing tool.</div>"
+                        + "<p style='font-family:Verdana;text-decoration:none;font-size:8.5px;'>It fits your needs and adds value to your business.</p>"
+                        + "<p style='font-family:Verdana;text-decoration:none;font-size:8.5px;'>Our mission is to offer much more than a plain invoicing tool.</p>"
+                        + "</html>";
+                    trayMessage = "You have installed Sleek Bill. "
+                        + "\nWe advise using Sleek Bill as your invoicing tool.";
+                }
+            } else {        //expirat
+                message = "<html> "
+                    + "<div style='font-family:Verdana;text-decoration:none;font-size:8.5px;padding-top:5px'>Your copy of Sleek Bill has expired!</div>"
+                    + "<p style='font-family:Verdana;text-decoration:none;font-size:8.5px;'>If you have any doubts,  please do not hesitate to contact us at <b style='color:#FE4800;'>"+Common.MAILTO+"</b>.</p>"
+                    + "<p style='font-family:Verdana;text-decoration:none;font-size:8.5px;'>Sleek Bill is here to add value to your business.</p>"
+                    + "<p style='font-family:Verdana;text-decoration:none;font-size:8.5px;'>Our mission is to offer much more than a plain invoicing tool.</p>"
+                    + "</html>";
+                trayMessage = "Your copy of Sleek Bill has expired!"
+                    + "\nClick here to continue.";
+            }
+            tray = SystemTray.getSystemTray();
+            ImageIcon trayImg = new ImageIcon("./images/icons/icon_mic.gif");
+            MouseListener mouseListener = new MouseAdapter() {
+
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (e.getButton() == MouseEvent.BUTTON1 && e.getClickCount() > 0) {
+                        //show frame
+                        SysTray.this.showFrame();
+                    }
+                }
+            };
+            ActionListener exitListener = new ActionListener() {
+
+                public void actionPerformed(ActionEvent e) {
+                    System.out.println("Exiting...");
+                    System.exit(0);
+                }
+            };
+            PopupMenu popup = new PopupMenu();
+            MenuItem sb = new MenuItem("Sleek Bill");
+            sb.addActionListener(new ActionListener() {
+
+                public void actionPerformed(ActionEvent e) {
+                    //show frame
+                    SysTray.this.showFrame();
+                }
+            });
+            popup.add(sb);
+            popup.addSeparator();
+            MenuItem defaultItem = new MenuItem("Exit");
+            defaultItem.addActionListener(exitListener);
+            popup.add(defaultItem);
+            final TrayIcon trayIcon = new TrayIcon(trayImg.getImage(), "Sleek Bill SysTray", popup);
+            trayIcon.setToolTip("Sleek Bill");
+            trayIcon.setImageAutoSize(true);
+            trayIcon.addActionListener(new ActionListener() {
+
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    //show frame
+                   SysTray.this.showFrame();
+                }
+            });
+            trayIcon.addMouseListener(mouseListener);
+            try {
+                tray.add(trayIcon);
+
+                GregorianCalendar gc = new GregorianCalendar();
+                gc.add(Calendar.SECOND, 3);
+                Date timeToUpdate = gc.getTime();
+                Timer rateTimer = new Timer();
+                rateTimer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        try {
+                            trayIcon.displayMessage("Reminder", trayMessage, TrayIcon.MessageType.INFO);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                }, timeToUpdate);
+            } catch (AWTException e) {
+                System.err.println("TrayIcon could not be added.");
+                throw new RuntimeException(e);
+            }
+        } catch (ClassNotFoundException ex) {
+            ex.printStackTrace();
+        } catch (InstantiationException ex) {
+            ex.printStackTrace();
+        } catch (IllegalAccessException ex) {
+            ex.printStackTrace();
+        } catch (UnsupportedLookAndFeelException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public void startSB() {
+        JFSysTray.startSleekBill();
+    }
+
+    private void showFrame() {
+        if(sysFrame==null){
+            sysFrame= new JFSysTray(message, days, areFirmaConfigurata);
+            sysFrame.addWindowListener(new WindowAdapter() {
+
+                @Override
+                public void windowClosed(WindowEvent e) {
+//                    tray.remove(tray.getTrayIcons()[0]);
+                }
+
+            });
+        }
+        if(Common.getMainFrame()!=null && Common.getMainFrame().isShowing()) Common.getMainFrame().toFront();
+        else if(sysFrame!=null && sysFrame.isShowing()){
+            sysFrame.toFront();
+        } else {
+            sysFrame.setVisible(true);
+        }
+    }
+
+}

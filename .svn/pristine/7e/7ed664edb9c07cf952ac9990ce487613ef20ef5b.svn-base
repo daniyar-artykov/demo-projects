@@ -1,0 +1,1334 @@
+/*
+ * JDialogEmail.java
+ *
+ * Created on November 11, 2008, 1:45 PM 
+ */
+package sleekbill.frames;
+
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ItemEvent;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Properties;
+
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
+import javax.mail.Authenticator;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.Multipart;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+import javax.swing.Action;
+import javax.swing.ImageIcon;
+import javax.swing.JComponent;
+import javax.swing.JOptionPane;
+
+import sleekbill.Common;
+import sleekbill.Config;
+import sleekbill.Messages;
+import sleekbill.beans.AliasEmail;
+import sleekbill.beans.Estimate;
+import sleekbill.beans.Invoice;
+import sleekbill.frames.autosuggesterdata.SBACAliasEmail;
+import sleekbill.jasper.Document;
+import sleekbill.jasper.JRViewerPlus;
+import sleekbill.util.EmailValidator;
+import sleekbill.util.PayPalUtilities;
+import sleekbill.util.SBSwingUtils;
+import sleekbill.utils.SBStringUtils;
+
+/**
+ *
+ * @author flaviu marcu, emir zaimovic 
+ * 
+ */
+public class JDialogEmail extends javax.swing.JDialog {
+
+    final static String HELP_TEXT_DE_LA = "<html><div style=\"font-family:Tahoma;font-size:11;margin:5px;\">"
+            + "The email address you entered during email sending configuration will be automatically inserted. "
+            + "The Alias field will use the name of the active company. The value in the Alias "
+            + "field can be edited on each email you send."
+            + "</div></hmtl>";
+    final static String HELP_TEXT_CATRE = "<html><div style=\"font-family:Tahoma;font-size:11;margin:5px;\">Recipient's email address.</div></hmtl>";
+    final static String HELP_TEXT_CC = "<html><div style=\"font-family:Tahoma;font-size:11;margin:5px;\">The email addresses inserted in this field "
+            + "will be visible to all the recipients of this message.</div></hmtl>";
+    final static String HELP_TEXT_BCC = "<html><div style=\"font-family:Tahoma;font-size:11;margin:5px;\">The email addresses inserted "
+            + "in this field will NOT be visible to all the recipients of this message.</div></hmtl>";
+    final static String HELP_TEXT_SUBIECT = "<html><div style=\"font-family:Tahoma;font-size:11;margin:5px;\">Subject matter.</div></hmtl>";
+    final static String HELP_TEXT_MESAJ = "<html><div style=\"font-family:Tahoma;font-size:11;margin:5px;\">Your content </div></hmtl>";
+    final static String HELP_TEXT_DEFAULT = "<html><div style=\"font-family:Tahoma;font-size:11;margin:5px;\">Here you can send by email the "
+            + "documents you issued. </div></hmtl>";
+    File attachament;
+    HashMap<String, String> listEmailuriTrimise = new HashMap<String, String>();    //lista cu mailurile ce contin alias
+    ArrayList<String> listaEmailuri = new ArrayList<String>();    //lista cu mailurile fara alias
+    String tipDocument = "";
+    String serieNrFactura = "";
+    String dataEmiterii = "";
+    String dataScadentei = "";
+    String numeClient = "";
+    String persoanaContact = "";
+    String totalDocument = "";
+    int clientId = -1;
+    boolean hideText = false;
+    SBACAliasEmail aliasEmail = new SBACAliasEmail();
+    // BILL-593 (Eroare de java atasat nu este complet): Am vorbit cu Dani si il mutam pt 1.6, si vedem cum ramane.
+    boolean eror = false;
+    boolean confirmare = false;
+    String from = "";
+    String to = "";
+    String subject = "";
+    String body = "";
+    Invoice invoice = null;
+    Estimate estimate = null;
+    Document document = null;
+    
+    public Boolean loadingMode = Boolean.TRUE;
+
+    /**
+     * Creates new form JDialogEmail
+     */
+//    public JDialogEmail(java.awt.Window parent, File attach, String from, String to, String tipDocument, String serieNrFactura, String dataEmiterii, String dataScadentei, String numeClient, String persoanaContact, String totalDocument, int clientId, boolean hideText) {
+//        super(parent, ModalityType.APPLICATION_MODAL);
+//
+//        this.tipDocument = tipDocument.substring(0, 1).toUpperCase()+tipDocument.substring(1);
+//        this.serieNrFactura = serieNrFactura;
+//        try {
+//            this.dataEmiterii = dataEmiterii.isEmpty()?"":SBConstants.ROMANIAN_DATE_FORMAT.format(SBConstants.SQLITE_DATE_FORMAT.parse(dataEmiterii));
+//            this.dataScadentei = dataEmiterii.isEmpty()?"":SBConstants.ROMANIAN_DATE_FORMAT.format(SBConstants.SQLITE_DATE_FORMAT.parse(dataScadentei));
+//        } catch (ParseException ex) {
+//            ex.printStackTrace();
+//        }
+//        this.numeClient = numeClient;
+//        this.persoanaContact = persoanaContact;
+//        this.totalDocument = totalDocument;
+//        this.clientId = clientId;
+//        this.hideText = hideText;
+//        
+//        initComponents();
+//        setResizable(false);
+//        setPreferredSize(new Dimension(700, 600));
+//
+//        setResizable(true);
+//        attachament = attach;
+//
+//        jLAttach.setText("Atasat: " + attach.getName());
+//        jLAttach.setIcon(new ImageIcon("./images/buttons/pdf.gif"));
+//        jPCleft1.revalidate();
+//
+//        if ("".equals(from)) {
+//            from = new Config().get("smtp_user");
+//        }
+//        String alias = "";
+//        User user = User.getUser(Common.getLoggedUser().getId());        
+//        if(user!=null && !(user.getNume().isEmpty() || user.getPrenume().isEmpty())){
+//            alias = user.getNume() +" "+ user.getPrenume();
+//        } else {
+//            alias = Common.getDenumireFirma(); 
+//        }
+//        jTFFrom.setText(alias + "<" + from + ">;");
+//        jTFTo.setText(to);
+//
+//        jBTTDeLa.setIcon(new javax.swing.ImageIcon("./images/icons/icon_question_mark.jpg"));
+//        jBTTDeLa.setToolTipText(HELP_TEXT_DE_LA);
+//        jBTTDeLa.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+//
+//        jBTTCatre.setIcon(new javax.swing.ImageIcon("./images/icons/icon_question_mark.jpg"));
+//        jBTTCatre.setToolTipText(HELP_TEXT_CATRE);
+//        jBTTCatre.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+//
+//        jBTTCC.setIcon(new javax.swing.ImageIcon("./images/icons/icon_question_mark.jpg"));
+//        jBTTCC.setToolTipText(HELP_TEXT_CC);
+//        jBTTCC.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+//
+//        jBTTBCC.setIcon(new javax.swing.ImageIcon("./images/icons/icon_question_mark.jpg"));
+//        jBTTBCC.setToolTipText(HELP_TEXT_BCC);
+//        jBTTBCC.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+//
+//        jBTTSubiect.setIcon(new javax.swing.ImageIcon("./images/icons/icon_question_mark.jpg"));
+//        jBTTSubiect.setToolTipText(HELP_TEXT_SUBIECT);
+//        jBTTSubiect.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+//
+//        jBTTMesaj.setIcon(new javax.swing.ImageIcon("./images/icons/icon_question_mark.jpg"));
+//        jBTTMesaj.setToolTipText(HELP_TEXT_MESAJ);
+//        jBTTMesaj.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+//
+//        autocompletareMail();
+//
+//        pack();
+//        setLocationRelativeTo(parent);
+//        
+//        SBSwingUtils.addContextMenuToChildren(this);
+//    }
+//BILL-593 (Eroare de java atasat nu este complet): Am vorbit cu Dani si il mutam pt 1.6, si vedem cum ramane.
+    public JDialogEmail(java.awt.Window parent, int clientId, File attach, String from, String to, String body, String subject, boolean confirmare) {
+        super(parent, ModalityType.APPLICATION_MODAL);
+
+        this.clientId = clientId;
+        eror = true;
+        initComponents();
+        setPreferredSize(new Dimension(600, 500));
+
+        attachament = attach;
+        if (attach != null) {
+            jLAttach.setText("Attachment: " + attach.getName());
+            jLAttach.setIcon(new ImageIcon("./images/buttons/viewer_ico_pdf.png"));
+            jPCleft1.revalidate();
+        } else {
+            jLAttach.setVisible(false);
+        }
+
+        if ("".equals(from)) {
+            from = Common.selectedCompanyConfig.get(Config.SMTP_USER);
+        }
+
+        jTFSubject.setText(subject);
+
+        if (from.isEmpty()) {
+            jTFFrom.setText("");
+        } else {
+            jTFFrom.setText(Common.selectedCompany.getDbName() + "<" + from + ">;");
+        }
+        jTFTo.setText(to);
+
+        jBTTDeLa.setIcon(new javax.swing.ImageIcon("./images/icons/icon_question_mark.jpg"));
+        jBTTDeLa.setToolTipText(HELP_TEXT_DE_LA);
+        jBTTDeLa.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        jBTTCatre.setIcon(new javax.swing.ImageIcon("./images/icons/icon_question_mark.jpg"));
+        jBTTCatre.setToolTipText(HELP_TEXT_CATRE);
+        jBTTCatre.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        jBTTCC.setIcon(new javax.swing.ImageIcon("./images/icons/icon_question_mark.jpg"));
+        jBTTCC.setToolTipText(HELP_TEXT_CC);
+        jBTTCC.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        jBTTBCC.setIcon(new javax.swing.ImageIcon("./images/icons/icon_question_mark.jpg"));
+        jBTTBCC.setToolTipText(HELP_TEXT_BCC);
+        jBTTBCC.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        jBTTSubiect.setIcon(new javax.swing.ImageIcon("./images/icons/icon_question_mark.jpg"));
+        jBTTSubiect.setToolTipText(HELP_TEXT_SUBIECT);
+        jBTTSubiect.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        jBTTMesaj.setIcon(new javax.swing.ImageIcon("./images/icons/icon_question_mark.jpg"));
+        jBTTMesaj.setToolTipText(HELP_TEXT_MESAJ);
+        jBTTMesaj.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        
+        Config c = Common.selectedCompanyConfig;
+        jComboBoxTemplate.setSelectedIndex(Integer.parseInt(c.get(Config.DEFAULT_EMAIL_TEMPLATE)));  
+
+        this.confirmare = confirmare;
+        this.from = from;
+        this.to = to;
+        this.subject = subject;
+        this.body = body;
+
+//        autocompletareMail();
+        pack();
+        setLocationRelativeTo(parent);
+
+        SBSwingUtils.addContextMenuToChildren(this);
+        SBSwingUtils.applyFocusBorder(this);
+        SBSwingUtils.applyManualFocusBorder(jTFTo);
+        SBSwingUtils.applyManualFocusBorder(jTFCC);
+        SBSwingUtils.applyManualFocusBorder(jTFBCC);
+
+        jBIesire.setVisible(false);
+        
+        loadingMode = Boolean.FALSE;
+    }
+
+    public JDialogEmail(java.awt.Window parent, int clientId, File attach, String from, String to, String body, String subject, boolean confirmare, Invoice invoice, Document doc) {
+        this(parent, clientId, attach, from, to, body, subject, confirmare);
+        this.invoice = invoice;
+        this.document = doc;
+        fillEmailFromDocument();
+    }
+
+    public JDialogEmail(java.awt.Window parent, int clientId, File attach, String from, String to, String body, String subject, boolean confirmare, Estimate estimate, Document doc) {
+        this(parent, clientId, attach, from, to, body, subject, confirmare);
+        this.estimate = estimate;
+        this.document = doc;
+        fillEmailFromDocument();
+    }
+
+    public boolean trimite() {
+        try {
+//            if (!Common.isValidEmailAddress(jTFFrom.getText())) {
+//                Messages.showErrorMessage(this, "Adresa dvs. de email nu este valida!", "Eroare");
+//                return false;
+//            }
+            if (!EmailValidator.isValid(jTFTo.getText())) {
+                Messages.showErrorMessage(this, "The message could not be sent! Please check the recipient address details!", "Error");
+                return false;
+            }
+
+            Properties props = new Properties();
+            Config c = Common.selectedCompanyConfig;
+            boolean isTls = "true".equals(c.get(Config.SMTP_TLS));
+            String user = c.get(Config.SMTP_USER);
+            String pass = Common.getEncrypter().decrypt(c.get(Config.SMTP_PASS));
+
+            props.put("mail.smtp.connectiontimeout", "5000");
+            props.put("mail.smtp.timeout", "5000");
+            props.put("mail.smtp.port", c.get(Config.SMTP_PORT));
+            props.put("mail.smtp.host", c.get(Config.SMTP_HOST));
+            props.put("mail.mime.multipart.ignoremissingendboundary", "false");
+
+            if (!isTls) {
+                props.put("mail.smtp.host", c.get(Config.SMTP_HOST));
+                props.put("mail.smtp.port", c.get(Config.SMTP_PORT));
+                if (user != null) {
+                    props.put("mail.smtp.auth", "true");
+                }
+            } else {
+                props.put("mail.transport.protocol", "smtps");
+                props.put("mail.smtp.ssl", "true");
+                props.put("mail.smtp.starttls.enable", "true");
+                props.put("mail.smtp.auth", "true");
+                props.put("mail.smtps.socketFactory.port", c.get(Config.SMTP_PORT));
+                props.put("mail.smtps.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+                props.put("mail.smtps.socketFactory.fallback", "false");
+            }
+
+            //Create the Session object
+            Session session = null;
+
+            session = isTls || user != null ? Session.getInstance(props, new MailAuthenticator(user, pass))
+                    : Session.getInstance(props, null);
+
+            //session.setDebug(true); // Verbose!
+            //session.setDebugOut(System.out);
+            MimeMessage message = createMessage(session);
+            message.saveChanges();
+
+            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            Transport.send(message);
+
+            Messages.showOkMessage(this, "You have successfully sent your document by email!", "Success");
+            return true;
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            throw new RuntimeException(ex);
+        } catch (MessagingException ex) {
+            ex.printStackTrace();
+            String s = ex.toString();
+            System.out.println(s);
+            if (s.contains("Unknown SMTP host:")) {
+                Messages.showErrorMessage(this, "The message could not be sent! Please check the internet connection or the server address!", "Error");
+            } else if (s.contains("port out of range")) {
+                Messages.showErrorMessage(this, "The message could not be sent! Please check the port configuration!", "Error");
+            } else if (s.contains("Could not connect to SMTP host") || s.contains("port:")) {
+                Messages.showErrorMessage(this, "The message could not be sent! Please check the port configuration!", "Error");
+            } else if (s.contains("No recipient addresses")) {
+                Messages.showErrorMessage(this, "The message could not be sent! Please provide at least one recipient address!", "Error");
+            } else if (s.contains("Read timed out")) {
+                Messages.showErrorMessage(this, "The message could not be sent! Please try again!", "Error");
+            } else {
+                Messages.showErrorMessageWithLink(this, "<html>The message could not be sent! Please check the configuration details!<br>"
+                        + "NOTE: if you are using a Gmail address please follow these "
+                        + "<a href=\"https://www.billingsoftware.in/gmail-third-party-emailing-enable.html\">steps to activate sending via email</a>.</html>", "Error");
+            }
+        } finally {
+            setCursor(null);
+        }
+        return false;
+    }
+
+    public MimeMessage createMessage(Session session) throws IOException, MessagingException {
+        MimeMessage mesg = new MimeMessage(session);
+        if (jCBConfirmarePrimire.isSelected()) {
+            String a = jTFFrom.getText();
+            String email = "";
+            try {
+                email = a.substring(a.indexOf('<') + 1, a.indexOf('>'));
+            } catch (Exception ex) {
+                email = a;
+            }
+            mesg.addHeader("Disposition-Notification-To", email);
+            mesg.addHeader("Return-Receipt-To", email);
+        }
+        //TO Addresses  
+        if (jTFTo.getText() != null && !jTFTo.getText().isEmpty()) {
+            String ToAdr[] = getAdrese(jTFTo.getText());
+            InternetAddress toAddresses[] = new InternetAddress[ToAdr.length];
+            for (int i = 0; i < ToAdr.length; i++) {
+                String a = ToAdr[i];
+                if (a == null || a.trim().isEmpty()) {
+                    continue;
+                }
+                try {
+                    String alias = a.substring(0, a.indexOf('<'));
+                    String email = a.substring(a.indexOf('<') + 1, a.indexOf('>'));
+                    toAddresses[i] = new InternetAddress(email, alias);
+                    listEmailuriTrimise.put(alias, email);
+                } catch (Exception ex) {
+                    String email = a;
+                    if (email != null && !email.isEmpty()) {
+                        listaEmailuri.add(email);
+                        toAddresses[i] = new InternetAddress(email);
+                    }
+                }
+            }
+            if (toAddresses != null && toAddresses.length > 0) {
+                mesg.addRecipients(Message.RecipientType.TO, toAddresses);
+            }
+        }
+
+        //CC Addresses
+        if (jTFCC.getText() != null && !jTFCC.getText().isEmpty()) {
+            String CCAdr[] = getAdrese(jTFCC.getText());
+            InternetAddress CCAddresses[] = new InternetAddress[CCAdr.length];
+            for (int i = 0; i < CCAdr.length; i++) {
+                String a = CCAdr[i];
+                if (a == null || a.trim().isEmpty()) {
+                    continue;
+                }
+                try {
+                    String alias = a.substring(0, a.indexOf('<'));
+                    String email = a.substring(a.indexOf('<') + 1, a.indexOf('>'));
+                    CCAddresses[i] = new InternetAddress(email, alias);
+                    listEmailuriTrimise.put(alias, email);
+                } catch (Exception ex) {
+                    String email = a;
+                    if (email != null && !email.isEmpty()) {
+                        listaEmailuri.add(email);
+                        CCAddresses[i] = new InternetAddress(email);
+                    }
+                }
+            }
+            if (CCAddresses != null && CCAddresses.length > 0) {
+                mesg.addRecipients(Message.RecipientType.CC, CCAddresses);
+            }
+        }
+
+        //BCC Addresses
+        if (jTFBCC.getText() != null && !jTFBCC.getText().isEmpty()) {
+            String BCCAdr[] = getAdrese(jTFBCC.getText());
+            InternetAddress BCCAddresses[] = new InternetAddress[BCCAdr.length];
+            for (int i = 0; i < BCCAdr.length; i++) {
+                String a = BCCAdr[i];
+                if (a == null || a.trim().isEmpty()) {
+                    continue;
+                }
+                try {
+                    String alias = a.substring(0, a.indexOf('<'));
+                    String email = a.substring(a.indexOf('<') + 1, a.indexOf('>'));
+                    BCCAddresses[i] = new InternetAddress(email, alias);
+                    listEmailuriTrimise.put(alias, email);
+                } catch (Exception ex) {
+                    String email = a;
+                    if (email != null && !email.isEmpty()) {
+                        listaEmailuri.add(email);
+                        BCCAddresses[i] = new InternetAddress(email);
+                    }
+                }
+            }
+            if (BCCAddresses != null && BCCAddresses.length > 0) {
+                mesg.addRecipients(Message.RecipientType.BCC, BCCAddresses);
+            }
+        }
+        //FROM
+        String a = jTFFrom.getText();
+        try {
+            String alias = a.substring(0, a.indexOf('<'));
+            String email = a.substring(a.indexOf('<') + 1, a.indexOf('>'));
+            mesg.setFrom(new InternetAddress(email, alias));
+        } catch (Exception ex) {
+            String email = a;
+            if (email != null && !email.isEmpty()) {
+                mesg.setFrom(new InternetAddress(email));
+            }
+        }
+
+        //SUBJECT
+        mesg.setSubject(jTFSubject.getText());
+
+        // Now the message body.
+        Multipart mp = new MimeMultipart();
+
+        MimeBodyPart textPart = new MimeBodyPart();
+        textPart.setText(jTAMessage.getText());
+
+        MimeBodyPart pdfPart = new MimeBodyPart();
+        //pdfPart.attachFile(attachament);
+        //pdfPart.setFileName(attachament.getName());
+
+        pdfPart.setDataHandler(new DataHandler(new InputStreamDataSource("name", "application/pdf", new FileInputStream(attachament))));
+        pdfPart.setFileName(attachament.getName());
+
+        // Collect the Parts into the MultiPart
+        mp.addBodyPart(textPart);
+        mp.addBodyPart(pdfPart);
+
+        // Put the MultiPart into the Message
+        mesg.setContent(mp);
+
+        return mesg;
+        /*    BILL-593 (Eroare de java atasat nu este complet): Am vorbit cu Dani si il mutam pt 1.6, si vedem cum ramane.
+         // Collect the Parts into the MultiPart
+         mp.addBodyPart(textPart);
+         if (attachament != null){
+         MimeBodyPart pdfPart = new MimeBodyPart();
+         //pdfPart.attachFile(attachament);
+         //pdfPart.setFileName(attachament.getName());
+         pdfPart.setDataHandler(new DataHandler(new InputStreamDataSource("name", "application/pdf", new FileInputStream(attachament))));
+         pdfPart.setFileName(attachament.getName());
+         mp.addBodyPart(pdfPart);
+         }
+
+         // Put the MultiPart into the Message
+         mesg.setContent(mp);
+
+         return mesg;
+
+         */
+    }
+
+    public String[] getAdrese(String line) {
+        String[] adrese;
+        int index = line.lastIndexOf(";");
+        if (index > 0) {
+            if (line.substring(index + 1).trim().isEmpty()) {
+                adrese = line.substring(0, index).split(";");
+            } else {
+                adrese = line.split(";");
+            }
+        } else {
+            return adrese = new String[]{line};
+        }
+        return adrese;
+    }
+
+    private void fillEmailFromDocument() {
+
+        String docType = capitalize(JRViewerPlus.getDocumentName(document));
+
+        String docNr = invoice == null ? estimate.getNumber() : invoice.getNumber();
+        String docTotal = invoice == null ? (estimate.getCompanyDetails().getCurrency().getSymbol()                 
+                + estimate.getTotalAll().setScale(Common.PRECISION, RoundingMode.HALF_UP).toString()) 
+                    : (invoice.getCompanyDetails().getCurrency().getSymbol() 
+                + invoice.getTotalAll().setScale(Common.PRECISION, RoundingMode.HALF_UP).toString());
+        String issueDate = invoice == null ? Common.US_DATE_FORMAT.format(estimate.getIssueDate()) 
+                    : Common.US_DATE_FORMAT.format(invoice.getIssueDate());
+        String dueDate = invoice == null ? Common.US_DATE_FORMAT.format(estimate.getValidUntil()) 
+                    : (invoice.getDueDate() == null ? "" : Common.US_DATE_FORMAT.format(invoice.getDueDate()));
+        String clientName = invoice == null ? estimate.getClient().getName() : invoice.getClient().getName();
+        String clientContact = invoice == null ? estimate.getClient().getContact() : invoice.getClient().getContact();
+        String paypal = invoice == null ? "" : (invoice.isPayOnline() ? PayPalUtilities.getLink(invoice.getPayEmail(), 
+                invoice.getCompanyDetails().getCurrency().getCurrencySymbol(), invoice.getTotalAll(), capitalize(invoice.getDocumentTypeName()) + " " + invoice.getNumber()) : "");
+
+        Config config = Common.selectedCompanyConfig;
+        Integer defaultTemplate = Integer.parseInt(config.get(Config.DEFAULT_EMAIL_TEMPLATE));        
+        String message = "", subject = "";
+        
+        // load default template
+        switch (defaultTemplate) {
+            case 0:
+                message = config.get(Config.MESSAGE);
+                subject = config.get(Config.SUBJECT);
+                
+                break;
+            case 1:
+                message = config.get(Config.MESSAGE2);
+                subject = config.get(Config.SUBJECT2);
+                
+                break;
+            case 2:
+                message = config.get(Config.MESSAGE3);
+                subject = config.get(Config.SUBJECT3);
+                
+                break;
+        }
+
+        message = message.replace("#document type#", docType);
+        message = message.replace("#document number#", docNr);
+        message = message.replace("#document total#", document.getType().equals(Estimate.TYPE_DELIVERY) ? "0.00" : docTotal);
+        message = message.replace("#issue date#", issueDate);
+        message = message.replace("#due date#", dueDate);
+        message = message.replace("#client name#", clientName);
+        message = message.replace("#client contact#", clientContact);
+        message = message.replace("#PayPal payment link#", paypal);
+
+        subject = subject.replace("#document type#", docType);
+        subject = subject.replace("#document number#", docNr);
+        subject = subject.replace("#document total#", document.getType().equals(Estimate.TYPE_DELIVERY) ? "0.00" : docTotal);
+        subject = subject.replace("#issue date#", issueDate);
+        subject = subject.replace("#due date#", dueDate);
+        subject = subject.replace("#client name#", clientName);
+        subject = subject.replace("#client contact#", clientContact);
+        subject = subject.replace("#PayPal payment link#", paypal);
+
+        jTFSubject.setText(subject);
+        jTAMessage.setText(message);
+    }
+
+    String capitalize(String input) {
+        return SBStringUtils.capitalizeEachWord(input);
+    }
+
+    private class InputStreamDataSource implements DataSource {
+
+        private String name;
+        private String contentType;
+        private ByteArrayOutputStream baos;
+
+        InputStreamDataSource(String name, String contentType, InputStream inputStream) throws IOException {
+            this.name = name;
+            this.contentType = contentType;
+
+            baos = new ByteArrayOutputStream();
+
+            int read;
+            byte[] buff = new byte[256];
+            while ((read = inputStream.read(buff)) != -1) {
+                baos.write(buff, 0, read);
+            }
+        }
+
+        public String getContentType() {
+            return contentType;
+        }
+
+        public InputStream getInputStream() throws IOException {
+            return new ByteArrayInputStream(baos.toByteArray());
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public OutputStream getOutputStream() throws IOException {
+            throw new IOException("Cannot write to this read-only resource");
+        }
+    }
+
+    public class MailAuthenticator extends Authenticator {
+
+        String user;
+        String pass;
+
+        public MailAuthenticator(String user, String pass) {
+            this.user = user;
+            this.pass = pass;
+        }
+
+        @Override
+        public PasswordAuthentication getPasswordAuthentication() {
+            return new PasswordAuthentication(user, pass);
+        }
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
+
+        jPanel2 = new javax.swing.JPanel();
+        jPCleft1 = new javax.swing.JPanel();
+        jPButtons = new javax.swing.JPanel();
+        jBTrimite = new javax.swing.JButton();
+        jBConfigurare = new javax.swing.JButton();
+        jBIesire = new javax.swing.JButton();
+        jPanel1 = new javax.swing.JPanel();
+        jLabel17 = new javax.swing.JLabel();
+        jLabel1 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        jTFCC = new sleekbill.swingutils.autosuggesters.SBAutoSuggesterJTextField(aliasEmail, false, false);
+        jLabel3 = new javax.swing.JLabel();
+        jTFTo = new sleekbill.swingutils.autosuggesters.SBAutoSuggesterJTextField(aliasEmail, false, false);
+        jLAttach = new javax.swing.JLabel();
+        jLabel18 = new javax.swing.JLabel();
+        jCBConfirmarePrimire = new javax.swing.JCheckBox();
+        jBTTDeLa = new javax.swing.JButton();
+        jTFFrom = new javax.swing.JTextField();
+        jTFSubject = new javax.swing.JTextField();
+        jBTTCatre = new javax.swing.JButton();
+        jLabel19 = new javax.swing.JLabel();
+        jBTTCC = new javax.swing.JButton();
+        jTFBCC = new sleekbill.swingutils.autosuggesters.SBAutoSuggesterJTextField(aliasEmail, false, false);
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jTAMessage = new javax.swing.JTextArea();
+        jBTTBCC = new javax.swing.JButton();
+        jBTTSubiect = new javax.swing.JButton();
+        jBTTMesaj = new javax.swing.JButton();
+        jLabel4 = new javax.swing.JLabel();
+        jComboBoxTemplate = new javax.swing.JComboBox<String>();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setTitle("Send by Email");
+        setMinimumSize(new java.awt.Dimension(600, 500));
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowOpened(java.awt.event.WindowEvent evt) {
+                formWindowOpened(evt);
+            }
+        });
+        getContentPane().setLayout(new java.awt.GridBagLayout());
+
+        jPanel2.setBackground(new java.awt.Color(229, 235, 242));
+        jPanel2.setLayout(new java.awt.GridBagLayout());
+
+        jPCleft1.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(195, 210, 219), 1, true));
+        jPCleft1.setMinimumSize(new java.awt.Dimension(380, 262));
+        jPCleft1.setPreferredSize(new java.awt.Dimension(410, 362));
+        jPCleft1.setLayout(new java.awt.GridBagLayout());
+
+        jPButtons.setBackground(new java.awt.Color(246, 246, 246));
+        jPButtons.setBorder(javax.swing.BorderFactory.createMatteBorder(0, 1, 1, 1, new java.awt.Color(203, 209, 213)));
+        jPButtons.setMinimumSize(new java.awt.Dimension(273, 36));
+        jPButtons.setPreferredSize(new java.awt.Dimension(165, 36));
+        jPButtons.setLayout(new java.awt.GridBagLayout());
+
+        jBTrimite.setText("Send Email");
+        jBTrimite.setName("bSend"); // NOI18N
+        jBTrimite.setIcon(new ImageIcon("./images/buttons/email.png"));
+        jBTrimite.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBTrimiteActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPButtons.add(jBTrimite, gridBagConstraints);
+
+        jBConfigurare.setIcon(new ImageIcon("./images/buttons/nav_ico_tools.png"));
+        jBConfigurare.setText("Configure Email");
+        jBConfigurare.setName("bConfigureEmail"); // NOI18N
+        jBConfigurare.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBConfigurareActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPButtons.add(jBConfigurare, gridBagConstraints);
+
+        jBIesire.setIcon(new ImageIcon("./images/buttons/Exit.png"));
+        jBIesire.setText("Exit");
+        jBIesire.setName("bExit"); // NOI18N
+        jBIesire.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBIesireActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPButtons.add(jBIesire, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        gridBagConstraints.weightx = 0.1;
+        jPCleft1.add(jPButtons, gridBagConstraints);
+
+        jPanel1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(203, 209, 213)));
+        jPanel1.setLayout(new java.awt.GridBagLayout());
+
+        jLabel17.setText("From");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel17, gridBagConstraints);
+
+        jLabel1.setText("Message");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 7;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel1, gridBagConstraints);
+
+        jLabel2.setText("CC");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel2, gridBagConstraints);
+
+        jTFCC.setMinimumSize(new java.awt.Dimension(400, 20));
+        jTFCC.setName("tfCC"); // NOI18N
+        jTFCC.setPreferredSize(new java.awt.Dimension(400, 20));
+        jTFCC.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTFCCActionPerformed(evt);
+            }
+        });
+        jTFCC.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                jTFCCFocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                jTFCCFocusLost(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jTFCC, gridBagConstraints);
+
+        jLabel3.setText("BCC");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel3, gridBagConstraints);
+
+        jTFTo.setMinimumSize(new java.awt.Dimension(400, 20));
+        jTFTo.setName("tfTo"); // NOI18N
+        jTFTo.setPreferredSize(new java.awt.Dimension(400, 20));
+        jTFTo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTFToActionPerformed(evt);
+            }
+        });
+        jTFTo.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                jTFToFocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                jTFToFocusLost(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jTFTo, gridBagConstraints);
+
+        jLAttach.setIcon(new ImageIcon("./images/buttons/viewer_ico_pdf.png"));
+        jLAttach.setText("Attachment");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLAttach, gridBagConstraints);
+
+        jLabel18.setText("Subject");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel18, gridBagConstraints);
+
+        jCBConfirmarePrimire.setSelected(true);
+        jCBConfirmarePrimire.setText("I want to receive confirmation of receipt");
+        jCBConfirmarePrimire.setName("cbConfirmation"); // NOI18N
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 8;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jCBConfirmarePrimire, gridBagConstraints);
+
+        jBTTDeLa.setBorder(null);
+        jBTTDeLa.setFocusable(false);
+        jBTTDeLa.setOpaque(false);
+        jBTTDeLa.setRequestFocusEnabled(false);
+        jBTTDeLa.setVisible(false);
+        jBTTDeLa.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jBTTDeLapostTip(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jBTTDeLa, gridBagConstraints);
+
+        jTFFrom.setMinimumSize(new java.awt.Dimension(400, 20));
+        jTFFrom.setName("tfFrom"); // NOI18N
+        jTFFrom.setPreferredSize(new java.awt.Dimension(400, 20));
+        jTFFrom.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                jTFFromFocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                jTFFromFocusLost(evt);
+            }
+        });
+        jTFFrom.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTFFromActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jTFFrom, gridBagConstraints);
+
+        jTFSubject.setMinimumSize(new java.awt.Dimension(400, 20));
+        jTFSubject.setName("tfSubject"); // NOI18N
+        jTFSubject.setPreferredSize(new java.awt.Dimension(400, 20));
+        jTFSubject.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                jTFSubjectFocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                jTFSubjectFocusLost(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jTFSubject, gridBagConstraints);
+
+        jBTTCatre.setBorder(null);
+        jBTTCatre.setFocusable(false);
+        jBTTCatre.setOpaque(false);
+        jBTTCatre.setRequestFocusEnabled(false);
+        jBTTCatre.setVisible(false);
+        jBTTCatre.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jBTTCatrepostTip(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jBTTCatre, gridBagConstraints);
+
+        jLabel19.setText("To");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel19, gridBagConstraints);
+
+        jBTTCC.setBorder(null);
+        jBTTCC.setFocusable(false);
+        jBTTCC.setOpaque(false);
+        jBTTCC.setRequestFocusEnabled(false);
+        jBTTCC.setVisible(false);
+        jBTTCC.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jBTTCCpostTip(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jBTTCC, gridBagConstraints);
+
+        jTFBCC.setMinimumSize(new java.awt.Dimension(400, 20));
+        jTFBCC.setName("tfBCC"); // NOI18N
+        jTFBCC.setPreferredSize(new java.awt.Dimension(400, 20));
+        jTFBCC.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                jTFBCCFocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                jTFBCCFocusLost(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jTFBCC, gridBagConstraints);
+
+        jScrollPane1.setBorder(null);
+        jScrollPane1.setMinimumSize(new java.awt.Dimension(400, 150));
+        jScrollPane1.setPreferredSize(new java.awt.Dimension(400, 150));
+
+        jTAMessage.setLineWrap(true);
+        jTAMessage.setWrapStyleWord(true);
+        jTAMessage.setName("tfMessage"); // NOI18N
+        jTAMessage.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                jTAMessageFocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                jTAMessageFocusLost(evt);
+            }
+        });
+        jScrollPane1.setViewportView(jTAMessage);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 7;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jScrollPane1, gridBagConstraints);
+
+        jBTTBCC.setBorder(null);
+        jBTTBCC.setFocusable(false);
+        jBTTBCC.setOpaque(false);
+        jBTTBCC.setRequestFocusEnabled(false);
+        jBTTBCC.setVisible(false);
+        jBTTBCC.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jBTTBCCpostTip(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jBTTBCC, gridBagConstraints);
+
+        jBTTSubiect.setBorder(null);
+        jBTTSubiect.setFocusable(false);
+        jBTTSubiect.setOpaque(false);
+        jBTTSubiect.setRequestFocusEnabled(false);
+        jBTTSubiect.setVisible(false);
+        jBTTSubiect.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jBTTSubiectpostTip(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jBTTSubiect, gridBagConstraints);
+
+        jBTTMesaj.setBorder(null);
+        jBTTMesaj.setFocusable(false);
+        jBTTMesaj.setOpaque(false);
+        jBTTMesaj.setRequestFocusEnabled(false);
+        jBTTMesaj.setVisible(false);
+        jBTTMesaj.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jBTTMesajpostTip(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 7;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jBTTMesaj, gridBagConstraints);
+
+        jLabel4.setText("Template");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 5;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jLabel4, gridBagConstraints);
+
+        jComboBoxTemplate.setModel(new javax.swing.DefaultComboBoxModel<String>(new String[] { "Template 1", "Template 2", "Template 3" }));
+        jComboBoxTemplate.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jComboBoxTemplateActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 5;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jComboBoxTemplate, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        jPCleft1.add(jPanel1, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(15, 15, 15, 15);
+        jPanel2.add(jPCleft1, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        getContentPane().add(jPanel2, gridBagConstraints);
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+	private void jBTrimiteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBTrimiteActionPerformed
+
+            // create email
+            if (Common.selectedCompanyConfig.get(Config.SMTP_HOST).isEmpty()) {
+                if (Messages.showQuestionMessage(JDialogEmail.this,
+                        "To send documents by email, you need to configure your email.\n"
+                        + "Do you want to configure now? ", "Information") == JOptionPane.NO_OPTION) {
+                    return;
+                }
+                JDialogConfigEmail configEmail = new JDialogConfigEmail(Common.mainFrame, true);
+                configEmail.setVisible(true);
+                if (Common.selectedCompanyConfig.get(Config.SMTP_HOST).isEmpty()) {
+                    return;
+                }
+            }
+
+            String email = Common.selectedCompanyConfig.get(Config.SMTP_USER);
+            if (email.isEmpty()) {
+                jTFFrom.setText("");
+            } else {
+                jTFFrom.setText(Common.selectedCompany.getDbName() + "<" + email + ">;");
+            }
+
+            if (trimite()) {
+                //update pt mailuri, sent/unsent
+                try {
+                    if (this.invoice != null) {
+                        this.invoice.setSent(true);
+                        this.invoice.update();
+                    }
+
+                    if (this.estimate != null) {
+                        this.estimate.setSent(true);
+                        this.estimate.update();
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+
+                //salvam adresele (aliasurile)
+                for (String key : listEmailuriTrimise.keySet()) {
+                    try {
+//	                if (!Common.existaAlias(-1, key)) {
+                        if (AliasEmail.get(Common.connection, clientId, key) == null) {
+//	                    DBAccess.uidRow("INSERT INTO alias_email (client_id, alias, email) VALUES (?,?,?)", new Object[]{clientId, key, listEmailuriTrimise.get(key)});
+                            AliasEmail aliasEmail = new AliasEmail();
+                            aliasEmail.setClientId(clientId);
+                            aliasEmail.setAlias(key);
+                            aliasEmail.setEmail(listEmailuriTrimise.get(key));
+                            aliasEmail.create();
+                        } else {
+                            // Messages.showErrorMessage(this, "Aliasul " + key + " este folosit deja pentru alta adresa de email.\nAcesta nu a fost salvat in bd.", "Atentie!");
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+//	        for (String s : listaEmailuri) {
+//	            try {
+////	                if (!Common.existaEmail(s, "")) {
+////	                    DBAccess.uidRow("INSERT INTO alias_email (client_id, alias, email) VALUES (?,?,?)", new Object[]{-1, "", s});
+////	                }
+//	            } catch (SQLException ex) {
+//	                ex.printStackTrace();
+//	            }
+//	        }
+            }
+	}//GEN-LAST:event_jBTrimiteActionPerformed
+
+	private void jBIesireActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBIesireActionPerformed
+            dispose();
+	}//GEN-LAST:event_jBIesireActionPerformed
+
+	private void jBTTDeLapostTip(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jBTTDeLapostTip
+            JComponent component = (JComponent) evt.getSource();
+            Action toolTipAction = component.getActionMap().get("postTip");
+            if (toolTipAction != null) {
+                ActionEvent postTip = new ActionEvent(component, ActionEvent.ACTION_PERFORMED, "");
+                toolTipAction.actionPerformed(postTip);
+            }
+	}//GEN-LAST:event_jBTTDeLapostTip
+
+	private void jBTTCatrepostTip(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jBTTCatrepostTip
+            JComponent component = (JComponent) evt.getSource();
+            Action toolTipAction = component.getActionMap().get("postTip");
+            if (toolTipAction != null) {
+                ActionEvent postTip = new ActionEvent(component, ActionEvent.ACTION_PERFORMED, "");
+                toolTipAction.actionPerformed(postTip);
+            }
+	}//GEN-LAST:event_jBTTCatrepostTip
+
+	private void jBTTSubiectpostTip(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jBTTSubiectpostTip
+            JComponent component = (JComponent) evt.getSource();
+            Action toolTipAction = component.getActionMap().get("postTip");
+            if (toolTipAction != null) {
+                ActionEvent postTip = new ActionEvent(component, ActionEvent.ACTION_PERFORMED, "");
+                toolTipAction.actionPerformed(postTip);
+            }
+	}//GEN-LAST:event_jBTTSubiectpostTip
+
+	private void jBTTMesajpostTip(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jBTTMesajpostTip
+            JComponent component = (JComponent) evt.getSource();
+            Action toolTipAction = component.getActionMap().get("postTip");
+            if (toolTipAction != null) {
+                ActionEvent postTip = new ActionEvent(component, ActionEvent.ACTION_PERFORMED, "");
+                toolTipAction.actionPerformed(postTip);
+            }
+	}//GEN-LAST:event_jBTTMesajpostTip
+
+	private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
+	}//GEN-LAST:event_formWindowOpened
+
+	private void jTFToActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTFToActionPerformed
+	}//GEN-LAST:event_jTFToActionPerformed
+
+	private void jBConfigurareActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBConfigurareActionPerformed
+            JDialogConfigEmail configEmail = new JDialogConfigEmail(Common.mainFrame, true);
+            configEmail.setVisible(true);
+            jTFFrom.setText(Common.selectedCompany.getDbName() + "<" + Common.selectedCompanyConfig.get(Config.SMTP_USER) + ">;");
+            fillEmailFromDocument();
+	}//GEN-LAST:event_jBConfigurareActionPerformed
+
+	private void jTFCCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTFCCActionPerformed
+            // TODO add your handling code here:
+	}//GEN-LAST:event_jTFCCActionPerformed
+
+	private void jBTTCCpostTip(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jBTTCCpostTip
+            // TODO add your handling code here:
+	}//GEN-LAST:event_jBTTCCpostTip
+
+	private void jBTTBCCpostTip(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jBTTBCCpostTip
+            // TODO add your handling code here:
+	}//GEN-LAST:event_jBTTBCCpostTip
+
+	private void jTFFromFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jTFFromFocusGained
+            //    mainJsp.setText(HELP_TEXT_DE_LA);
+	}//GEN-LAST:event_jTFFromFocusGained
+
+	private void jTFToFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jTFToFocusGained
+            //    mainJsp.setText(HELP_TEXT_CATRE);
+	}//GEN-LAST:event_jTFToFocusGained
+
+	private void jTFCCFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jTFCCFocusLost
+	}//GEN-LAST:event_jTFCCFocusLost
+
+	private void jTFBCCFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jTFBCCFocusGained
+            //    mainJsp.setText(HELP_TEXT_BCC);
+	}//GEN-LAST:event_jTFBCCFocusGained
+
+	private void jTFSubjectFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jTFSubjectFocusLost
+            //    mainJsp.setText(HELP_TEXT_DEFAULT);
+	}//GEN-LAST:event_jTFSubjectFocusLost
+
+	private void jTFSubjectFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jTFSubjectFocusGained
+            //    mainJsp.setText(HELP_TEXT_SUBIECT);
+	}//GEN-LAST:event_jTFSubjectFocusGained
+
+	private void jTFCCFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jTFCCFocusGained
+            //    mainJsp.setText(HELP_TEXT_CC);
+	}//GEN-LAST:event_jTFCCFocusGained
+
+	private void jTFFromFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jTFFromFocusLost
+            //    mainJsp.setText(HELP_TEXT_DEFAULT);
+	}//GEN-LAST:event_jTFFromFocusLost
+
+	private void jTFToFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jTFToFocusLost
+            //    mainJsp.setText(HELP_TEXT_DEFAULT);
+	}//GEN-LAST:event_jTFToFocusLost
+
+	private void jTFBCCFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jTFBCCFocusLost
+            //    mainJsp.setText(HELP_TEXT_DEFAULT);
+	}//GEN-LAST:event_jTFBCCFocusLost
+
+    private void jTAMessageFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jTAMessageFocusLost
+        //    mainJsp.setText(HELP_TEXT_DEFAULT);
+    }//GEN-LAST:event_jTAMessageFocusLost
+
+    private void jTAMessageFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jTAMessageFocusGained
+        //    mainJsp.setText(HELP_TEXT_MESAJ);
+    }//GEN-LAST:event_jTAMessageFocusGained
+
+    private void jTFFromActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTFFromActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTFFromActionPerformed
+
+    private void jComboBoxTemplateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxTemplateActionPerformed
+        
+        if (!loadingMode) { // if not in loading mode execute
+            Config config = Common.selectedCompanyConfig;
+            config.set(Config.DEFAULT_EMAIL_TEMPLATE, String.valueOf(jComboBoxTemplate.getSelectedIndex()));
+
+            this.fillEmailFromDocument();
+        }
+    }//GEN-LAST:event_jComboBoxTemplateActionPerformed
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jBConfigurare;
+    private javax.swing.JButton jBIesire;
+    private javax.swing.JButton jBTTBCC;
+    private javax.swing.JButton jBTTCC;
+    private javax.swing.JButton jBTTCatre;
+    private javax.swing.JButton jBTTDeLa;
+    private javax.swing.JButton jBTTMesaj;
+    private javax.swing.JButton jBTTSubiect;
+    private javax.swing.JButton jBTrimite;
+    private javax.swing.JCheckBox jCBConfirmarePrimire;
+    private javax.swing.JComboBox<String> jComboBoxTemplate;
+    private javax.swing.JLabel jLAttach;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel17;
+    private javax.swing.JLabel jLabel18;
+    private javax.swing.JLabel jLabel19;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JPanel jPButtons;
+    private javax.swing.JPanel jPCleft1;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JTextArea jTAMessage;
+    private javax.swing.JTextField jTFBCC;
+    private javax.swing.JTextField jTFCC;
+    private javax.swing.JTextField jTFFrom;
+    private javax.swing.JTextField jTFSubject;
+    private javax.swing.JTextField jTFTo;
+    // End of variables declaration//GEN-END:variables
+}

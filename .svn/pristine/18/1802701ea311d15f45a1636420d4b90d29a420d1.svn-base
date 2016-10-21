@@ -1,0 +1,11 @@
+package sleekbill.swingutils.datepicker.calendar;
+
+public abstract class DatePickerUI extends CalendarPaneUI {
+
+	public abstract void showPopup(boolean visible);
+
+	public abstract void setSimpeLook(boolean b);
+        
+        public abstract void setInvalid(boolean b);
+
+}

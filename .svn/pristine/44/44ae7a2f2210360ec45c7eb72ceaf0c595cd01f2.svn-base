@@ -1,0 +1,7 @@
+package sleekbill.swingutils.datepicker.gradienteditor;
+
+import javax.swing.plaf.ComponentUI;
+
+public class GradientEditorUI extends ComponentUI{
+
+}

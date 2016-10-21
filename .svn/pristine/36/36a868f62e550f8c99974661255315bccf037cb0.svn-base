@@ -1,0 +1,124 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.entities;
+
+import com.j256.ormlite.field.DataType;
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+import java.math.BigDecimal;
+
+/**
+ *
+ * @author Andrei
+ */
+@DatabaseTable(tableName = "invoice_payments")
+public class InvoicePaymentEntity {
+    
+    public static final String PAYMENT_ID = "payment_id";
+    public static final String INVOICE_ID = "invoice_id";
+    public static final String AMOUNT = "amount";
+    public static final String DELETED = "deleted";
+    
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+
+    @DatabaseField(foreign = true, columnName = PAYMENT_ID, foreignAutoRefresh = true, foreignAutoCreate = true, columnDefinition = "INTEGER REFERENCES payments (id)")
+    protected PaymentEntity payment;
+    @DatabaseField(foreign = true, columnName = INVOICE_ID, foreignAutoRefresh = true, foreignAutoCreate = true, columnDefinition = "INTEGER REFERENCES invoices (id)")
+    protected InvoiceEntity invoice;
+    @DatabaseField(columnName = AMOUNT, canBeNull = false, dataType = DataType.BIG_DECIMAL)
+    protected BigDecimal amount;
+    @DatabaseField(columnName = DELETED, canBeNull = false, defaultValue = "n")
+    protected String deleted;
+
+    public InvoicePaymentEntity() {
+    }
+
+    public InvoicePaymentEntity(InvoicePaymentEntity invoicePaymentEntity) {
+        this.id = invoicePaymentEntity.id;
+        this.payment = invoicePaymentEntity.payment;
+        this.invoice = invoicePaymentEntity.invoice;
+        this.amount = invoicePaymentEntity.amount;
+        this.deleted = invoicePaymentEntity.deleted;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public PaymentEntity getPayment() {
+        return payment;
+    }
+
+    public void setPayment(PaymentEntity payment) {
+        this.payment = payment;
+    }
+
+    public InvoiceEntity getInvoice() {
+        return invoice;
+    }
+
+    public void setInvoice(InvoiceEntity invoice) {
+        this.invoice = invoice;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    public String getDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(String deleted) {
+        this.deleted = deleted;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 89 * hash + this.id;
+        hash = 89 * hash + (this.payment != null ? this.payment.hashCode() : 0);
+        hash = 89 * hash + (this.invoice != null ? this.invoice.hashCode() : 0);
+        hash = 89 * hash + (this.amount != null ? this.amount.hashCode() : 0);
+        hash = 89 * hash + (this.deleted != null ? this.deleted.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final InvoicePaymentEntity other = (InvoicePaymentEntity) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (this.payment != other.payment && (this.payment == null || !this.payment.equals(other.payment))) {
+            return false;
+        }
+        if (this.invoice != other.invoice && (this.invoice == null || !this.invoice.equals(other.invoice))) {
+            return false;
+        }
+        if (this.amount != other.amount && (this.amount == null || !this.amount.equals(other.amount))) {
+            return false;
+        }
+        if ((this.deleted == null) ? (other.deleted != null) : !this.deleted.equals(other.deleted)) {
+            return false;
+        }
+        return true;
+    }
+}

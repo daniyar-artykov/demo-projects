@@ -1,0 +1,62 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.swingutils;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.math.BigDecimal;
+import java.util.Date;
+import javax.swing.JTable;
+import javax.swing.SwingConstants;
+import javax.swing.UIManager;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableCellRenderer;
+import sleekbill.Common;
+
+/**
+ *
+ * @author Andrei
+ */
+public class LeftCellLabel extends DefaultTableCellRenderer {
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int r, int c) {
+            String t = value==null?"":value.toString().replace("\n",",");
+            if(value!=null && value.getClass() == Double.class) {
+                t = Common.format((Double)value,2);
+            }
+            else if(value instanceof Date && !(value instanceof SBDateTime) && !(value instanceof SBDate)){
+                t = Common.US_DATE_FORMAT.format(value);
+            } else if(value instanceof  SBDateTime){
+                t = Common.US_DATE_HOUR_FORMAT.format(value);
+            } else if(value instanceof  SBDate){
+                if(((SBDate)value).isLinie())
+                    t = "-";
+                else
+                    t = Common.US_DATE_FORMAT.format(value);
+            }
+           // if(value instanceof Double || value instanceof Integer || value instanceof  BigDecimal) setHorizontalAlignment(SwingConstants.RIGHT);
+            //else setHorizontalAlignment(SwingConstants.CENTER);
+            setBorder(new EmptyBorder(0,5,0,5));
+            setText(t);
+            setToolTipText(t);            
+            setFont(table.getFont());
+            if (isSelected) {
+                setForeground(table.getSelectionForeground());
+                setBackground(table.getSelectionBackground());
+            } 
+            else {
+                setForeground(table.getForeground());                
+                if(UIManager.get("Table.evenRowColor") instanceof Color &&  UIManager.get("Table.evenRowColor") instanceof Color) {
+                    Color rc =  r%2==0? (Color)UIManager.get("Table.evenRowColor"):(Color)UIManager.get("Table.oddRowColor");
+                    setBackground(rc);                    
+                }      
+                else {
+                    setBackground(table.getBackground());
+                }
+            }
+            setHorizontalAlignment(SwingConstants.LEFT);
+            return this;
+    }    
+}

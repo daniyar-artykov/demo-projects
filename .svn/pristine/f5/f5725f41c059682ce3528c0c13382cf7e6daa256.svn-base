@@ -1,0 +1,121 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.beans;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import sleekbill.Common;
+import sleekbill.entities.PaymentEntity;
+
+/**
+ *
+ * @author Andrei
+ */
+public class Payment extends PaymentEntity {
+
+    private Dao<PaymentEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+
+    public Payment(PaymentEntity paymentEntity) {
+        this(0);
+        this.id = paymentEntity.getId();
+        this.amount = paymentEntity.getAmount();
+        this.type = paymentEntity.getType();
+        this.note = paymentEntity.getNote();
+        this.deleted = paymentEntity.getDeleted();
+    }
+
+    public Payment() {
+        this(0);
+    }
+
+    public Payment(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager
+                        .createDao(mainConnection, PaymentEntity.class);
+
+                if (id != null && id != 0) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void refreshDao() {
+        try {
+            mainDao = DaoManager
+                    .createDao(Common.connection.getConnection(), PaymentEntity.class);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void create() throws Exception {
+        mainDao.create(this);
+    }
+
+    public PaymentEntity read(Integer id) throws Exception {
+        return mainDao.queryForId(id);
+    }
+
+    public void update() throws Exception {
+        mainDao.update(this);
+    }
+
+    public void delete() throws Exception {
+        mainDao.delete(this);
+    }
+    
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 43 * hash + this.id;
+        hash = 43 * hash + (this.amount != null ? this.amount.hashCode() : 0);
+        hash = 43 * hash + (this.type != null ? this.type.hashCode() : 0);
+        hash = 43 * hash + (this.note != null ? this.note.hashCode() : 0);
+        hash = 43 * hash + (this.payDate != null ? this.payDate.hashCode() : 0);
+        hash = 43 * hash + (this.deleted != null ? this.deleted.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Payment other = (Payment) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (this.amount != other.amount && (this.amount == null || !this.amount.equals(other.amount))) {
+            return false;
+        }
+        if ((this.type == null) ? (other.type != null) : !this.type.equals(other.type)) {
+            return false;
+        }
+        if ((this.note == null) ? (other.note != null) : !this.note.equals(other.note)) {
+            return false;
+        }
+        if (this.payDate != other.payDate && (this.payDate == null || !this.payDate.equals(other.payDate))) {
+            return false;
+        }
+        if ((this.deleted == null) ? (other.deleted != null) : !this.deleted.equals(other.deleted)) {
+            return false;
+        }
+        return true;
+    }
+}

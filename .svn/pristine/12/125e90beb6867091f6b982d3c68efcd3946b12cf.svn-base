@@ -1,0 +1,259 @@
+package sleekbill.beans;
+
+import java.sql.SQLException;
+import java.util.List;
+
+import sleekbill.Common;
+import sleekbill.entities.ClientEntity;
+import sleekbill.entities.StateEntity;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.stmt.DeleteBuilder;
+import com.j256.ormlite.stmt.PreparedQuery;
+import com.j256.ormlite.stmt.SelectArg;
+import com.j256.ormlite.stmt.UpdateBuilder;
+
+public class Client extends ClientEntity {
+
+    private Dao<ClientEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+
+    public Client(ClientEntity clientsEntity) {
+        this(0);
+        this.id = clientsEntity.getId();
+        this.name = clientsEntity.getName();
+        this.code = clientsEntity.getCode();
+        this.email = clientsEntity.getEmail();
+        this.telephone = clientsEntity.getTelephone();
+        this.contact = clientsEntity.getContact();
+        this.billingAddress = clientsEntity.getBillingAddress();
+        this.billingZip = clientsEntity.getBillingZip();
+        this.billingCity = clientsEntity.getBillingCity();
+        this.shippingAddress = clientsEntity.getShippingAddress();
+        this.shippingZip = clientsEntity.getShippingZip();
+        this.shippingCity = clientsEntity.getShippingCity();
+        this.billingState = clientsEntity.getBillingState();
+        this.shippingState = clientsEntity.getShippingState();
+        this.details = clientsEntity.getDetails();
+        this.detailsPublic = clientsEntity.getDetailsPublic();
+        this.tin = clientsEntity.getTin();
+        this.deleted = clientsEntity.getDeleted();
+        this.invoices = clientsEntity.getInvoices();
+    }
+
+    public Client() {
+        this(0);
+    }
+
+    public Client(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager.createDao(mainConnection, ClientEntity.class);
+
+                if (id != null && id != 0) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void refreshDao() {
+        try {
+            mainDao = DaoManager.createDao(Common.connection.getConnection(), ClientEntity.class);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void create() throws Exception {
+        mainDao.create(this);
+    }
+
+    public ClientEntity read(Integer id) throws Exception {
+        return mainDao.queryForId(id);
+    }
+
+    public void update() throws Exception {
+        mainDao.update(this);
+    }
+
+    public void delete() throws Exception {
+        mainDao.delete(this);
+    }
+
+    public void updateDeleted(boolean deleted) throws SQLException {
+        Dao<ClientEntity, Integer> clientDao = DaoManager.createDao(mainConnection, ClientEntity.class);
+        UpdateBuilder<ClientEntity, Integer> updateBuilder = clientDao.updateBuilder();
+        updateBuilder.updateColumnValue(DELETED, deleted ? "y" : "n");
+        updateBuilder.where().eq("id", id);
+        updateBuilder.update();
+    }
+
+    public static Client add(JdbcConnectionSource connectionSource, Client client) throws SBDaoException, SQLException {
+
+        Dao<ClientEntity, Integer> clientDao = DaoManager.createDao(connectionSource, ClientEntity.class);
+
+        StateEntity bState = client.getBillingState();
+        StateEntity sState = client.getShippingState();
+
+        if (bState.getId() <= 0) {
+            client.setBillingState(State.get(connectionSource, bState));
+        }
+
+        if (sState.getId() <= 0) {
+            client.setShippingState(State.get(connectionSource, sState));
+        }
+
+        clientDao.create(client);
+
+        return client;
+    }
+
+    public static Client get(JdbcConnectionSource connectionSource, String name) throws SBDaoException, SQLException {
+        SelectArg selectArg = new SelectArg();
+        Dao<ClientEntity, Integer> clientDao = DaoManager.createDao(connectionSource, ClientEntity.class);
+        PreparedQuery<ClientEntity> prepare = clientDao.queryBuilder().where().eq(Client.NAME, selectArg).prepare();
+        selectArg.setValue(name);
+        List<ClientEntity> query = clientDao.query(prepare);
+
+        if (query.size() > 0) {
+            return new Client(query.get(0));
+        }
+        return null;
+    }
+
+    public static Client getUndelete(JdbcConnectionSource connectionSource, String name) throws SBDaoException, SQLException {
+        SelectArg selectArg = new SelectArg();
+        Dao<ClientEntity, Integer> clientDao = DaoManager.createDao(connectionSource, ClientEntity.class);
+        PreparedQuery<ClientEntity> prepare = clientDao.queryBuilder().where().eq(Client.NAME, selectArg).and().eq(Client.DELETED, "n").prepare();
+        selectArg.setValue(name);
+        List<ClientEntity> query = clientDao.query(prepare);
+
+        if (query.size() > 0) {
+            return new Client(query.get(0));
+        }
+        return null;
+    }
+
+    public static void delete(JdbcConnectionSource connectionSource, int id) throws SQLException {
+        Dao<ClientEntity, Integer> clientDao = DaoManager.createDao(connectionSource, ClientEntity.class);
+        DeleteBuilder<ClientEntity, Integer> deleteBuilder = clientDao.deleteBuilder();
+        deleteBuilder.where().eq(ID, id);
+        clientDao.delete(deleteBuilder.prepare());
+    }
+
+    public static void updateDeleted(JdbcConnectionSource connectionSource, int id, boolean deleted) throws SQLException {
+        Dao<ClientEntity, Integer> clientDao = DaoManager.createDao(connectionSource, ClientEntity.class);
+        UpdateBuilder<ClientEntity, Integer> updateBuilder = clientDao.updateBuilder();
+        updateBuilder.updateColumnValue(DELETED, deleted ? "y" : "n");
+        updateBuilder.where().eq("id", id);
+        updateBuilder.update();
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 79 * hash + this.id;
+        hash = 79 * hash + (this.name != null ? this.name.hashCode() : 0);
+        hash = 79 * hash + (this.code != null ? this.code.hashCode() : 0);
+        hash = 79 * hash + (this.email != null ? this.email.hashCode() : 0);
+        hash = 79 * hash + (this.telephone != null ? this.telephone.hashCode() : 0);
+        hash = 79 * hash + (this.contact != null ? this.contact.hashCode() : 0);
+        hash = 79 * hash + (this.billingAddress != null ? this.billingAddress.hashCode() : 0);
+        hash = 79 * hash + (this.billingZip != null ? this.billingZip.hashCode() : 0);
+        hash = 79 * hash + (this.billingCity != null ? this.billingCity.hashCode() : 0);
+        hash = 79 * hash + (this.shippingAddress != null ? this.shippingAddress.hashCode() : 0);
+        hash = 79 * hash + (this.shippingZip != null ? this.shippingZip.hashCode() : 0);
+        hash = 79 * hash + (this.shippingCity != null ? this.shippingCity.hashCode() : 0);
+        hash = 79 * hash + (this.billingState != null ? this.billingState.hashCode() : 0);
+        hash = 79 * hash + (this.shippingState != null ? this.shippingState.hashCode() : 0);
+        hash = 79 * hash + (this.details != null ? this.details.hashCode() : 0);
+        hash = 79 * hash + (this.detailsPublic != null ? this.detailsPublic.hashCode() : 0);
+        hash = 79 * hash + (this.tin != null ? this.tin.hashCode() : 0);
+        hash = 79 * hash + (this.deleted != null ? this.deleted.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Client other = (Client) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if ((this.name == null) ? (other.name != null) : !this.name.equals(other.name)) {
+            return false;
+        }
+        if ((this.code == null) ? (other.code != null) : !this.code.equals(other.code)) {
+            return false;
+        }
+        if ((this.email == null) ? (other.email != null) : !this.email.equals(other.email)) {
+            return false;
+        }
+        if ((this.telephone == null) ? (other.telephone != null) : !this.telephone.equals(other.telephone)) {
+            return false;
+        }
+        if ((this.contact == null) ? (other.contact != null) : !this.contact.equals(other.contact)) {
+            return false;
+        }
+        if ((this.billingAddress == null) ? (other.billingAddress != null) : !this.billingAddress.equals(other.billingAddress)) {
+            return false;
+        }
+        if ((this.billingZip == null) ? (other.billingZip != null) : !this.billingZip.equals(other.billingZip)) {
+            return false;
+        }
+        if ((this.billingCity == null) ? (other.billingCity != null) : !this.billingCity.equals(other.billingCity)) {
+            return false;
+        }
+        if ((this.shippingAddress == null) ? (other.shippingAddress != null) : !this.shippingAddress.equals(other.shippingAddress)) {
+            return false;
+        }
+        if ((this.shippingZip == null) ? (other.shippingZip != null) : !this.shippingZip.equals(other.shippingZip)) {
+            return false;
+        }
+        if ((this.shippingCity == null) ? (other.shippingCity != null) : !this.shippingCity.equals(other.shippingCity)) {
+            return false;
+        }
+        if (this.billingState != other.billingState && (this.billingState == null || !this.billingState.equals(other.billingState))) {
+            return false;
+        }
+        if (this.shippingState != other.shippingState && (this.shippingState == null || !this.shippingState.equals(other.shippingState))) {
+            return false;
+        }
+        if ((this.details == null) ? (other.details != null) : !this.details.equals(other.details)) {
+            return false;
+        }
+        if ((this.detailsPublic == null) ? (other.detailsPublic != null) : !this.detailsPublic.equals(other.detailsPublic)) {
+            return false;
+        }
+        if ((this.tin == null) ? (other.tin != null) : !this.tin.equals(other.tin)) {
+            return false;
+        }
+        if ((this.deleted == null) ? (other.deleted != null) : !this.deleted.equals(other.deleted)) {
+            return false;
+        }
+        return true;
+    }
+
+    public Dao<ClientEntity, Integer> getMainDao() {
+        return mainDao;
+    }
+
+    public void setMainDao(Dao<ClientEntity, Integer> mainDao) {
+        this.mainDao = mainDao;
+    }
+}

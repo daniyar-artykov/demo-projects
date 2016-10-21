@@ -1,0 +1,693 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.entities;
+
+import java.math.BigDecimal;
+import java.util.Date;
+
+import com.j256.ormlite.dao.ForeignCollection;
+import com.j256.ormlite.field.DataType;
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.field.ForeignCollectionField;
+import com.j256.ormlite.table.DatabaseTable;
+import sleekbill.SBConstants;
+
+/**
+ *
+ * @author Andrei
+ */
+@DatabaseTable(tableName = "invoices")
+public class InvoiceEntity {
+
+    public static final String NUMBER = "number";
+    public static final String ISSUE_DATE = "issue_date";
+    public static final String DUE_DATE = "due_date";
+    public static final String COMPANY_DETAILS_ID = "company_details_id";
+    public static final String CLIENT_ID = "client_id";
+    public static final String CLIENT_NAME = "client_name";
+    public static final String CLIENT_CODE = "client_code";
+    public static final String CLIENT_BILLING_ADDRESS = "client_billing_address";
+    public static final String CLIENT_BILLING_CITY = "client_billing_city";
+    public static final String CLIENT_BILLING_ZIP = "client_billing_zip";
+    public static final String CLIENT_SHIPPING_ADDRESS = "client_shipping_address";
+    public static final String CLIENT_SHIPPING_CITY = "client_shipping_city";
+    public static final String CLIENT_SHIPPING_ZIP = "client_shipping_zip";
+    public static final String CLIENT_EMAIL = "client_email";
+    public static final String CLIENT_TELEPHONE = "client_telephone";
+    public static final String CLIENT_CONTACT = "client_contact";
+    public static final String IS_PAID = "is_paid";
+    public static final String IS_DRAFT = "is_draft";
+    public static final String TOTAL_NO_TAX = "total_no_tax";
+    public static final String TOTAL_TAX = "total_tax";
+    public static final String TOTAL_ALL = "total_all";
+    public static final String INTERNAL_NOTES = "internal_notes";
+    public static final String INVOICES_NOTES = "invoice_notes";
+    public static final String CLIENT_BILLING_STATE_ID = "client_billing_state_id";
+    public static final String CLIENT_SHIPPING_STATE_ID = "client_shipping_state_id";
+    public static final String DELETED = "deleted";
+    public static final String COLOR = "color";
+    public static final String PAGE_SIZE = "page_size_id";
+    public static final String PO_NUMBER = "po_number";  
+    public static final String PAY_EMAIL = "pay_email";
+    public static final String PAY_ONLINE = "pay_online";
+    public static final String LOGO = "logo";
+    public static final String FLAG_ID = "flag_id";
+    public static final String LAYOUT = "layout";
+    public static final String PRINT_ID = "print_id";
+    public static final String DISCOUNT = "discount";
+	public static final String SENT = "sent";
+	public static final String TYPE = "type";
+    
+    
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+    @DatabaseField(columnName = NUMBER, canBeNull = false)
+    protected String number;
+    @DatabaseField(columnName = ISSUE_DATE, canBeNull = false, dataType = DataType.DATE_STRING, format = "yyyy-MM-dd")
+    protected Date issueDate;
+    @DatabaseField(columnName = DUE_DATE, canBeNull = true, dataType = DataType.DATE_STRING, format = "yyyy-MM-dd")
+    protected Date dueDate;
+    @DatabaseField(foreign = true, columnName = COMPANY_DETAILS_ID, foreignAutoRefresh = true, foreignAutoCreate = true, columnDefinition = "INTEGER REFERENCES company_details (id)")
+    protected CompanyDetailsEntity companyDetails;
+    @DatabaseField(foreign = true, columnName = CLIENT_ID, foreignAutoRefresh = true, foreignAutoCreate = true, columnDefinition = "INTEGER REFERENCES clients (id)")
+    protected ClientEntity client;
+    @DatabaseField(columnName = CLIENT_NAME, canBeNull = false)
+    protected String clientName;
+    @DatabaseField(columnName = CLIENT_CODE, canBeNull = true)
+    protected String clientCode;
+    @DatabaseField(columnName = CLIENT_EMAIL, canBeNull = true)
+    protected String clientEmail;
+    @DatabaseField(columnName = CLIENT_TELEPHONE, canBeNull = true)
+    protected String clientTelephone;
+    @DatabaseField(columnName = CLIENT_CONTACT, canBeNull = true)
+    protected String clientContact;
+    @DatabaseField(columnName = CLIENT_BILLING_ADDRESS, canBeNull = true)
+    protected String clientBillingAddress;
+    @DatabaseField(columnName = CLIENT_BILLING_ZIP, canBeNull = true)
+    protected String clientBillingZip;
+    @DatabaseField(columnName = CLIENT_BILLING_CITY, canBeNull = true)
+    protected String clientBillingCity;
+    @DatabaseField(columnName = CLIENT_SHIPPING_ADDRESS, canBeNull = true)
+    protected String clientShippingAddress;
+    @DatabaseField(columnName = CLIENT_SHIPPING_ZIP, canBeNull = true)
+    protected String clientShippingZip;
+    @DatabaseField(columnName = CLIENT_SHIPPING_CITY, canBeNull = true)
+    protected String clientShippingCity;
+    @DatabaseField(columnName = IS_PAID, canBeNull = true, dataType = DataType.BOOLEAN)
+    protected boolean isPaid;
+    @DatabaseField(columnName = IS_DRAFT, canBeNull = true, dataType = DataType.BOOLEAN)
+    protected boolean isDraft;
+    @DatabaseField(columnName = TOTAL_NO_TAX, canBeNull = true, dataType = DataType.BIG_DECIMAL)
+    protected BigDecimal totalNoTax;
+    @DatabaseField(columnName = TOTAL_TAX, canBeNull = true, dataType = DataType.BIG_DECIMAL)
+    protected BigDecimal totalTax;
+    @DatabaseField(columnName = TOTAL_ALL, canBeNull = true, dataType = DataType.BIG_DECIMAL)
+    protected BigDecimal totalAll;
+    @DatabaseField(columnName = INTERNAL_NOTES, canBeNull = true)
+    protected String internalNotes;
+    @DatabaseField(columnName = INVOICES_NOTES, canBeNull = true)
+    protected String invoiceNotes;
+    @DatabaseField(columnName = DELETED, canBeNull = false, defaultValue = "n")
+    protected String deleted;
+    @DatabaseField(columnName = COLOR, canBeNull = false, defaultValue = SBConstants.PORTOCALIU/*"E58B00"*/)
+    protected String color;
+    @DatabaseField(columnName = PO_NUMBER, canBeNull = true, defaultValue = "")
+    protected String poNumber;
+    @DatabaseField(columnName = LOGO, canBeNull = true, defaultValue = "")
+    protected String logo;
+    @DatabaseField(foreign = true, columnName = PAGE_SIZE, foreignAutoRefresh = true, foreignAutoCreate = true, columnDefinition = "INTEGER REFERENCES page_size (id)")
+    protected PageSizeEntity pageSize;
+    @DatabaseField(foreign = true, columnName = CLIENT_BILLING_STATE_ID, foreignAutoRefresh = true, foreignAutoCreate = true, columnDefinition = "INTEGER REFERENCES states (id)")
+    protected StateEntity clientBillingState;
+    @DatabaseField(foreign = true, columnName = CLIENT_SHIPPING_STATE_ID, foreignAutoRefresh = true, foreignAutoCreate = true, columnDefinition = "INTEGER REFERENCES states (id)")
+    protected StateEntity clientShippingState;
+    @DatabaseField(columnName = PAY_EMAIL, canBeNull = true)
+    protected String payEmail;
+    @DatabaseField(columnName = PAY_ONLINE, canBeNull = true, dataType = DataType.BOOLEAN)
+    protected boolean isPayOnline;
+    @DatabaseField(foreign = true, columnName = FLAG_ID, foreignAutoRefresh = true, foreignAutoCreate = true, columnDefinition = "INTEGER REFERENCES flags (id)")
+    protected FlagEntity flag;
+    @DatabaseField(columnName = LAYOUT, canBeNull = false)
+    protected Integer layout;
+    @DatabaseField(columnName = PRINT_ID, canBeNull = false)
+    protected Integer printId;
+    @DatabaseField(columnName = DISCOUNT, canBeNull = true, dataType = DataType.BIG_DECIMAL)
+    protected BigDecimal discount;
+	@DatabaseField(columnName = SENT, canBeNull = false, dataType = DataType.BOOLEAN, defaultValue = "0")
+    protected boolean sent;
+	@DatabaseField(columnName = TYPE, canBeNull = true)
+    protected String type;
+
+    
+    @ForeignCollectionField(foreignFieldName = "invoice")
+    protected ForeignCollection<InvoiceProductEntity> invoiceProducts;
+
+    public InvoiceEntity(InvoiceEntity invoicesEntity) {
+        this.id = invoicesEntity.id;
+        this.number = invoicesEntity.number;
+        this.issueDate = invoicesEntity.issueDate;
+        this.dueDate = invoicesEntity.dueDate;
+        this.companyDetails = invoicesEntity.companyDetails;
+        this.client = invoicesEntity.client;
+        this.clientName = invoicesEntity.clientName;
+        this.clientCode = invoicesEntity.clientCode;
+        this.clientEmail = invoicesEntity.clientEmail;
+        this.clientTelephone = invoicesEntity.clientTelephone;
+        this.clientContact = invoicesEntity.clientContact;
+        this.clientBillingAddress = invoicesEntity.clientBillingAddress;
+        this.clientBillingZip = invoicesEntity.clientBillingZip;
+        this.clientBillingCity = invoicesEntity.clientBillingCity;
+        this.clientShippingAddress = invoicesEntity.clientShippingAddress;
+        this.clientShippingZip = invoicesEntity.clientShippingZip;
+        this.clientShippingCity = invoicesEntity.clientShippingCity;
+        this.isPaid = invoicesEntity.isPaid;
+        this.isDraft = invoicesEntity.isDraft;
+        this.totalNoTax = invoicesEntity.totalNoTax;
+        this.totalTax = invoicesEntity.totalTax;
+        this.totalAll = invoicesEntity.totalAll;
+        this.internalNotes = invoicesEntity.internalNotes;
+        this.invoiceNotes = invoicesEntity.invoiceNotes;
+        this.deleted = invoicesEntity.deleted;
+        this.poNumber = invoicesEntity.poNumber;
+        this.color = invoicesEntity.color;
+        this.pageSize = invoicesEntity.pageSize;
+        this.clientBillingState = invoicesEntity.clientBillingState;
+        this.clientShippingState = invoicesEntity.clientShippingState;
+        this.invoiceProducts = invoicesEntity.invoiceProducts;
+        this.payEmail = invoicesEntity.payEmail;
+        this.isPayOnline = invoicesEntity.isPayOnline;
+        this.logo = invoicesEntity.logo;
+        this.flag = invoicesEntity.flag;
+        this.layout = invoicesEntity.layout;
+        this.printId = invoicesEntity.printId;
+        this.discount = invoicesEntity.discount;
+		this.sent = invoicesEntity.sent;
+		this.type = invoicesEntity.type;
+    }
+
+    public InvoiceEntity() {
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public void setNumber(String number) {
+        this.number = number;
+    }
+
+    public Date getIssueDate() {
+        return issueDate;
+    }
+
+    public void setIssueDate(Date issueDate) {
+        this.issueDate = issueDate;
+    }
+
+    public Date getDueDate() {
+        return dueDate;
+    }
+
+    public void setDueDate(Date dueDate) {
+        this.dueDate = dueDate;
+    }
+
+    public CompanyDetailsEntity getCompanyDetails() {
+        return companyDetails;
+    }
+
+    public void setCompanyDetails(CompanyDetailsEntity companyDetails) {
+        this.companyDetails = companyDetails;
+    }
+
+    public ClientEntity getClient() {
+        return client;
+    }
+
+    public void setClient(ClientEntity client) {
+        this.client = client;
+    }
+
+    public String getClientName() {
+        return clientName;
+    }
+
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
+    }
+
+    public String getClientCode() {
+        return clientCode;
+    }
+
+    public void setClientCode(String clientCode) {
+        this.clientCode = clientCode;
+    }
+
+    public String getClientEmail() {
+        return clientEmail;
+    }
+
+    public void setClientEmail(String clientEmail) {
+        this.clientEmail = clientEmail;
+    }
+
+    public String getClientTelephone() {
+        return clientTelephone;
+    }
+
+    public void setClientTelephone(String clientTelephone) {
+        this.clientTelephone = clientTelephone;
+    }
+
+    public String getClientContact() {
+        return clientContact;
+    }
+
+    public void setClientContact(String clientContact) {
+        this.clientContact = clientContact;
+    }
+
+    public String getClientBillingAddress() {
+        return clientBillingAddress;
+    }
+
+    public void setClientBillingAddress(String clientBillingAddress) {
+        this.clientBillingAddress = clientBillingAddress;
+    }
+
+    public String getClientBillingZip() {
+        return clientBillingZip;
+    }
+
+    public void setClientBillingZip(String clientBillingZip) {
+        this.clientBillingZip = clientBillingZip;
+    }
+
+    public String getClientBillingCity() {
+        return clientBillingCity;
+    }
+
+    public void setClientBillingCity(String clientBillingCity) {
+        this.clientBillingCity = clientBillingCity;
+    }    
+
+    public String getClientShippingAddress() {
+        return clientShippingAddress;
+    }
+
+    public void setClientShippingAddress(String clientShippingAddress) {
+        this.clientShippingAddress = clientShippingAddress;
+    }
+
+    public String getClientShippingZip() {
+        return clientShippingZip;
+    }
+
+    public void setClientShippingZip(String clientShippingZip) {
+        this.clientShippingZip = clientShippingZip;
+    }
+
+    public String getClientShippingCity() {
+        return clientShippingCity;
+    }
+
+    public void setClientShippingCity(String clientShippingCity) {
+        this.clientShippingCity = clientShippingCity;
+    }   
+
+    public boolean isPaid() {
+        return isPaid;
+    }
+
+    public void setIsPaid(boolean isPaid) {
+        this.isPaid = isPaid;
+    }
+
+    public boolean isDraft() {
+        return isDraft;
+    }
+
+    public void setIsDraft(boolean isDraft) {
+        this.isDraft = isDraft;
+    }
+
+    public BigDecimal getTotalNoTax() {
+        return totalNoTax;
+    }
+
+    public void setTotalNoTax(BigDecimal totalNoTax) {
+        this.totalNoTax = totalNoTax;
+    }
+
+    public BigDecimal getTotalTax() {
+        return totalTax;
+    }
+
+    public void setTotalTax(BigDecimal totalTax) {
+        this.totalTax = totalTax;
+    }
+
+    public BigDecimal getTotalAll() {
+        return totalAll;
+    }
+
+    public void setTotalAll(BigDecimal totalAll) {
+        this.totalAll = totalAll;
+    }
+
+    public String getInternalNotes() {
+        return internalNotes;
+    }
+
+    public void setInternalNotes(String internalNotes) {
+        this.internalNotes = internalNotes;
+    }
+
+    public String getInvoiceNotes() {
+        return invoiceNotes;
+    }
+
+    public void setInvoiceNotes(String invoiceNotes) {
+        this.invoiceNotes = invoiceNotes;
+    } 
+
+    public StateEntity getClientBillingState() {
+        return clientBillingState;
+    }
+
+    public void setClientBillingState(StateEntity clientBillingState) {
+        this.clientBillingState = clientBillingState;
+    }
+
+    public StateEntity getClientShippingState() {
+        return clientShippingState;
+    }
+
+    public void setClientShippingState(StateEntity clientShippingState) {
+        this.clientShippingState = clientShippingState;
+    }
+
+    public ForeignCollection<InvoiceProductEntity> getInvoiceProducts() {
+        return invoiceProducts;
+    }
+
+    public void setInvoiceProducts(ForeignCollection<InvoiceProductEntity> invoiceProducts) {
+        this.invoiceProducts = invoiceProducts;
+    }
+
+    public String getDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(String deleted) {
+        this.deleted = deleted;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+
+    public PageSizeEntity getPageSize() {
+        return pageSize;
+    }
+
+    public void setPageSize(PageSizeEntity pageSize) {
+        this.pageSize = pageSize;
+    }
+
+    public String getPoNumber() {
+        return poNumber;
+    }
+
+    public void setPoNumber(String poNumber) {
+        this.poNumber = poNumber;
+    }
+
+    public String getPayType() {
+        return payEmail;
+    }
+
+    public void setPayType(String payType) {
+        this.payEmail = payType;
+    }
+
+    public boolean isPayOnline() {
+        return isPayOnline;
+    }
+
+    public void setPayOnline(boolean isPayOnline) {
+        this.isPayOnline = isPayOnline;
+    }
+
+    public String getPayEmail() {
+        return payEmail;
+    }
+
+    public void setPayEmail(String payEmail) {
+        this.payEmail = payEmail;
+    }
+
+    public String getLogo() {
+        return logo;
+    }
+
+    public void setLogo(String logo) {
+        this.logo = logo;
+    }
+   
+    public FlagEntity getFlag() {
+        return flag;
+    }
+
+    public void setFlag(FlagEntity flag) {
+        this.flag = flag;
+    }
+
+    public Integer getLayout() {
+        return layout;
+    }
+
+    public void setLayout(Integer layout) {
+        this.layout = layout;
+    }
+    public Integer getPrintId() {
+        return printId;
+    }
+
+    public void setPrintId(Integer printId) {
+        this.printId = printId;
+    }
+
+    public BigDecimal getDiscount() {
+        return discount;
+    }
+
+    public void setDiscount(BigDecimal discount) {
+        this.discount = discount;
+    }	
+
+	public boolean isSent() {
+		return sent;
+	}
+
+	public void setSent(boolean sent) {
+		this.sent = sent;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	@Override
+	public int hashCode() {
+		int hash = 3;
+		hash = 61 * hash + this.id;
+		hash = 61 * hash + (this.number != null ? this.number.hashCode() : 0);
+		hash = 61 * hash + (this.issueDate != null ? this.issueDate.hashCode() : 0);
+		hash = 61 * hash + (this.dueDate != null ? this.dueDate.hashCode() : 0);
+		hash = 61 * hash + (this.companyDetails != null ? this.companyDetails.hashCode() : 0);
+		hash = 61 * hash + (this.client != null ? this.client.hashCode() : 0);
+		hash = 61 * hash + (this.clientName != null ? this.clientName.hashCode() : 0);
+		hash = 61 * hash + (this.clientCode != null ? this.clientCode.hashCode() : 0);
+		hash = 61 * hash + (this.clientEmail != null ? this.clientEmail.hashCode() : 0);
+		hash = 61 * hash + (this.clientTelephone != null ? this.clientTelephone.hashCode() : 0);
+		hash = 61 * hash + (this.clientContact != null ? this.clientContact.hashCode() : 0);
+		hash = 61 * hash + (this.clientBillingAddress != null ? this.clientBillingAddress.hashCode() : 0);
+		hash = 61 * hash + (this.clientBillingZip != null ? this.clientBillingZip.hashCode() : 0);
+		hash = 61 * hash + (this.clientBillingCity != null ? this.clientBillingCity.hashCode() : 0);
+		hash = 61 * hash + (this.clientShippingAddress != null ? this.clientShippingAddress.hashCode() : 0);
+		hash = 61 * hash + (this.clientShippingZip != null ? this.clientShippingZip.hashCode() : 0);
+		hash = 61 * hash + (this.clientShippingCity != null ? this.clientShippingCity.hashCode() : 0);
+		hash = 61 * hash + (this.isPaid ? 1 : 0);
+		hash = 61 * hash + (this.isDraft ? 1 : 0);
+		hash = 61 * hash + (this.totalNoTax != null ? this.totalNoTax.hashCode() : 0);
+		hash = 61 * hash + (this.totalTax != null ? this.totalTax.hashCode() : 0);
+		hash = 61 * hash + (this.totalAll != null ? this.totalAll.hashCode() : 0);
+		hash = 61 * hash + (this.internalNotes != null ? this.internalNotes.hashCode() : 0);
+		hash = 61 * hash + (this.invoiceNotes != null ? this.invoiceNotes.hashCode() : 0);
+		hash = 61 * hash + (this.deleted != null ? this.deleted.hashCode() : 0);
+		hash = 61 * hash + (this.color != null ? this.color.hashCode() : 0);
+		hash = 61 * hash + (this.poNumber != null ? this.poNumber.hashCode() : 0);
+		hash = 61 * hash + (this.logo != null ? this.logo.hashCode() : 0);
+		hash = 61 * hash + (this.pageSize != null ? this.pageSize.hashCode() : 0);
+		hash = 61 * hash + (this.clientBillingState != null ? this.clientBillingState.hashCode() : 0);
+		hash = 61 * hash + (this.clientShippingState != null ? this.clientShippingState.hashCode() : 0);
+		hash = 61 * hash + (this.payEmail != null ? this.payEmail.hashCode() : 0);
+		hash = 61 * hash + (this.isPayOnline ? 1 : 0);
+		hash = 61 * hash + (this.flag != null ? this.flag.hashCode() : 0);
+		hash = 61 * hash + (this.layout != null ? this.layout.hashCode() : 0);
+		hash = 61 * hash + (this.printId != null ? this.printId.hashCode() : 0);
+		hash = 61 * hash + (this.discount != null ? this.discount.hashCode() : 0);
+		hash = 61 * hash + (this.sent ? 1 : 0);
+		hash = 61 * hash + (this.type != null ? this.type.hashCode() : 0);
+		return hash;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final InvoiceEntity other = (InvoiceEntity) obj;
+		if (this.id != other.id) {
+			return false;
+		}
+		if ((this.number == null) ? (other.number != null) : !this.number.equals(other.number)) {
+			return false;
+		}
+		if (this.issueDate != other.issueDate && (this.issueDate == null || !this.issueDate.equals(other.issueDate))) {
+			return false;
+		}
+		if (this.dueDate != other.dueDate && (this.dueDate == null || !this.dueDate.equals(other.dueDate))) {
+			return false;
+		}
+		if (this.companyDetails != other.companyDetails && (this.companyDetails == null || !this.companyDetails.equals(other.companyDetails))) {
+			return false;
+		}
+		if (this.client != other.client && (this.client == null || !this.client.equals(other.client))) {
+			return false;
+		}
+		if ((this.clientName == null) ? (other.clientName != null) : !this.clientName.equals(other.clientName)) {
+			return false;
+		}
+		if ((this.clientCode == null) ? (other.clientCode != null) : !this.clientCode.equals(other.clientCode)) {
+			return false;
+		}
+		if ((this.clientEmail == null) ? (other.clientEmail != null) : !this.clientEmail.equals(other.clientEmail)) {
+			return false;
+		}
+		if ((this.clientTelephone == null) ? (other.clientTelephone != null) : !this.clientTelephone.equals(other.clientTelephone)) {
+			return false;
+		}
+		if ((this.clientContact == null) ? (other.clientContact != null) : !this.clientContact.equals(other.clientContact)) {
+			return false;
+		}
+		if ((this.clientBillingAddress == null) ? (other.clientBillingAddress != null) : !this.clientBillingAddress.equals(other.clientBillingAddress)) {
+			return false;
+		}
+		if ((this.clientBillingZip == null) ? (other.clientBillingZip != null) : !this.clientBillingZip.equals(other.clientBillingZip)) {
+			return false;
+		}
+		if ((this.clientBillingCity == null) ? (other.clientBillingCity != null) : !this.clientBillingCity.equals(other.clientBillingCity)) {
+			return false;
+		}
+		if ((this.clientShippingAddress == null) ? (other.clientShippingAddress != null) : !this.clientShippingAddress.equals(other.clientShippingAddress)) {
+			return false;
+		}
+		if ((this.clientShippingZip == null) ? (other.clientShippingZip != null) : !this.clientShippingZip.equals(other.clientShippingZip)) {
+			return false;
+		}
+		if ((this.clientShippingCity == null) ? (other.clientShippingCity != null) : !this.clientShippingCity.equals(other.clientShippingCity)) {
+			return false;
+		}
+		if (this.isPaid != other.isPaid) {
+			return false;
+		}
+		if (this.isDraft != other.isDraft) {
+			return false;
+		}
+		if (this.totalNoTax != other.totalNoTax && (this.totalNoTax == null || !this.totalNoTax.equals(other.totalNoTax))) {
+			return false;
+		}
+		if (this.totalTax != other.totalTax && (this.totalTax == null || !this.totalTax.equals(other.totalTax))) {
+			return false;
+		}
+		if (this.totalAll != other.totalAll && (this.totalAll == null || !this.totalAll.equals(other.totalAll))) {
+			return false;
+		}
+		if ((this.internalNotes == null) ? (other.internalNotes != null) : !this.internalNotes.equals(other.internalNotes)) {
+			return false;
+		}
+		if ((this.invoiceNotes == null) ? (other.invoiceNotes != null) : !this.invoiceNotes.equals(other.invoiceNotes)) {
+			return false;
+		}
+		if ((this.deleted == null) ? (other.deleted != null) : !this.deleted.equals(other.deleted)) {
+			return false;
+		}
+		if ((this.color == null) ? (other.color != null) : !this.color.equals(other.color)) {
+			return false;
+		}
+		if ((this.poNumber == null) ? (other.poNumber != null) : !this.poNumber.equals(other.poNumber)) {
+			return false;
+		}
+		if ((this.logo == null) ? (other.logo != null) : !this.logo.equals(other.logo)) {
+			return false;
+		}
+		if (this.pageSize != other.pageSize && (this.pageSize == null || !this.pageSize.equals(other.pageSize))) {
+			return false;
+		}
+		if (this.clientBillingState != other.clientBillingState && (this.clientBillingState == null || !this.clientBillingState.equals(other.clientBillingState))) {
+			return false;
+		}
+		if (this.clientShippingState != other.clientShippingState && (this.clientShippingState == null || !this.clientShippingState.equals(other.clientShippingState))) {
+			return false;
+		}
+		if ((this.payEmail == null) ? (other.payEmail != null) : !this.payEmail.equals(other.payEmail)) {
+			return false;
+		}
+		if (this.isPayOnline != other.isPayOnline) {
+			return false;
+		}
+		if (this.flag != other.flag && (this.flag == null || !this.flag.equals(other.flag))) {
+			return false;
+		}
+		if (this.layout != other.layout && (this.layout == null || !this.layout.equals(other.layout))) {
+			return false;
+		}
+		if (this.printId != other.printId && (this.printId == null || !this.printId.equals(other.printId))) {
+			return false;
+		}
+		if (this.discount != other.discount && (this.discount == null || !this.discount.equals(other.discount))) {
+			return false;
+		}
+		if (this.sent != other.sent) {
+			return false;
+		}
+		if ((this.type == null) ? (other.type != null) : !this.type.equals(other.type)) {
+			return false;
+		}
+		return true;
+	}
+}

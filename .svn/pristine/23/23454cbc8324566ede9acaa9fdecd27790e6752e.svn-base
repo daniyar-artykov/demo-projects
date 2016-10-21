@@ -1,0 +1,127 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.beans;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.stmt.PreparedQuery;
+import com.j256.ormlite.support.ConnectionSource;
+import java.sql.SQLException;
+import java.util.List;
+import sleekbill.Common;
+import sleekbill.entities.StockEntity;
+
+/**
+ *
+ * @author Andrei
+ */
+public class Stock extends StockEntity {
+
+    private Dao<StockEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+
+    public Stock(StockEntity stockEntity) {
+        this(0);
+        this.id = stockEntity.getId();
+        this.quantity = stockEntity.getQuantity();
+        this.deleted = stockEntity.getDeleted();
+    }
+
+    public Stock() {
+        this(0);
+    }
+
+    public Stock(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager
+                        .createDao(mainConnection, StockEntity.class);
+
+                if (id != null && id != 0) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void refreshDao() {
+        try {
+            mainDao = DaoManager
+                    .createDao(Common.connection.getConnection(), StockEntity.class);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void create() throws Exception {
+        mainDao.create(this);
+    }
+
+    public StockEntity read(Integer id) throws Exception {
+        return mainDao.queryForId(id);
+    }
+
+    public void update() throws Exception {
+        mainDao.update(this);
+    }
+
+    public void delete() throws Exception {
+        mainDao.delete(this);
+    }
+    
+    public static Stock getByProductId(ConnectionSource connectionSource, Integer id) throws SBDaoException, SQLException {
+        
+        Dao<StockEntity, Integer> stockDao = DaoManager.createDao(connectionSource, StockEntity.class);
+        PreparedQuery<StockEntity> prepare = stockDao.queryBuilder().where().eq(Stock.PRODUCT_ID, id).prepare();
+        List<StockEntity> query = stockDao.query(prepare);
+
+        if (query.size() > 0) {
+            return new Stock(query.get(0));
+        }
+        return null;
+    }
+    
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 79 * hash + this.id;
+        hash = 79 * hash + (this.product != null ? this.product.hashCode() : 0);
+        hash = 79 * hash + (this.quantity != null ? this.quantity.hashCode() : 0);
+        hash = 79 * hash + (this.deleted != null ? this.deleted.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Stock other = (Stock) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (this.product != other.product && (this.product == null || !this.product.equals(other.product))) {
+            return false;
+        }
+        if (this.quantity != other.quantity && (this.quantity == null || !this.quantity.equals(other.quantity))) {
+            return false;
+        }
+        if ((this.deleted == null) ? (other.deleted != null) : !this.deleted.equals(other.deleted)) {
+            return false;
+        }
+        return true;
+    }
+}

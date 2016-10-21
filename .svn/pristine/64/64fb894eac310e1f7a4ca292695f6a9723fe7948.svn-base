@@ -1,0 +1,166 @@
+package sleekbill.beans;
+
+import java.sql.SQLException;
+import java.util.List;
+
+import sleekbill.Common;
+import sleekbill.db.SBConnection;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.stmt.PreparedQuery;
+import sleekbill.entities.ReleaseEntity;
+
+/**
+ *
+ * @author daniyar.artykov
+ */
+public class Release extends ReleaseEntity {
+
+    public static int DEFAULT_ID = 1;
+
+    private Dao<ReleaseEntity, Integer> mainDao;
+    private JdbcConnectionSource mainConnection = Common.connection.getConnection();
+
+    public Release(ReleaseEntity releaseEntity) {
+        this(0);
+        this.id = releaseEntity.getId();
+        this.version = releaseEntity.getVersion();
+        this.year = releaseEntity.getYear();
+    }
+
+    public Release() {
+        this(0);
+    }
+
+    public Release(Integer id) {
+        super();
+
+        if (mainConnection != null) {
+            try {
+                mainDao = DaoManager
+                        .createDao(mainConnection, ReleaseEntity.class);
+
+                if (id != null) {
+                    setId(id);
+                    mainDao.refresh(this);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void refreshDao() {
+        try {
+            mainDao = DaoManager
+                    .createDao(Common.connection.getConnection(), ReleaseEntity.class);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void create() throws Exception {
+        mainDao.create(this);
+    }
+
+    public ReleaseEntity read(Integer id) throws Exception {
+        return mainDao.queryForId(id);
+    }
+
+    public void update() throws Exception {
+        mainDao.update(this);
+    }
+
+    public void delete() throws Exception {
+        mainDao.delete(this);
+    }
+
+    public static void add(JdbcConnectionSource connectionSource, Release version) throws SBDaoException, SQLException {
+
+        Dao<ReleaseEntity, Integer> versionDao = DaoManager.createDao(connectionSource, ReleaseEntity.class);
+
+        versionDao.create(version);
+    }
+
+    public static ReleaseEntity get(JdbcConnectionSource connectionSource, 
+            String version) throws SBDaoException, SQLException {
+
+        Dao<ReleaseEntity, Integer> versionDao = 
+                DaoManager.createDao(connectionSource, ReleaseEntity.class);
+        PreparedQuery<ReleaseEntity> pq = versionDao.queryBuilder().where()
+                .eq(Release.VERSION, version).prepare();
+        List<ReleaseEntity> list = versionDao.query(pq);
+
+        if (list.size() > 0) {
+            return list.get(0);
+        }
+        return null;
+    }
+
+    public static Release get(SBConnection connection) 
+            throws SBDaoException, SQLException {
+
+        Dao<ReleaseEntity, Integer> versionDao = 
+                DaoManager.createDao(connection.getConnection(), ReleaseEntity.class);
+        ReleaseEntity entity = versionDao.queryForId(DEFAULT_ID);
+        
+        return new Release(entity);
+    }
+
+    public static void update(SBConnection connection, Release release) 
+            throws SBDaoException, SQLException {
+
+        Dao<ReleaseEntity, Integer> versionDao = 
+                DaoManager.createDao(connection.getConnection(), ReleaseEntity.class);
+        release.setId(DEFAULT_ID);
+        versionDao.update(release);
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 29 * hash + this.id;
+        hash = 29 * hash + (this.version != null ? this.version.hashCode() : 0);
+        hash = 29 * hash + (this.year != null ? this.year.hashCode() : 0);
+        hash = 29 * hash + (this.releaseNotes != null ? this.releaseNotes.hashCode() : 0);
+        hash = 31 * hash + (this.showNotes ? 1 : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Release other = (Release) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if ((this.version == null) ? (other.version != null) : !this.version.equals(other.version)) {
+            return false;
+        }
+        if ((this.releaseNotes == null) ? (other.releaseNotes != null) : !this.releaseNotes.equals(other.releaseNotes)) {
+            return false;
+        }
+        if (this.showNotes != other.showNotes) {
+            return false;
+        }
+        
+        return !((this.year == null) ? (other.year != null) : !this.year.equals(other.year));
+    }
+
+    public Dao<ReleaseEntity, Integer> getMainDao() {
+        return mainDao;
+    }
+
+    public void setMainDao(Dao<ReleaseEntity, Integer> mainDao) {
+        this.mainDao = mainDao;
+    }
+}

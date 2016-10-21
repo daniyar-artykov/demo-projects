@@ -1,0 +1,138 @@
+package sleekbill;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.UnknownHostException;
+
+import sleekbill.ApplicationInstanceManager.ApplicationInstanceListener;
+
+/**
+ *
+ * @author  flaviu m
+ */
+public class ApplicationInstanceManager {
+
+    private static ApplicationInstanceListener subListener;
+    /** Randomly chosen, but static, high socket number */
+    public static final int SINGLE_INSTANCE_NETWORK_SOCKET = 44333;
+    /** Must end with newline */
+    public static final String SINGLE_INSTANCE_SHARED_KEY = Common.isClient()?"$$SleekBillClient2010$$\n":"$$SleekBill2010$$\n";
+
+    /**
+     * Registers this instance of the application.
+     *
+     * @return true if first instance, false if not.
+     */
+    public static boolean registerInstance() {
+        // returnValueOnError should be true if lenient (allows app to run on network error) or false if strict.
+        boolean returnValueOnError = true;
+        // try to open network socket
+        // if success, listen to socket for new instance message, return true
+        // if unable to open, connect to existing and send new instance message, return false
+        try {
+            final ServerSocket socket = new ServerSocket(SINGLE_INSTANCE_NETWORK_SOCKET, 10, InetAddress.getLocalHost());
+            System.err.println("Listening for application instances on socket " + SINGLE_INSTANCE_NETWORK_SOCKET);
+            Thread instanceListenerThread = new Thread(new Runnable() {
+
+                public void run() {
+                    boolean socketClosed = false;
+                    while (!socketClosed) {
+                        if (socket.isClosed()) {
+                            socketClosed = true;
+                        } else {
+                            try {
+                                Socket client = socket.accept();
+                                BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+                                String message = in.readLine();
+                                if (SINGLE_INSTANCE_SHARED_KEY.trim().equals(message.trim())) {
+                                    System.err.println("Shared key matched - new application instance found");
+                                    fireNewInstance();
+                                }
+                                OutputStream out = client.getOutputStream();
+                                out.write(SINGLE_INSTANCE_SHARED_KEY.getBytes());
+                                in.close();
+                                out.close();
+                                client.close();
+                            } catch (IOException e) {
+                                socketClosed = true;
+                            }
+                        }
+                    }
+                }
+            });
+            instanceListenerThread.start();
+        // listen
+        } catch (UnknownHostException e) {
+            System.err.println(e.getMessage());
+            return returnValueOnError;
+        } catch (IOException e) {
+            System.err.println("Port is already taken.  Notifying first instance.");
+            try {
+                Socket clientSocket = new Socket(InetAddress.getLocalHost(), SINGLE_INSTANCE_NETWORK_SOCKET);
+                OutputStream out = clientSocket.getOutputStream();
+                out.write(SINGLE_INSTANCE_SHARED_KEY.getBytes());
+
+                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                String message = in.readLine();
+                boolean res = true;
+                if (SINGLE_INSTANCE_SHARED_KEY.trim().equals(message.trim())) {
+                    System.err.println("Shared key matched - acknowledged");
+                    res =  false;
+                }
+
+                out.close();
+                in.close();
+                clientSocket.close();
+                System.err.println("Successfully notified first instance.");
+                return res;
+            } catch (UnknownHostException e1) {
+                System.err.println(e.getMessage());
+                return returnValueOnError;
+            } catch (IOException e1) {
+                System.err.println("Error connecting to local port for single instance notification");
+                System.err.println(e1.getMessage());
+                return returnValueOnError;
+            }
+
+        }
+        return true;
+    }
+
+    public static void setApplicationInstanceListener(ApplicationInstanceListener listener) {
+        subListener = listener;
+    }
+
+    private static void fireNewInstance() {
+        if (subListener != null) {
+            subListener.newInstanceCreated();
+        }
+    }
+    public static interface ApplicationInstanceListener {
+        public void newInstanceCreated();
+    }
+}
+
+
+ class MyApplication {
+
+    public static void main(String[] args) {
+        if (!ApplicationInstanceManager.registerInstance()) {
+            // instance already running.
+            System.out.println("Another instance of this application is already running.  Exiting.");
+            System.exit(0);
+        }
+        ApplicationInstanceManager.setApplicationInstanceListener(new ApplicationInstanceListener() {
+
+            public void newInstanceCreated() {
+                System.out.println("New instance detected...");
+            // this is where your handler code goes...
+            }
+        });
+    }
+}
+

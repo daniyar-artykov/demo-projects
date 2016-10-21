@@ -1,0 +1,106 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.entities;
+
+import com.j256.ormlite.field.DataType;
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+import java.math.BigDecimal;
+
+/**
+ *
+ * @author Andrei
+ */
+@DatabaseTable(tableName = "stocks")
+public class StockEntity {
+
+    public static final String PRODUCT_ID = "product_id";
+    public static final String QUANTITY = "quantity";
+    public static final String DELETED = "deleted";
+    
+    @DatabaseField(generatedId = true, columnDefinition = "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE")
+    protected int id;
+    @DatabaseField(foreign = true, columnName = PRODUCT_ID, foreignAutoRefresh = true, foreignAutoCreate = true, columnDefinition = "INTEGER REFERENCES products (id)")
+    protected ProductEntity product;
+    @DatabaseField(columnName = QUANTITY, canBeNull = true, dataType = DataType.BIG_DECIMAL)
+    protected BigDecimal quantity;
+    @DatabaseField(columnName = DELETED, canBeNull = false, defaultValue = "n")
+    protected String deleted;
+
+    public StockEntity() {
+    }
+
+    public StockEntity(StockEntity stockEntity) {
+        this.id = stockEntity.id;
+        this.product = stockEntity.product;
+        this.deleted = stockEntity.deleted;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public ProductEntity getProduct() {
+        return product;
+    }
+
+    public void setProduct(ProductEntity product) {
+        this.product = product;
+    }
+
+    public BigDecimal getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(BigDecimal quantity) {
+        this.quantity = quantity;
+    }
+
+    public String getDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(String deleted) {
+        this.deleted = deleted;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 79 * hash + this.id;
+        hash = 79 * hash + (this.product != null ? this.product.hashCode() : 0);
+        hash = 79 * hash + (this.quantity != null ? this.quantity.hashCode() : 0);
+        hash = 79 * hash + (this.deleted != null ? this.deleted.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final StockEntity other = (StockEntity) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (this.product != other.product && (this.product == null || !this.product.equals(other.product))) {
+            return false;
+        }
+        if (this.quantity != other.quantity && (this.quantity == null || !this.quantity.equals(other.quantity))) {
+            return false;
+        }
+        if ((this.deleted == null) ? (other.deleted != null) : !this.deleted.equals(other.deleted)) {
+            return false;
+        }
+        return true;
+    }
+}

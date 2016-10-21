@@ -1,0 +1,760 @@
+
+package sleekbill.swingutils.autosuggesters;
+
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
+
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.ActionMap;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.InputMap;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.KeyStroke;
+import javax.swing.ListCellRenderer;
+import javax.swing.ListModel;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+import javax.swing.UIManager;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.event.MouseInputAdapter;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+
+import sleekbill.util.SBObservable;
+
+/**
+ * 
+ * @author dani
+ */
+public class SBAutoSuggesterJTextArea extends JTextArea {
+	private static final long serialVersionUID = 12L;
+	
+	public static String ADDNEW_LABEL = "&lt Add New &gt";
+	public static String CANTDELETE_LABEL = "You can't delete this record";
+	public static String CANDELETE_LABEL = "Delete the record";
+	
+	protected boolean focusAdditions;
+	protected JScrollPane popupScroll;
+	protected JPopupMenu popup;
+	protected JList list;
+	protected JPanel panel;
+	protected InputMap im;
+	protected ActionMap am;
+	protected int maxListSize = 2000; /*if bigger sqlite may throw 'database locked' sql exception*/
+	protected AutosuggesterItem selectedItem;
+	Object[] results;
+	SwingWorker<Object[], Void> worker;
+	protected Dimension minimumPopupSize = new Dimension(200, 60);
+	protected Dimension maximumPopupSize = new Dimension(300, 600);
+	SBAutoSuggesterJTextArea.SBLoadingListener loadingListener = null;
+	boolean alertIfNoMatch = false;
+	private SBAutoSuggesterJTextArea.ACDocumentListener docListener = new SBAutoSuggesterJTextArea.ACDocumentListener();
+	SBObservable observable = new SBObservable();
+	
+	AutosuggesterDataBuilder dataBuilder;
+
+	boolean addNew = false;
+	AddNewActionListener addNewActionListener;
+	private static final int ADDNEW_ITEM_ID = -999999;
+	private static final AutosuggesterItem ADDNEW_ITEM = new AutosuggesterItem(ADDNEW_ITEM_ID, ADDNEW_LABEL, "<html><a href=''>"
+			+ ADDNEW_LABEL + "</a></html>", null);
+
+	private boolean showDeleteButton = false;
+	private boolean deleteButtonPressed = false;
+	DeleteActionListener deleteActionListener;
+
+	/** Creates a new instance of SBAutoSuggesterJTextArea */
+	public SBAutoSuggesterJTextArea() {
+		this(false);
+	}
+
+	public SBAutoSuggesterJTextArea(boolean showDeleteButton) {
+		this.showDeleteButton = showDeleteButton;
+		this.focusAdditions = false;
+		init();
+	}
+	
+	public SBAutoSuggesterJTextArea(AutosuggesterDataBuilder dataBuilder) {
+		this.dataBuilder = dataBuilder;
+		this.focusAdditions = false;
+		init();
+	}
+
+	public SBAutoSuggesterJTextArea(AutosuggesterDataBuilder dataBuilder, boolean showDeleteButton) {
+		this.showDeleteButton = showDeleteButton;
+		this.dataBuilder = dataBuilder;
+		this.focusAdditions = false;
+		init();
+	}
+        
+        public SBAutoSuggesterJTextArea(AutosuggesterDataBuilder dataBuilder, boolean showDeleteButton, boolean addNew) {
+		this.showDeleteButton = showDeleteButton;
+		this.dataBuilder = dataBuilder;
+		this.focusAdditions = false;
+                this.addNew = addNew;
+		init();
+	}
+	
+	public void setDataBuilder(AutosuggesterDataBuilder dataBuilder){
+		this.dataBuilder = dataBuilder;
+	}
+
+	public void setAddNew(boolean enabled) {
+		addNew = enabled;
+	}
+
+	public void setAddNewActionListener(AddNewActionListener listener){
+		addNewActionListener = listener;
+	}
+	
+	public void removeAddNewActionListener(){
+		addNewActionListener = null;
+	}
+	
+	public AddNewActionListener getAddNewActionListener(){
+		return addNewActionListener;
+	}
+
+	public void setDeleteActionListener(DeleteActionListener listener){
+		deleteActionListener = listener;
+	}
+	
+	public void removeDeleteActionListener(){
+		deleteActionListener = null;
+	}
+	
+	public DeleteActionListener getDeleteActionListener(){
+		return deleteActionListener;
+	}
+
+	void setLoadingListener(SBAutoSuggesterJTextArea.SBLoadingListener sBLoadingListener) {
+		this.loadingListener = sBLoadingListener;
+	}
+
+	public void init() {
+            
+            setWrapStyleWord(true);
+        setLineWrap(true);
+        
+		// setPreferredSize(new Dimension(150,20));
+		popup = new JPopupMenu();
+		// popup.setBorder(new LineBorder(Color.BLUE));
+		popup.setFocusable(false);
+
+		if (showDeleteButton || addNew) {
+			list = new JList(reset("", true));
+			list.setCellRenderer(new IconListRenderer(addNew, showDeleteButton));
+			minimumPopupSize.setSize(new Dimension(215, 60));
+		} else {
+			list = new JList(reset("", true)) {
+				private static final long serialVersionUID = 1L;
+
+				@Override
+				public ListCellRenderer getCellRenderer() {
+					DefaultListCellRenderer lcr = (DefaultListCellRenderer) super.getCellRenderer();
+					return lcr;
+				}
+			};
+		}
+                
+                list.setUI(new FastListUI());
+		list.setFont(UIManager.getFont("TextField.font"));
+		list.setForeground(UIManager.getColor("TextField.foreground"));
+		list.addMouseMotionListener(new SBAutoSuggesterJTextArea.JListMouseMotionListener());
+		list.addMouseListener(new SBAutoSuggesterJTextArea.JListMouseAdapter());
+		list.setFocusable(false);
+
+		popupScroll = new JScrollPane(list);
+		popupScroll.setBorder(null);
+		// popupScroll.getVerticalScrollBar().setBlockIncrement(1);
+
+		popup.setLayout(new GridBagLayout());
+		popup.add(popupScroll, new GridBagConstraints(0, 0, 1, 1, 1, 1, GridBagConstraints.CENTER, GridBagConstraints.BOTH,
+				new Insets(0, 0, 0, 0), 0, 0));
+		setEditable(true);
+
+		getDocument().addDocumentListener(docListener);
+
+		im = getInputMap();
+		am = getActionMap();
+		String actionKey = "downaction";
+		KeyStroke stroke = KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0);
+		im.put(stroke, actionKey);
+		am.put(actionKey, new SBAutoSuggesterJTextArea.LAction("down"));
+
+		actionKey = "upaction";
+		stroke = KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0);
+		im.put(stroke, actionKey);
+		am.put(actionKey, new SBAutoSuggesterJTextArea.LAction("up"));
+
+		actionKey = "selectaction";
+		stroke = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
+		im.put(stroke, actionKey);
+		am.put(actionKey, new SBAutoSuggesterJTextArea.LAction("select"));
+
+		actionKey = "escapeaction";
+		stroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+		im.put(stroke, actionKey);
+		am.put(actionKey, new SBAutoSuggesterJTextArea.LAction("escape"));
+
+		addFocusListener(new FocusListener() {
+			public void focusGained(FocusEvent e) {
+
+				// if(reset(getText()).length == 0)
+				// {
+				// selectedItem=null;
+				// observable.notifyObservers(SBConstants.HIDE_FISA_CLIENT_BUTTON);
+				// }
+			}
+
+			public void focusLost(FocusEvent e) {
+				if (!e.isTemporary()) {
+					hidePopup();
+				}
+
+				if (selectedItem != null) {
+					observable.notifyObservers(AutosuggesterItem.ITEM_SELECTED);
+				} else {
+					observable.notifyObservers(AutosuggesterItem.ITEM_DESELECTED);
+				}				
+//				if (selectedItem != null) {
+//					try {
+//						getDocument().remove(0, getDocument().getLength());
+//						getDocument().insertString(
+//								0,
+//								selectedItem.toString().replace("<html>", "").replace("</html>", "").replace("<b>", "")
+//										.replace("</b>", ""), null);
+//					} catch (BadLocationException ex) {
+//						ex.printStackTrace();
+//					}
+//				}
+			}
+		});
+                
+                
+//                JScrollPane mainJsp = new JScrollPane(this);
+//        mainJsp.getVerticalScrollBar().setUnitIncrement(30);
+//        mainJsp.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+//        this.setAutoscrolls(true);
+	}
+        
+       protected synchronized Object[] reset(String input, boolean initial) {
+
+        if (dataBuilder != null) {
+            List<AutosuggesterItem> data = dataBuilder.getData(input, initial ? 1 : 2000);
+
+//            if (addNew) {
+//                data.add(0, ADDNEW_ITEM);
+//
+//            }
+
+            if (data.isEmpty() && alertIfNoMatch && input != null && !input.isEmpty()) {
+                Toolkit.getDefaultToolkit().beep();
+                setBackground(UIManager.getColor("TextField.alertColor") != null ? UIManager.getColor("TextField.alertColor")
+                        : Color.PINK);
+                setForeground(UIManager.getColor("TextField.alertForegroundColor") != null ? UIManager
+                        .getColor("TextField.alertForegroundColor") : Color.BLACK);
+//                observable.notifyObservers(AutosuggesterItem.ITEM_DESELECTED);
+            } else if (data.size() > 0 && alertIfNoMatch) {
+                setBackground(UIManager.getColor("TextField.background"));
+                setForeground(UIManager.getColor("TextField.foreground"));
+            }
+            
+            if(data.isEmpty()){
+            	observable.notifyObservers(AutosuggesterItem.ITEM_DESELECTED);
+            }
+            
+            if (addNew) {
+                data.add(0, ADDNEW_ITEM);
+
+            }
+
+            return data.toArray();
+        }
+
+        return new Object[]{};
+    }
+
+	protected synchronized Object[] reset(String input) {
+            
+            return reset(input,false);
+		
+	}
+
+	public void delete() {
+		if(deleteActionListener != null){
+			selectedItem = (AutosuggesterItem) list.getSelectedValue();
+			if(selectedItem != null){
+				hidePopup();
+				deleteActionListener.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, selectedItem.getItemName(),
+						System.currentTimeMillis(), 0), selectedItem);
+				selectedItem = null;
+//				reset(getText());
+				setText("");
+			}
+			return;
+		}
+
+//		selectedItem = (IdAndName) list.getSelectedValue();
+//		if (!selectedItem.isDeletable() && table.equals("clienti")) {
+//			Messages.showWarningMessage(
+//					null,
+//					"Clientul "
+//							+ selectedItem.toString().replace("<html>", "").replace("</html>", "").replace("<b>", "")
+//									.replace("</b>", "")
+//							+ " a fost deja sters din Nomenclator, "
+//							+ "totusi pentru a putea efectua cautari\nale documentelor emise pentru acesta, el figureaza in continuare in aceasta lista.",
+//					"Atentie!");
+//			return;
+//		}
+//		String txtMsj = "";
+//		if (table.equals("delegati")) {
+//			txtMsj = "delegatului ";
+//		} else if (table.equals("intocmitori")) {
+//			txtMsj = "intocmitorului ";
+//		} else if (table.equals("clienti")) {
+//			txtMsj = "clientului ";
+//		} else if (table.equals("articole")) {
+//			txtMsj = " produsului/serviciului ";
+//		} else {
+//			txtMsj = "";
+//		}
+//		if (Messages.showQuestionMessage(null, "Doriti stergerea "
+//				+ txtMsj
+//				+ selectedItem.toString().replace("<html>", "").replace("</html>", "").replace("<b>", "").replace("</b>", "")
+//						.replaceAll("<font(.*)font>", "") + "?", "Atentie!") == JOptionPane.NO_OPTION) {
+//			showPopup();
+//			// setSelectedItem(selectedItem.name.replace("<html>",
+//			// "").replace("</html>", "").replace("<b>", "").replace("</b>",
+//			// ""));
+//		} else {
+//			try {
+//				DBAccess.uidRow("UPDATE " + table + " SET deleted = 'y' WHERE " + idName + " = ?",
+//						new Object[] { selectedItem.getId() });
+//			} catch (SQLException ex) {
+//				ex.printStackTrace();
+//			}
+//			if (table.equals("articole")) {
+//				setText("");
+//			}
+//			reset("");
+//			showPopup();
+//		}
+	}
+
+	protected class JListMouseMotionListener extends MouseMotionAdapter {
+
+		public void mouseMoved(MouseEvent e) {
+			JList list = ((JList) e.getComponent());
+            if(list.getSelectedIndex() == 0 && addNew){
+                list.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            } else if (showDeleteButton) {
+				deleteButtonArea(e);
+            } else {
+            	list.setCursor(null);
+            }
+			list.setSelectedIndex(list.locationToIndex(e.getPoint()));
+		}
+	}
+
+	protected class JListMouseAdapter extends MouseInputAdapter {
+
+		public void mouseClicked(MouseEvent e) {
+			if (e.getClickCount() == 2 || e.getClickCount() == 1) {
+				if (showDeleteButton) {
+					if (deleteButtonArea(e)) {
+						deleteButtonPressed = true;
+						delete();
+					} else {
+						deleteButtonPressed = false;
+						setSelectedItem();
+					}
+				} else {
+					deleteButtonPressed = false;
+					setSelectedItem();
+					observable.notifyObservers(AutosuggesterItem.ITEM_SELECTED);
+				}
+//				setSelectedItem();
+//				observable.notifyObservers(AutosuggesterItem.ITEM_SELECTED);
+			}
+		}
+	}
+
+	protected class ACDocumentListener implements DocumentListener {
+		public void changedUpdate(DocumentEvent e) {
+		}
+
+		public void insertUpdate(DocumentEvent e) {
+			selectedItem = null;
+			if (e.getDocument().getLength() > 0) {
+				if (hasFocus())
+					showPopup(false);
+			} else {
+				if (alertIfNoMatch) {
+					setBackground(UIManager.getColor("TextField.background"));
+				}
+				hidePopup();
+			}
+		}
+
+		public void removeUpdate(DocumentEvent e) {
+			selectedItem = null;
+			if (e.getDocument().getLength() == 0) {
+				hidePopup();
+				if (alertIfNoMatch) {
+					setBackground(UIManager.getColor("TextField.background"));
+				}
+			} else {
+				if (hasFocus())
+					showPopup(false);
+			}
+		}
+	}
+
+	public void showPopup() {
+		showPopup(true);
+	}
+
+	public void showPopup(boolean forceShow) {
+		try {
+			String in = getDocument().getText(0, getDocument().getLength());
+			showPopup(in, forceShow);
+		} catch (BadLocationException ex) {
+			ex.printStackTrace();
+		}
+
+	}
+
+	public void showPopup(final String in) {
+		showPopup(in, true);
+	}
+
+	public void showPopup(final String in, final boolean forceShow) {
+		if (worker != null) {
+			/* if(!Common.isClient()) */worker.cancel(true);
+		}
+		worker = new SwingWorker<Object[], Void>() {
+			public Object[] doInBackground() {
+				if (!isCancelled()) {
+					if (loadingListener != null)
+						loadingListener.starting();
+					return reset(in);
+				}
+				return null;
+			}
+
+			public void done() {
+				try {
+					if (!isCancelled()) {
+						results = get();
+					}
+				} catch (InterruptedException ignore) {
+				} catch (java.util.concurrent.ExecutionException e) {
+					e.printStackTrace();
+				}
+
+				// daca sunt prea multe rezultate si prea putin input nu apare
+				// suggesterul
+				if (results == null || results.length == 0 || isCancelled()
+						/*|| (!forceShow && results.length > 5 && in.length() < 3 && !Common.isFirmaTest())*/) {
+					hidePopup();
+					if (loadingListener != null)
+						loadingListener.stopped();
+					return;
+				}
+
+				if (!isCancelled() && !getText().equals("")) {
+					popup.show(SBAutoSuggesterJTextArea.this, 0, getHeight());
+					popupScroll.getHorizontalScrollBar().setValue(0);
+				}
+
+				list.setListData(results);
+				list.setSelectedIndex(0);
+				if(addNew && results.length > 0) {
+					list.setSelectedIndex(1);
+				}
+				popup.setVisible(false);
+				if (loadingListener != null) {
+					loadingListener.stopped();
+				}
+
+				Dimension pd = new Dimension((int) list.getPreferredSize().getWidth() + 30, list.getModel().getSize()
+						* (list.getCellBounds(0, 0).height) + 10);
+				pd.width = minimumPopupSize.width <= pd.width && pd.width <= maximumPopupSize.width ? pd.width
+						: (pd.width < minimumPopupSize.width ? minimumPopupSize.width : maximumPopupSize.width);
+				pd.height = minimumPopupSize.height <= pd.height && pd.height <= maximumPopupSize.height ? pd.height
+						: (pd.height < minimumPopupSize.height ? minimumPopupSize.height : maximumPopupSize.height);
+
+				popup.setPreferredSize(pd);
+				if (!isCancelled()) {
+					popup.show(SBAutoSuggesterJTextArea.this, 0, getHeight());
+					popupScroll.getHorizontalScrollBar().setValue(0);
+				}                               
+			}
+		};
+		worker.execute();
+	}
+
+	public void hidePopup() {
+		popup.setVisible(false);
+		popup.setVisible(false);
+		popup.setVisible(false);
+	}
+
+	public void setSelectedItem(AutosuggesterItem item) {
+		if (popup.isVisible()) {
+			selectedItem = item;
+			observable.notifyObservers(AutosuggesterItem.ITEM_SELECTED);
+		}
+	}
+
+	public void setSelectedItem(String s) {
+		// TODO de implementat
+		ListModel model = list.getModel();
+		for (int i = 0; i < model.getSize(); i++) {
+			AutosuggesterItem el = (AutosuggesterItem) model.getElementAt(i);
+			if (el.getItemName().equals(s)) {
+				selectedItem = el;
+				observable.notifyObservers(AutosuggesterItem.ITEM_SELECTED);
+			}
+		}
+	}
+
+	public void setSelectedItem() {
+		try {
+			if (list.getSelectedIndex() == -1 || !popup.isVisible()) {
+				return;
+			}
+			selectedItem = (AutosuggesterItem)list.getSelectedValue();
+			if(selectedItem.getId() == ADDNEW_ITEM_ID && addNewActionListener != null){
+				addNewActionListener.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, selectedItem.getItemName(), System.currentTimeMillis(), 0));
+				return;
+			}
+			
+			Document document = getDocument();
+			document.removeDocumentListener(docListener);
+			document.remove(0, getDocument().getLength());
+			String text = selectedItem.getItemName();
+			text = text.trim();
+			document.insertString(0, text, null);
+			document.addDocumentListener(docListener);
+			if (worker != null)
+				/* if(!Common.isClient()) */worker.cancel(true);
+			hidePopup();
+			selectedItem = (AutosuggesterItem) list.getSelectedValue();
+			observable.notifyObservers(AutosuggesterItem.ITEM_SELECTED);
+			setCaretPosition(0);
+			requestFocus();
+			transferFocus();
+		} catch (BadLocationException ble) {
+			ble.printStackTrace();// should never happen
+		}
+	}
+
+//	public void setSelectedItem(String id, String name, boolean deletable) {
+//		selectedItem = new IdAndName(id, name, deletable);
+//		observable.notifyObservers(SBConstants.SHOW_FISA_CLIENT_BUTTON);
+//	}
+
+	public AutosuggesterItem getSelectedItem() {
+		return selectedItem;
+	}
+
+	public int getMaxListSize() {
+		return maxListSize;
+	}
+
+	public void setMaxListSize(int maxListSize) {
+		this.maxListSize = maxListSize;
+	}
+
+	public JPopupMenu getPopUp() {
+		return popup;
+	}
+
+	protected class LAction extends AbstractAction {
+		private static final long serialVersionUID = 1L;
+
+		public LAction(String s) {
+			super(s);
+		}
+
+		public void actionPerformed(ActionEvent e) {
+			if (getValue(Action.NAME).equals("down")) {
+				if (!popup.isVisible()) {
+					showPopup();
+				} else {
+					list.setSelectedIndex(list.getSelectedIndex() < (list.getModel().getSize() - 1) ? list.getSelectedIndex() + 1
+							: list.getModel().getSize() - 1);
+				}
+				refreshScroll();
+			}
+			if (getValue(Action.NAME).equals("up")) {
+				list.setSelectedIndex(list.getSelectedIndex() > 0 ? list.getSelectedIndex() - 1 : 0);
+				refreshScroll();
+			}
+			if (getValue(Action.NAME).equals("select")) {
+				deleteButtonPressed = false;
+				setSelectedItem();
+				if (list.getSelectedIndex() == -1 || !popup.isVisible()) {
+					if (focusAdditions) {
+						transferFocus();
+					}
+				}
+			}
+			if (getValue(Action.NAME).equals("escape")) {
+				hidePopup();
+			}
+		}
+
+	}
+
+	public int getIdOfSelectedItem() {
+		if (selectedItem != null)
+			return selectedItem.getId();
+		else
+			return -1;
+	}
+
+	public Dimension getMinimumPopupSize() {
+		return minimumPopupSize;
+	}
+
+	public void setMinimumPopupSize(Dimension minimumPopupSize) {
+		this.minimumPopupSize = minimumPopupSize;
+	}
+
+	public Dimension getMaximumPopupSize() {
+		return maximumPopupSize;
+	}
+
+	public void setMaximumPopupSize(Dimension maximumPopupSize) {
+		this.maximumPopupSize = maximumPopupSize;
+	}
+
+	public void refreshScroll() {
+		Rectangle viewr = popupScroll.getViewport().getViewRect();
+		Rectangle listr = list.getCellBounds(list.getSelectedIndex(), list.getSelectedIndex());
+		if (viewr == null || listr == null)
+			return;
+		Rectangle intr = SwingUtilities.computeIntersection((int) viewr.getX(), (int) viewr.getY(), (int) viewr.getWidth(),
+				(int) viewr.getHeight(), listr);
+		listr = list.getCellBounds(list.getSelectedIndex(), list.getSelectedIndex());
+		if (intr.getHeight() < (list.getCellBounds(0, 0).height)) {
+			popupScroll.revalidate();
+			popupScroll.getViewport().setViewPosition(new Point(listr.x + 10, listr.y - 50));
+		}
+	}
+
+	public long resultsCount() {
+                if (dataBuilder != null) {
+                    return dataBuilder.getCount() + (addNew?1:0);
+                } else {
+                    return 0 + (addNew?1:0);
+                }
+        }
+
+	public boolean isFocusAdditions() {
+		return focusAdditions;
+	}
+
+	public void setFocusAdditions(boolean focusAdditions) {
+		this.focusAdditions = focusAdditions;
+	}
+
+	@Override
+	public String getText() {
+//		return super.getText().replace((char) 0, '\n');
+		return super.getText();
+	}
+
+	public interface SBLoadingListener {
+		public void starting();
+
+		public void stopped();
+	}
+
+	public boolean isWorking() {
+		if (worker == null)
+			return false;
+		return worker.getState() == SwingWorker.StateValue.STARTED;
+	}
+
+	public void cancel() {
+		if (worker != null && worker.getState() == SwingWorker.StateValue.STARTED) {
+			worker.cancel(true);
+		}
+	}
+
+	public boolean isAlertIfNoMatch() {
+		return alertIfNoMatch;
+	}
+
+	public void setAlertIfNoMatch(boolean alertIfNoMatch) {
+		this.alertIfNoMatch = alertIfNoMatch;
+	}
+
+	public void setShowDeleteButton(boolean showDeleteButton) {
+		this.showDeleteButton = showDeleteButton;
+	}
+
+	public boolean deleteButtonArea(MouseEvent e) {
+            
+		if (list.getSize().width - e.getPoint().x < 15) {
+			if (!((AutosuggesterItem) list.getModel().getElementAt(list.getSelectedIndex())).isDeletable()) {
+				list.setToolTipText(CANTDELETE_LABEL);
+				list.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+			} else {
+				list.setToolTipText(CANDELETE_LABEL);
+				list.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+			}
+			return true;
+		} else {
+			list.setToolTipText("");
+			list.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+			return false;
+		}
+	}
+
+	public boolean isDeleteButtonPressed() {
+		return deleteButtonPressed;
+	}
+
+	@Override
+	public void setName(String name) {
+		super.setName(name);
+		if (list != null) {
+			list.setName("list_" + this.getName());
+		}
+	}
+
+	public void addObserver(Observer o) {
+		observable.addObserver(o);
+	}
+
+	public boolean isObservableEqual(Observable o) {
+		return observable.equals(o);
+	}	
+}

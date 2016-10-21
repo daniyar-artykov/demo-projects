@@ -1,0 +1,173 @@
+/*
+ * Connection.java
+ *
+ * Created on November 1, 2007, 11:00 AM
+ */
+package sleekbill.db;
+
+import java.sql.SQLException;
+
+import sleekbill.Common;
+import sleekbill.entities.ClientEntity;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+
+/**
+ *
+ * @author flaviu marcu
+ */
+public class DBConnection {
+
+    public final static String DEFAULT_DBKEY = "__default__";
+
+    public static JdbcConnectionSource getConnection(String test, String firma) throws SQLException {
+
+        String url = "";
+        
+        if (Common.FIRMA_TEST_KEY.equals(firma)) {
+            url = "jdbc:sqlite:" + Common.DB_TEST_FILE_PATH;
+        } else if (Common.FIRMA_TEMP_KEY.equals(firma)) {
+            url = "jdbc:sqlite:" + Common.DB_FIRMA_TEMP_FILE_PATH;
+        } else if (DEFAULT_DBKEY.equals(firma)) {
+            url = "jdbc:sqlite:./userdata/dbfile/sleekbill.db";
+        } else if (!DEFAULT_DBKEY.equals(firma)) {
+            url = "jdbc:sqlite:" + (test.isEmpty() ? Common.getTestDBPath(firma) : Common.getDBPath(firma));
+        } else {
+            url = "jdbc:sqlite:" + Common.DB_FILE_PATH;
+        }
+        
+        JdbcConnectionSource conn = new JdbcConnectionSource(url);
+        Dao<ClientEntity, Integer> cDao = DaoManager.createDao(conn, ClientEntity.class);
+        cDao.executeRaw("PRAGMA foreign_keys = ON;");
+
+        return conn;
+
+    }
+
+//************************************** OLD	
+//    private static HashMap <String,Connection> connectionPool= new HashMap <String,Connection>();
+//    private static HashMap<String,String> lockPool= new HashMap <String,String>();
+//    private static long TIMEOUT = 12000;
+//    
+//    public static Connection getConnection(String user,String firma) throws SQLException{        
+//        try{
+//            Connection connection=null;
+//            String lock=null;
+//            String dbkey = firma==null?Common.sbProperties.getProperty("firma",DEFAULT_DBKEY):firma;
+//            
+//            synchronized(DBConnection.class){
+//                connection = connectionPool.get(dbkey);
+//                lock = lockPool.get(dbkey);
+//                if(connection==null || connection.isClosed()) {
+//                    lock=user;            
+//                    connection = getNewConnection(dbkey);
+//
+//                    //check again
+//                    if(connectionPool.get(dbkey)!=null && !connectionPool.get(dbkey).isClosed()) 
+//                        return getConnection();
+//
+//                    connectionPool.put(dbkey, connection);
+//
+//                    assert "native".equals(connection.getMetaData().getDriverVersion()) : "Native driver not loaded!";
+//
+//                    lockPool.put(dbkey,user);
+//                    return connection;
+//                }           
+//                else if(lock==null){
+//                    lock=user;
+//                    lockPool.put(dbkey,lock);
+//                    return connection;
+//                }
+//             }
+//            if(lock!=null){
+//                if(lock.equals(user)) return connection; //autocommit = false wait?
+//                else {
+//                    //wait
+//                    long t = System.currentTimeMillis();
+//                    while(lock!=null && !connection.isClosed() && System.currentTimeMillis()-t<TIMEOUT){
+//                        lock = lockPool.get(dbkey);
+//                        try {
+//                            Thread.sleep(300);
+//                        } catch (InterruptedException ex) {
+//                            ex.printStackTrace();
+//                        }
+//                        System.out.println("waiting for not-busy connection...");
+//                    }
+//                    if(connection.isClosed() || lock==null){
+//                        //is free now
+//                        return getConnection(user,firma); 
+//                    }
+//                    else {
+//                        System.err.println("Connection still busy!");
+//                        //force
+//                        try{
+//                            if(!connection.isClosed()) connection.close();
+//                        }
+//                        catch(Exception e){
+//                            e.printStackTrace();
+//                        }                                
+//
+//                        //force 
+//                        releaseLock(firma);
+//                        return getConnection(user,firma); //prevent deadlock?
+//                    }
+//                }                    
+//        }
+//        }
+//        catch( SQLException sx ){
+//            System.out.println( "Couldn't get connection!" );
+//            sx.printStackTrace();
+//            throw sx;
+//        }
+//        catch(ClassNotFoundException cx) {
+//            System.out.println( "Couldn't load driver!" );
+//            cx.printStackTrace();
+//            System.exit(1);
+//            return null;
+//        }
+//        catch(UnsupportedEncodingException uncex) {
+//            System.out.println( "Couldn't load driver!" );
+//            uncex.printStackTrace();
+//            System.exit(1);
+//            return null;
+//        }
+//        return null;        
+//    }    
+//    
+//    public static Connection getConnection() throws SQLException{    
+//        return getConnection(DBAccess.SERVERNAME,DBAccess.getFirmakey());
+//    }
+//        
+//    public static  Connection getNewConnection(String firma) throws ClassNotFoundException,UnsupportedEncodingException,SQLException{
+//        Class.forName("org.sqlite.JDBC"); //load driver            
+//
+//        String url="";
+//        if(Common.FIRMA_TEST_KEY.equals(firma)) {
+//            url = "jdbc:sqlite:"+Common.DB_TEST_FILE_PATH;
+//        }
+//        else if(Common.FIRMA_TEMP_KEY.equals(firma)) {
+//            url = "jdbc:sqlite:"+Common.DB_FIRMA_TEMP_FILE_PATH;
+//        }
+//        else if(!DEFAULT_DBKEY.equals(firma)) {
+//            url = "jdbc:sqlite:"+Common.getDBPath(firma);
+//        }
+//        else {
+//            url  =  "jdbc:sqlite:"+Common.DB_FILE_PATH;
+//        }
+//        if(!new File(url.substring("jdbc:sqlite:".length())).exists()) throw new SQLException("db file not found");
+//        Connection lc = DriverManager.getConnection(url);            
+//        return lc;    
+//    }
+//    
+//
+//    
+//    public static  void releaseLock(String firma){
+//        lockPool.remove(firma);
+//    }
+//    
+//    public static String getLock(String firma){
+//        return lockPool.get(firma);
+//    }
+}

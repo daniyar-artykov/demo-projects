@@ -1,0 +1,299 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill.util.sleekdetection;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Properties;
+
+import javax.mail.AuthenticationFailedException;
+import javax.mail.MessagingException;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.naming.NamingEnumeration;
+import javax.naming.directory.Attribute;
+import javax.naming.directory.Attributes;
+import javax.naming.directory.DirContext;
+import javax.naming.directory.InitialDirContext;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSession;
+import javax.swing.SwingWorker;
+
+/**
+ *
+ * @author Andrei
+ */
+public class SleekDetection extends SwingWorker<SleekResponse, Object>{
+
+     Integer[] ports = {25, 587, 465};
+     String[] users = new String[]{""};;
+     String[] guesses;
+     String password = "";
+     String mail;
+     boolean stop = false;
+    
+     boolean usernameAndPassword = false;
+
+    public  SleekResponse detect(String email, String password, boolean up) {
+        usernameAndPassword = up;
+
+        final String[] split = email.split("@");
+        final String domain = split[split.length - 1];
+        //users = new String[]{email, split[0]};
+        guesses = new String[]{"mail." + domain, "smtp." + domain, domain};
+
+        String smtp = searchISPDB(domain);
+
+        if (!smtp.isEmpty()) {
+            System.out.println(smtp);
+        } else {
+            smtp = queryMX(domain);
+            if (!smtp.isEmpty()) {
+                System.out.println(smtp);
+            }
+
+        }
+
+        if (smtp.isEmpty()) {
+            for (final Integer p : ports) {
+                for (final String u : users) {
+                    for (final String s : guesses) {
+                        SleekResponse sr = new SleekResponse();
+                        if (confirmSMTP(s, p.toString(), u, password, "true",
+                                "TLS")) {
+                            sr.setPassword(password);
+                            sr.setUser(u);
+                            sr.setSmtp(s);
+                            sr.setTls(true);
+                            sr.setPort(p.toString());
+                            return sr;
+                        }
+
+                        if (stop) {
+                            return null;
+                        }
+
+                        if (confirmSMTP(s, p.toString(), u, password, "true",
+                                "SSL")) {
+                            sr.setPassword(password);
+                            sr.setUser(u);
+                            sr.setSmtp(s);
+                            sr.setTls(false);
+                            sr.setPort(p.toString());
+                            return sr;
+                        }
+
+                        if (stop) {
+                            return null;
+                        }
+
+                        if (confirmSMTP(s, p.toString(), u, password, "true",
+                                "")) {
+                            sr.setPassword(password);
+                            sr.setUser(u);
+                            sr.setSmtp(s);
+                            sr.setTls(false);
+                            sr.setPort(p.toString());
+                            return sr;
+                        }
+
+                        if (stop) {
+                            return null;
+                        }
+                    }
+
+                }
+            }
+        } else {
+            for (final Integer p : ports) {
+                for (final String u : users) {
+
+                    SleekResponse sr = new SleekResponse();
+                    if (confirmSMTP(smtp, p.toString(), u, password, "true",
+                            "TLS")) {
+
+                        sr.setPassword(password);
+                        sr.setUser(u);
+                        sr.setSmtp(smtp);
+                        sr.setTls(true);
+                        sr.setPort(p.toString());
+                        return sr;
+                    }
+
+                    if (stop) {
+                        return null;
+                    }
+
+                    if (confirmSMTP(smtp, p.toString(), u, password, "true",
+                            "SSL")) {
+                        sr.setPassword(password);
+                        sr.setUser(u);
+                        sr.setSmtp(smtp);
+                        sr.setTls(false);
+                        sr.setPort(p.toString());
+                        return sr;
+                    }
+
+                    if (stop) {
+                        return null;
+                    }
+
+                    if (confirmSMTP(smtp, p.toString(), u, password, "true", "")) {
+                        sr.setPassword(password);
+                        sr.setUser(u);
+                        sr.setSmtp(smtp);
+                        sr.setTls(false);
+                        sr.setPort(p.toString());
+                        return sr;
+                    }
+
+                    if (stop) {
+                        return null;
+                    }
+
+                }
+            }
+        }
+
+        return null;
+    }
+
+     String searchISPDB(final String domain) {
+        String result = "";
+        try {
+            final URL url = new URL(
+                    "https://autoconfig-live.mozillamessaging.com/autoconfig/v1.1/"
+                    + domain);
+            HttpsURLConnection con = (HttpsURLConnection)url.openConnection();
+            con.setHostnameVerifier(new HostnameVerifier() {
+
+                @Override
+                public boolean verify(String string, SSLSession ssls) {
+                    return true;
+                }
+            });
+            final BufferedReader br = new BufferedReader(new InputStreamReader(
+                    con.getInputStream()));
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.contains("type=\"smtp\"")
+                        && (line = br.readLine()) != null) {
+                    line = line.replaceAll("<hostname>", "")
+                            .replace("</hostname>", "").trim();
+                    result = line.trim();
+                }
+            }
+        } catch (final Exception ex) {
+            ex.printStackTrace();
+        }
+        return result;
+    }
+
+     String queryMX(final String domain) {
+        String result = "";
+        try {
+            final Hashtable env = new Hashtable();
+            env.put("java.naming.factory.initial",
+                    "com.sun.jndi.dns.DnsContextFactory");
+            final DirContext ictx = new InitialDirContext(env);
+            final Attributes attrs = ictx.getAttributes(domain,
+                    new String[]{"MX"});
+            final Attribute attr = attrs.get("MX");
+
+            final NamingEnumeration en = attr.getAll();
+
+            while (en.hasMore()) {
+                final String address = (String) en.next();
+                final String[] split = address.replace(" ", "").split("\\.");
+                final String mx = split[split.length - 2] + "."
+                        + split[split.length - 1];
+
+                final String[] mxguesses = {"mail." + mx, "smtp." + mx, mx};
+                guesses = concat(guesses, mxguesses);
+
+                result = searchISPDB(mx);
+                if (!result.isEmpty()) {
+                    return result;
+                }
+            }
+        } catch (final Exception ex) {
+        }
+        return result;
+    }
+
+     String[] concat(final String[] first, final String[] second) {
+        final List both = new ArrayList(first.length + second.length);
+        Collections.addAll(both, first);
+        Collections.addAll(both, second);
+        return (String[]) both.toArray(new String[both.size()]);
+    }
+
+    public  boolean confirmSMTP(final String host, final String port,
+            final String username, final String password, final String auth,
+            final String enctype) {
+        boolean result = false;
+        try {
+            final Properties props = new Properties();
+            if (auth.equals("true")) {
+                props.setProperty("mail.smtp.auth", "true");
+            } else {
+                props.setProperty("mail.smtp.auth", "false");
+            }
+            if (enctype.endsWith("TLS")) {
+                props.setProperty("mail.smtp.starttls.enable", "true");
+            } else if (enctype.endsWith("SSL")) {
+                props.setProperty("mail.smtp.startssl.enable", "true");
+            }
+            
+            
+            props.put("mail.smtp.connectiontimeout", "4000");
+            props.put("mail.smtp.timeout", "4000");
+            
+            final Session session = Session.getInstance(props, null);
+            final Transport transport = session.getTransport("smtp");
+            final int portint = Integer.parseInt(port);
+            transport.connect(host, portint, username, password);
+            transport.close();
+            result = true;
+        } catch (final AuthenticationFailedException e) {
+            
+            if (!usernameAndPassword) {
+                result = true;
+            }
+        } catch (final MessagingException e) {
+            
+        } catch (final Exception e) {
+            
+        }
+        return result;
+    }
+
+    @Override
+    protected SleekResponse doInBackground() throws Exception {
+        return detect(mail, password, usernameAndPassword);
+    }
+
+    public  boolean isStop() {
+        return stop;
+    }
+
+    public  void setStop(boolean stop) {
+        this.stop = stop;
+    }
+
+    public  String getMail() {
+        return mail;
+    }
+
+    public  void setMail(String mail) {
+        this.mail = mail;
+    }
+}

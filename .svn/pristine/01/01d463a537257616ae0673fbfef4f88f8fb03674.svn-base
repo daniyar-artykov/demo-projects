@@ -1,0 +1,168 @@
+package sleekbill;
+
+import java.awt.Component;
+import java.awt.Font;
+import java.net.URI;
+
+import javax.swing.ImageIcon;
+import javax.swing.JEditorPane;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.UIManager;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
+import sleekbill.utils.SBDesktop;
+
+/**
+ *
+ * @author  flaviu marcu
+ */
+public class Messages {
+    private static ImageIcon errorIcon = new ImageIcon("./images/dialogs/icon_x.png");
+    private static ImageIcon okIcon =new ImageIcon("./images/dialogs/icon_tick.png");
+    private static ImageIcon exclamationIcon =new ImageIcon("./images/dialogs/icon_exclamare.png");
+    private static ImageIcon questionIcon =new ImageIcon("./images/dialogs/icon_question.png");
+    private static ImageIcon informationIcon =new ImageIcon("./images/dialogs/icon_info.png");
+    
+    public static final int YES_OPTION = JOptionPane.YES_OPTION;
+    public static final int NO_OPTION = JOptionPane.NO_OPTION;
+    public static final int CANCEL_OPTION = JOptionPane.CANCEL_OPTION;
+    public static final int OK_OPTION = JOptionPane.OK_OPTION;
+    public static final int CLOSED_OPTION = JOptionPane.CLOSED_OPTION;
+
+    public static void showErrorMessage(Component parent,String message, String title){
+        JOptionPane.showMessageDialog(parent,message, title, JOptionPane.INFORMATION_MESSAGE, errorIcon);
+    }
+        
+     public static void showErrorMessageWithLink(Component parent,String message, String title){
+        
+         Font font = null;
+        try {
+            font = UIManager.getFont("OptionPane.messageFont");
+        } catch (Exception ex) {
+            font = new JLabel().getFont();
+        }
+
+         if(font == null){
+            font = new JLabel().getFont();
+        }
+
+        StringBuffer style = new StringBuffer("font-family:" + font.getFamily() + ";");
+        style.append("font-weight:" + (font.isBold() ? "bold" : "normal") + ";");
+        style.append("font-size:" + font.getSize() + "pt;");
+
+         JEditorPane ep = new JEditorPane("text/html", "<html><body style=\"" + style + "\">"+message+"</body></html>");
+        ep.addHyperlinkListener(new HyperlinkListener() {
+            @Override
+            public void hyperlinkUpdate(HyperlinkEvent e) {
+                if (e.getEventType().equals(HyperlinkEvent.EventType.ACTIVATED)) {
+                    try {
+                        SBDesktop.browse(new URI(e.getURL().toString()));
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        });
+        ep.setEditable(false);
+
+        JOptionPane.showMessageDialog(parent, ep, title, JOptionPane.INFORMATION_MESSAGE, errorIcon);
+    }
+     
+    /**
+     * 
+     * @param parent
+     * @param message
+     * @param title 
+     */ 
+    public static void showInfoMessageWithLink(Component parent, String message, String title) {
+        showMessageWithLink(parent, message, title, informationIcon);
+    }
+    /**
+     *
+     * @param parent
+     * @param message
+     * @param title
+     * @param icon
+     */
+    public static void showMessageWithLink(Component parent, String message, String title, ImageIcon icon) {
+
+        Font font = null;
+        try {
+            font = UIManager.getFont("OptionPane.messageFont");
+        } catch (Exception ex) {
+            font = new JLabel().getFont();
+        }
+
+         if(font == null){
+            font = new JLabel().getFont();
+        }
+
+        StringBuffer style = new StringBuffer("font-family:" + font.getFamily() + ";");
+        style.append("font-weight:" + (font.isBold() ? "bold" : "normal") + ";");
+        style.append("font-size:" + font.getSize() + "pt;");
+
+         JEditorPane ep = new JEditorPane("text/html", "<html><body style=\"" + style + "\">"+message+"</body></html>");
+        ep.addHyperlinkListener(new HyperlinkListener() {
+            @Override
+            public void hyperlinkUpdate(HyperlinkEvent e) {
+                if (e.getEventType().equals(HyperlinkEvent.EventType.ACTIVATED)) {
+                    try {
+                        SBDesktop.browse(new URI(e.getURL().toString()));
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        });
+        ep.setEditable(false);
+        
+        JOptionPane.showMessageDialog(parent, ep, title, JOptionPane.INFORMATION_MESSAGE, icon);
+    }
+
+    public static void showOkMessage(Component parent,String message, String title){
+        JOptionPane.showMessageDialog(parent,message, title, JOptionPane.INFORMATION_MESSAGE, okIcon);
+    }
+    
+    public static void showInformationMessage(Component parent,String message, String title){
+        JOptionPane.showMessageDialog(parent,message, title, JOptionPane.INFORMATION_MESSAGE, informationIcon);
+    }
+
+    public static void showWarningMessage(Component parent,String message, String title){
+        JOptionPane.showMessageDialog(parent,message, title, JOptionPane.WARNING_MESSAGE, exclamationIcon);
+    }
+    
+    public static void showWarningMessage(Component parent,Object message, String title){
+        JOptionPane.showMessageDialog(parent,message, title, JOptionPane.WARNING_MESSAGE, exclamationIcon);
+    }
+    
+    public static int showQuestionMessage(Component parent,String message,String title){
+        return JOptionPane.showConfirmDialog(parent, message, title, JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, questionIcon);
+    }
+    
+    public static int showQuestionMessage(Component parent,Object message,String title){
+        return JOptionPane.showConfirmDialog(parent, message, title, JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, questionIcon);
+    }
+
+    public static int showQuestionYesNoCancelMessage(Component parent,String message,String title){
+        return JOptionPane.showConfirmDialog(parent, message, title, JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, questionIcon);
+    }
+
+    public static Object showInputMessage(Component parent,String message,String title){
+        return JOptionPane.showInputDialog(parent, message, title, JOptionPane.WARNING_MESSAGE, exclamationIcon,null,null);
+    }
+    
+    public static void main(String args[]){
+        showInputMessage(null, "test", "test");
+    }
+
+    public static int showQuestionMessage(Component parent,String message,String title,Object [] options, Object selected){
+        return JOptionPane.showOptionDialog(parent, message, title, JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, questionIcon,
+            options,selected);
+    }
+    
+     public static int showWarningMessage(Component parent,String message,String title,Object [] options, Object selected){
+        return JOptionPane.showOptionDialog(parent, message, title, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, exclamationIcon,
+            options,selected);
+    }
+}

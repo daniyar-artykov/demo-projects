@@ -1,0 +1,141 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package sleekbill;
+
+import java.math.BigDecimal;
+import java.sql.SQLException;
+
+import sleekbill.beans.Tax;
+import sleekbill.entities.ClientEntity;
+import sleekbill.entities.StateEntity;
+import sleekbill.entities.TaxEntity;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+
+/**
+ *
+ * @author dani
+ */
+public class TestORMLite {
+	private final static String DATABASE_URL = "jdbc:sqlite:sleekkbill.db";
+	
+//	public static void saveT(Taxes tax) throws SQLException {
+	public static void saveT(Object[] p) throws SQLException {
+		JdbcConnectionSource connectionSource = Common.connection.getConnection();
+		
+		if(connectionSource == null){
+			throw new SQLException("Conexiune inexistenta!");
+		}
+		synchronized (connectionSource) {
+			try {
+				// create our data source
+//				connectionSource = new JdbcConnectionSource(DATABASE_URL);
+				// setup our database and DAOs
+//				setupDatabase(connectionSource);
+				
+				Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+				
+				// read and write some data
+//				readWriteData();
+				
+//				Taxes taxes = new Taxes("t1", 1, true);
+				TaxEntity tax = new TaxEntity((String)p[0], (BigDecimal)p[1], ((Boolean)p[2]).booleanValue());
+				taxesDao.create(tax);
+				
+				System.out.println("\n\nIt seems to have worked\n\n");
+			} finally {
+				// destroy the data source which should close underlying connections
+				if (connectionSource != null) {
+					connectionSource.close();
+				}
+			}
+		}
+	}
+	
+	public static void saveT1(TaxEntity tax) throws SQLException {
+		JdbcConnectionSource connectionSource = null;
+		try {
+			// create our data source
+			connectionSource = new JdbcConnectionSource(DATABASE_URL);
+			// setup our database and DAOs
+//			setupDatabase(connectionSource);
+			
+			Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+			
+			// read and write some data
+//			readWriteData();
+			
+//			Taxes taxes = new Taxes("t1", 1, true);
+//			Taxes tax = new Taxes((String)p[0], (Integer)p[1], (Boolean)p[2]);
+			taxesDao.create(tax);
+//			if(true) throw new SQLException("eroare");
+			System.out.println("\n\nIt seems to have worked\n\n");
+		} finally {
+			// destroy the data source which should close underlying connections
+			if (connectionSource != null) {
+				connectionSource.close();
+			}
+		}
+	}
+	
+	public static void saveTest(JdbcConnectionSource connectionSource) throws SQLException {
+//		JdbcConnectionSource connectionSource = null;
+		try {
+			// create our data source
+//			connectionSource = new JdbcConnectionSource(DATABASE_URL);
+			// setup our database and DAOs
+//			setupDatabase(connectionSource);
+			
+			Dao<ClientEntity, Integer> cDao = DaoManager.createDao(connectionSource, ClientEntity.class);
+			Dao<StateEntity, Integer> stDao = DaoManager.createDao(connectionSource, StateEntity.class);
+			
+			// read and write some data
+//			readWriteData();
+			
+//			Taxes taxes = new Taxes("t1", 1, true);
+//			Taxes tax = new Taxes((String)p[0], (Integer)p[1], (Boolean)p[2]);
+//			taxesDao.create(tax);
+			StateEntity bstate = new StateEntity();
+			bstate.setState("stat1");
+			bstate.setCountry("tara1");
+//			stDao.create(bstate);
+			StateEntity sstate = new StateEntity();
+			sstate.setState("stat2");
+			sstate.setCountry("tara2");
+//			stDao.create(sstate);
+			ClientEntity c = new ClientEntity("n", "cod", "email", "tel", "contact", "adr", "zip", "city", "s adr", "s zip", "s city", bstate, sstate,"details");
+			cDao.create(c);
+//			if(true) throw new SQLException("eroare");
+			System.out.println("\n\nIt seems to have worked\n\n");
+		} finally {
+			// destroy the data source which should close underlying connections
+//			if (connectionSource != null) {
+//				connectionSource.close();
+//			}
+		}
+	}
+	public static void saveTest1(JdbcConnectionSource connectionSource) throws SQLException {
+		try {
+			// create our data source
+			Dao<TaxEntity, Integer> taxesDao = DaoManager.createDao(connectionSource, TaxEntity.class);
+			
+			Tax tax = new Tax();
+			tax.setTaxName("tn ' z");
+			tax.setTaxPercentage(new BigDecimal(10));
+			
+//				Taxes tax = new Taxes((String)p[0], (Integer)p[1], (Boolean)p[2]);
+			taxesDao.create(tax);
+//				if(true) throw new SQLException("eroare");
+			System.out.println("\n\nIt seems to have worked\n\n");
+		} finally {
+			// destroy the data source which should close underlying connections
+//				if (connectionSource != null) {
+//					connectionSource.close();
+//				}
+		}
+	}	
+}
