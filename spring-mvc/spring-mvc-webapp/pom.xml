@@ -7,12 +7,10 @@
         <version>0.0.1</version>
     </parent>
 
-    <groupId>com.upwork</groupId>
-    <artifactId>spring-mongo</artifactId>
-    <version>0.0.2</version>
+    <artifactId>spring-mvc-webapp</artifactId>
     <packaging>war</packaging>
 
-    <name>spring-mongo</name>
+    <name>spring-mvc-webapp</name>
 
     <properties>
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
